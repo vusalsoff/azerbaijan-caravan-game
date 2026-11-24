@@ -1225,6 +1225,87 @@ export class UIManager {
   }
 
   /**
+   * Sürətli Səfər (Fast-Travel) sonunda çıxan qısa və rəsmi Divan Yol Hesabatı
+   */
+  showFastTravelSummary(report) {
+    if (!this.modalEl || !report) return;
+    this.marketOpen = false;
+    this.mapOpen = false;
+    this.inventoryOpen = false;
+
+    this.modalEl.innerHTML = `
+      <div id="FastTravelSummaryModal" class="modal-backdrop">
+        <div class="modal-card" style="max-width:540px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+            <span class="wax-seal-tag">${renderSigil('compass', 12)} Mənzil Yekunu</span>
+            <span style="font-size:12px;color:var(--text-muted);">${report.eraName}</span>
+          </div>
+
+          <h2 style="margin-top:8px;">${report.fromName} → ${report.toName}</h2>
+          ${renderSeljukStarDivider()}
+
+          <div class="lotm-lore-box" style="margin-bottom:12px;">
+            ${report.roadNote}
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
+            <div class="irs-trade-row">
+              <span>Səfər müddəti</span>
+              <strong>+${report.wholeDays} gün (${report.daysSpent} sutka)</strong>
+            </div>
+            <div class="irs-trade-row">
+              <span>Yol azuqəsi və keçid xərci</span>
+              <span style="color:#d98b76;">-${report.roadCost} qızıl</span>
+            </div>
+            ${
+              report.bonusGold > 0
+                ? `<div class="irs-trade-row">
+                     <span>Yol qazancı / ənam</span>
+                     <strong style="color:#84c994;">+${report.bonusGold} qızıl</strong>
+                   </div>`
+                : ''
+            }
+            ${
+              report.questDeltaGold > 0
+                ? `<div class="irs-trade-row">
+                     <span>Təhvil verilən əmanət mükafatı</span>
+                     <strong style="color:var(--gold-bright);">+${report.questDeltaGold} qızıl</strong>
+                   </div>`
+                : ''
+            }
+            ${
+              report.spoiledItems.length > 0
+                ? `<div class="irs-trade-row">
+                     <span>Yolda xarab olan yük</span>
+                     <span style="color:#d9786e;">${report.spoiledItems.join(', ')}</span>
+                   </div>`
+                : ''
+            }
+          </div>
+
+          <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;">
+            <button id="ft-stay-map" class="btn-secondary">Xəritədə Qal</button>
+            <button id="ft-enter-3d" class="btn-emerald">
+              ${renderSigil('gate', 15)}
+              <span>3D Şəhərə Daxil Ol (${report.toShort})</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    this.modalEl.querySelector('#ft-stay-map')?.addEventListener('click', () => {
+      this.modalEl.innerHTML = '';
+      this.eventBus.emit('fast_travel:dismiss');
+    });
+
+    this.modalEl.querySelector('#ft-enter-3d')?.addEventListener('click', () => {
+      this.modalEl.innerHTML = '';
+      this.eventBus.emit('scene:enter_bazaar', report.toCityId);
+    });
+  }
+
+  /**
    * Antispam Toast — eyni mesaj dalbadal gəldikdə üst-üstə yığmır,
    * mövcud sətiri yeniləyir və ekranda maksimum 3 bildiriş saxlayır.
    */

@@ -970,6 +970,99 @@ export class TradeAndQuestManager {
     this.saveToStorage();
   }
 
+  /**
+   * 2D Xəritədə Sürətli Səfər (Fast-Travel) simulyasiyası:
+   * Gün irəliləyir, yol azuqə xərci çıxılır, bağ nemətlərinin möhləti azalır,
+   * yol hadisəsi (keşikçi uğuru / sakit keçid / quldur həmləsi) hesablanır və qısa hesabat qaytarılır.
+   */
+  completeFastTravel(fromCityId, toCityId, daysElapsed = 1.4) {
+    const fromCity = fromCityId ? this.data.getCityById(fromCityId) : null;
+    const toCity = this.data.getCityById(toCityId);
+    if (!toCity) return null;
+
+    const effectiveDays = this.hasHorseBonus()
+      ? Number((daysElapsed * 0.72).toFixed(1))
+      : Number(daysElapsed.toFixed(1));
+
+    const wholeDays = Math.max(1, Math.round(effectiveDays));
+    this.gameDay += wholeDays;
+
+    // Yeni günə görə köhnə bazarlıq qıfıllarını təmizlə
+    for (const [k, v] of Object.entries(this.haggleState)) {
+      if (v && typeof v.day === 'number' && v.day < this.gameDay) {
+        delete this.haggleState[k];
+      }
+    }
+
+    // Karvan yol azuqəsi xərci (yükə görə yüngül xərc)
+    const cargoCount = this.getTotalItems();
+    const roadCost = Math.min(this.gold, 4 + Math.round(cargoCount * 0.8));
+    this.gold -= roadCost;
+
+    // Bağ nemətlərinin möhlət azalması
+    const spoiledItems = [];
+    for (const [itemId, batches] of Object.entries(this.inventoryBatches)) {
+      if (!batches || batches.length === 0) continue;
+      const meta = this.data.getItemMeta(itemId);
+      if (!meta.max_freshness_days) continue;
+
+      let expiredQty = 0;
+      for (const b of batches) {
+        if (b.daysLeft != null) b.daysLeft -= effectiveDays;
+      }
+      for (let i = batches.length - 1; i >= 0; i--) {
+        if (batches[i].daysLeft != null && batches[i].daysLeft <= 0) {
+          expiredQty += batches[i].qty;
+          batches.splice(i, 1);
+        }
+      }
+      if (expiredQty > 0) {
+        this.stats.spoiledCount += expiredQty;
+        spoiledItems.push(`${expiredQty}× ${meta.name}`);
+      }
+    }
+    this._syncInventoryFromBatches();
+
+    // Təsadüfi yol qeydi
+    let roadNote = 'Karvan daş körpüləri və dərələri sağ-salamat aşdı.';
+    let bonusGold = 0;
+    const roll = Math.random();
+    if (roll < 0.28) {
+      bonusGold = 15;
+      this.gold += bonusGold;
+      this.stats.thievesRepelled += 1;
+      roadNote = 'Yol kənarında pusqu quran quldur dəstəsi keşikçi tərəfindən dəf edildi (+15 qızıl ənam).';
+    } else if (roll < 0.48) {
+      bonusGold = 8;
+      this.gold += bonusGold;
+      roadNote = 'Karvan yolunda rast gəlinən səyyahlarla faydalı mübadilə aparıldı (+8 qızıl).';
+    }
+
+    // Şəhərə çatış və tapşırıq təhvili
+    const prevGold = this.gold;
+    this.setCurrentCity(toCityId);
+    const questDeltaGold = Math.max(0, this.gold - prevGold);
+
+    this.checkVictory();
+    this.emitState();
+
+    return {
+      fromName: fromCity?.short_name || 'Karvan Yolu',
+      toCityId,
+      toName: toCity.display_name,
+      toShort: toCity.short_name || toCity.display_name,
+      eraName: toCity.era_name,
+      daysSpent: effectiveDays,
+      wholeDays,
+      roadCost,
+      bonusGold,
+      questDeltaGold,
+      spoiledItems,
+      roadNote,
+      perishables: this.getHeldPerishables(),
+    };
+  }
+
   getSnapshot() {
     return {
       gold: this.gold,

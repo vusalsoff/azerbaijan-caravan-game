@@ -251,6 +251,10 @@ export class GameManager {
         this.ui.toggleMapChronicle(this.tradeManager.getSnapshot(), this.merchant.position, cities);
         this.paused = false;
       }
+      if (this.worldScene?.startFastTravelToCity) {
+        this.worldScene.startFastTravelToCity(cityId);
+        return;
+      }
       this.merchant.setWaypoint(target.x, target.z);
       if (this.worldScene?.setWaypointVisual) {
         this.worldScene.setWaypointVisual(target.x, target.z);
@@ -265,6 +269,19 @@ export class GameManager {
           this.eventBus.emit('camera:set_mode', 'gta');
         }
       }
+    });
+
+    this.eventBus.on('world:fast_travel_complete', ({ fromCityId, toCityId, daysElapsed }) => {
+      const report = this.tradeManager.completeFastTravel(fromCityId, toCityId, daysElapsed);
+      if (report && !this.tradeManager.victoryReached) {
+        this.paused = true;
+        this.audio.playSFX('coin');
+        this.ui.showFastTravelSummary(report);
+      }
+    });
+
+    this.eventBus.on('fast_travel:dismiss', () => {
+      this.paused = false;
     });
 
     this.eventBus.on('world:trigger_event_now', () => {
