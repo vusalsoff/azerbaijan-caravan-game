@@ -84,6 +84,7 @@ export class UIManager {
     if (!this.hudEl) return;
 
     const isGTA = state.cameraMode === 'gta';
+    const isBazaar = state.sceneName === 'Caravanserai_Bazaar';
     const eraBanner = state.currentCity
       ? `${state.currentCity.short_name || state.currentCity.display_name} • ${state.currentCity.era_name}`
       : `Qədim İpək Yolu • Gün ${state.gameDay}`;
@@ -92,6 +93,30 @@ export class UIManager {
     if (state.hasHorseBonus) bonuses.push('🐎 +35% Sürət');
     if (state.speedBoostTimer > 0) bonuses.push(`⚡ ${state.speedBoostTimer}s`);
     if (state.guardBoostTimer > 0) bonuses.push(`🛡️ ${state.guardBoostTimer}s`);
+
+    const prox = state.bazaarProximity;
+    const bottomActionHtml = isBazaar
+      ? prox?.type === 'exit_to_map'
+        ? `<button id="btn-exit-map" class="btn-primary" style="display:flex;align-items:center;gap:8px;">
+            <span class="key-cap" style="background:rgba(28,19,8,0.22);border-color:#1c1308;color:#1c1308;">E</span>
+            <span>• Qədim 3D Xəritəyə Çıx</span>
+          </button>`
+        : `<button id="btn-open-market" class="btn-primary" style="display:flex;align-items:center;gap:8px;">
+            <span class="key-cap" style="background:rgba(28,19,8,0.22);border-color:#1c1308;color:#1c1308;">E</span>
+            <span>• ${prox?.label || 'Tacirlə danış'}</span>
+          </button>
+          <span style="color:#d2c09d;">WASD: Gəz · Siçan: Kamera</span>`
+      : state.currentCity
+      ? `<button id="btn-enter-bazaar" class="btn-emerald">🏛️ Karvansaraya Gir (3D Tacir)</button>
+         <button id="btn-open-market" class="btn-primary" style="display:flex;align-items:center;gap:8px;">
+           <span class="key-cap" style="background:rgba(28,19,8,0.22);border-color:#1c1308;color:#1c1308;">E</span>
+           <span>• Bazar (${state.currentCity.short_name || state.currentCity.display_name})</span>
+         </button>`
+      : `<span>${
+          isGTA
+            ? '<strong>GTA Rejimi:</strong> W/S sür · A/D döndər · Sağ klik kamera · <span class="key-cap">V</span> Xəritə'
+            : '<strong>Qədim Xəritə:</strong> Kliklə (GTA GPS ilə enər) · <span class="key-cap">M</span> Salnamə'
+        }</span>`;
 
     this.hudEl.innerHTML = `
       <div class="hud-shell">
@@ -110,9 +135,13 @@ export class UIManager {
           <div class="irs-era-banner">✦ ${eraBanner} ✦</div>
 
           <div class="hud-actions-bar">
-            <button id="btn-cam-mode" class="btn-primary">
-              ${isGTA ? '🗺️ Xəritə (V)' : '🎥 GTA 3D (V)'}
-            </button>
+            ${
+              isBazaar
+                ? `<button id="btn-exit-map-top" class="btn-primary">🗺️ Qədim Xəritə (X)</button>`
+                : `<button id="btn-cam-mode" class="btn-primary">
+                    ${isGTA ? '🗺️ Xəritə (V)' : '🎥 GTA 3D (V)'}
+                  </button>`
+            }
             <button id="btn-map" class="btn-secondary">📜 Salnamə (${state.discoveredEvents.length}/${state.totalEventsCount})</button>
             <button id="btn-event-test" class="btn-secondary" title="Yol hadisəsi">✨ Hadisə</button>
             <button id="btn-mute" class="btn-secondary" title="Səsi aç/bağla">${this.muted ? '🔇' : '🔊'}</button>
@@ -120,7 +149,7 @@ export class UIManager {
           </div>
         </div>
 
-        <div class="hud-middle-right">
+        <div class="hud-middle-right" style="${isBazaar && this.marketOpen ? 'display:none;' : ''}">
           <div class="hud-side-card">
             <h4>Aktiv Tapşırıqlar (${state.activeQuests.length})</h4>
             ${
@@ -161,18 +190,7 @@ export class UIManager {
 
           <div class="hud-bottom-center">
             <div class="hud-bottom-hint">
-              ${
-                state.currentCity
-                  ? `<button id="btn-open-market" class="btn-primary" style="display:flex;align-items:center;gap:8px;">
-                      <span class="key-cap" style="background:rgba(28,19,8,0.22);border-color:#1c1308;color:#1c1308;">E</span>
-                      <span>• Tacirlə danış (${state.currentCity.short_name || state.currentCity.display_name})</span>
-                    </button>`
-                  : `<span>${
-                      isGTA
-                        ? '<strong>GTA Rejimi:</strong> W/S sür · A/D döndər · Sağ klik kamera · <span class="key-cap">V</span> Xəritə'
-                        : '<strong>Qədim Xəritə:</strong> Kliklə (GTA GPS ilə enər) · <span class="key-cap">M</span> Salnamə'
-                    }</span>`
-              }
+              ${bottomActionHtml}
             </div>
           </div>
 
@@ -183,6 +201,15 @@ export class UIManager {
 
     this.hudEl.querySelector('#btn-cam-mode')?.addEventListener('click', () => {
       this.eventBus.emit('camera:toggle_mode');
+    });
+    this.hudEl.querySelector('#btn-enter-bazaar')?.addEventListener('click', () => {
+      this.eventBus.emit('scene:enter_bazaar', state.currentCityId);
+    });
+    this.hudEl.querySelector('#btn-exit-map')?.addEventListener('click', () => {
+      this.eventBus.emit('scene:exit_to_world');
+    });
+    this.hudEl.querySelector('#btn-exit-map-top')?.addEventListener('click', () => {
+      this.eventBus.emit('scene:exit_to_world');
     });
     this.hudEl.querySelector('#btn-open-market')?.addEventListener('click', () => {
       this.eventBus.emit('market:open');
@@ -203,10 +230,11 @@ export class UIManager {
     });
   }
 
-  showMarket(city, state) {
+  showMarket(city, state, options = {}) {
     if (!this.modalEl) return;
     this.marketOpen = true;
     this.mapOpen = false;
+    const dockedRight = Boolean(options.dockedRight);
 
     const validIds = city.goods.map((g) => g.item_id);
     if (!this.selectedMarketItemId || !validIds.includes(this.selectedMarketItemId)) {
@@ -215,6 +243,135 @@ export class UIManager {
 
     const analysis = this.tradeManager.getMarketAnalysis(city.city_id, this.selectedMarketItemId);
     const selectedOwned = this.selectedMarketItemId ? state.inventory[this.selectedMarketItemId] || 0 : 0;
+
+    // Karvansaray 3D səhnəsində arxanı qaraltmadan konsept şəklinizdəki kimi SAĞ TƏRƏFDƏ açılır!
+    if (dockedRight && analysis) {
+      if (this.lastState) this.updateHUD(this.lastState);
+      this.modalEl.innerHTML = `
+        <div id="MarketPanel" class="irs-docked-market">
+          <div class="irs-trade-card" style="box-shadow:0 20px 52px rgba(0,0,0,0.65);">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:8px;border-bottom:1px solid rgba(229,184,75,0.3);">
+              <span style="font-family:var(--font-display);font-size:15.5px;letter-spacing:0.05em;color:#f4d078;">
+                ${analysis.good.item_id === 'carpet' ? 'XALÇA TİCARƏTİ' : analysis.good.category === 'agriculture' ? 'KƏND TƏSƏRRÜFATI' : 'BAZAR TİCARƏTİ'}
+              </span>
+              <button id="market-close" class="btn-secondary" style="padding:4px 9px;font-size:12px;">✕ (Esc)</button>
+            </div>
+
+            <div class="irs-item-chips">
+              ${city.goods
+                .map(
+                  (g) => `
+                <button class="irs-item-chip ${g.item_id === this.selectedMarketItemId ? 'active' : ''}" data-select="${g.item_id}">
+                  ${g.icon || '📦'} ${g.name.split(' ')[0]}
+                </button>`
+                )
+                .join('')}
+            </div>
+
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="width:52px;height:52px;border-radius:10px;background:rgba(229,184,75,0.14);border:1px solid rgba(229,184,75,0.55);display:flex;align-items:center;justify-content:center;font-size:28px;">
+                ${analysis.good.icon || '📦'}
+              </div>
+              <div>
+                <div style="font-size:16px;font-weight:700;color:#f8edd4;">${analysis.good.name}</div>
+                <div style="font-size:12px;color:#cbb896;">Ən sərfəli bazar: <strong style="color:#f0c75e">${analysis.bestCityName}</strong></div>
+              </div>
+            </div>
+
+            <div class="irs-trade-row">
+              <span>Alış qiyməti</span>
+              <strong style="color:#ffd479;">🪙 ${analysis.effectiveBuy} ${
+                analysis.haggle.status === 'won' ? '<small style="color:#6ee7b7">(Endirim!)</small>' : ''
+              }</strong>
+            </div>
+            <div class="irs-trade-row">
+              <span>Təxmini satış</span>
+              <strong>🪙 ${analysis.estSellMin}–${analysis.estSellMax}</strong>
+            </div>
+            <div class="irs-trade-row">
+              <span>Yol xərci</span>
+              <span>🪙 ${analysis.travelCost}</span>
+            </div>
+            <div class="irs-trade-row profit">
+              <span>Xalis qazanc</span>
+              <span style="color:${analysis.netMax >= 0 ? '#7ce38b' : '#f28b82'};">
+                🪙 ${analysis.netMin >= 0 ? '+' : ''}${analysis.netMin}..${analysis.netMax >= 0 ? '+' : ''}${analysis.netMax}
+              </span>
+            </div>
+
+            <div>
+              <div class="irs-trade-row" style="margin-bottom:5px;font-size:12.5px;">
+                <span>Proqnoza etibar</span>
+                <strong style="color:#f0c75e">${analysis.trustPercent}%</strong>
+              </div>
+              <div class="trust-bar-track">
+                <div class="trust-bar-fill" style="width:${analysis.trustPercent}%;"></div>
+              </div>
+            </div>
+
+            <div style="font-size:13px;color:#e6d7b9;">
+              🏅 Keyfiyyət: <strong style="color:#f0c75e">${analysis.quality}</strong>
+              ${
+                analysis.good.max_freshness_days
+                  ? ` · 🌿 ${analysis.good.max_freshness_days} gün`
+                  : ''
+              }
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <button id="btn-haggle-sel" class="btn-secondary" ${analysis.haggle.attempted ? 'disabled' : ''}>
+                Bazarlıq et
+              </button>
+              <button id="btn-buy-sel" class="btn-emerald">Al</button>
+            </div>
+
+            ${
+              selectedOwned > 0
+                ? `<button id="btn-sell-sel" class="btn-primary" style="width:100%;">
+                    💰 1× Sat (+${analysis.effectiveSell} qızıl · Səndə: ${selectedOwned})
+                  </button>`
+                : ''
+            }
+
+            <div class="irs-freshness-box">
+              <div style="text-align:center;font-family:var(--font-display);font-size:12.5px;color:#f0c75e;margin-bottom:6px;">
+                ✦ Təzəlik ✦
+              </div>
+              ${this._renderFreshnessRows(state.perishables)}
+            </div>
+          </div>
+        </div>
+      `;
+
+      this.modalEl.querySelector('#market-close')?.addEventListener('click', () => {
+        this.eventBus.emit('market:close');
+      });
+      this.modalEl.querySelectorAll('.irs-item-chip[data-select]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          this.selectedMarketItemId = btn.dataset.select;
+          this.showMarket(city, state, { dockedRight: true });
+        });
+      });
+      this.modalEl.querySelector('#btn-haggle-sel')?.addEventListener('click', () => {
+        this.eventBus.emit('trade:haggle', {
+          cityId: city.city_id,
+          itemId: this.selectedMarketItemId,
+        });
+      });
+      this.modalEl.querySelector('#btn-buy-sel')?.addEventListener('click', () => {
+        this.eventBus.emit('trade:buy', {
+          cityId: city.city_id,
+          itemId: this.selectedMarketItemId,
+        });
+      });
+      this.modalEl.querySelector('#btn-sell-sel')?.addEventListener('click', () => {
+        this.eventBus.emit('trade:sell', {
+          cityId: city.city_id,
+          itemId: this.selectedMarketItemId,
+        });
+      });
+      return;
+    }
 
     const cityGoodsIds = new Set(validIds);
     const extraOwned = Object.entries(state.inventory).filter(
@@ -411,6 +568,7 @@ export class UIManager {
   hideMarket() {
     this.marketOpen = false;
     if (this.modalEl) this.modalEl.innerHTML = '';
+    if (this.lastState) this.updateHUD(this.lastState);
   }
 
   showQuest(quest, npc) {
