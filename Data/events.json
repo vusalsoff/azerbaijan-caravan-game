@@ -1,0 +1,109 @@
+{
+  "historical_events": [
+    {
+      "event_id": "evt_gobustan_bce",
+      "era": "Eramızdan əvvəl (XII–VIII minillik)",
+      "region": "Qobustan (Abşeron yaxınlığı)",
+      "near_city": "City_Baku",
+      "npc_role": "NPC_Historian",
+      "npc_name": "Qədim İz Axtaran Səyyah",
+      "title": "Qobustan Qayaüstü Rəsmləri",
+      "story_text": "Karvan yolunun kənarında qədim qayaüstü təsvirlər tapıldı — min illər əvvəl bu torpaqlarda qayıqlar, ov səhnələri və 'Yallı' rəqsi həkk olunub.",
+      "history_fact": "Qobustan qayaüstü incəsənəti e.ə. dövrlərdən qalma 6000-dən çox təsvirlə UNESCO Dünya İrsi siyahısındadır.",
+      "choices": [
+        {
+          "label": "Tapıntını salnaməyə yaz (+60 Qızıl, Tarix Salnaməsi)",
+          "effect": { "gold": 60, "speed_boost_sec": 0 }
+        },
+        {
+          "label": "Səyyaha yol azuqəsi ver (+40 Qızıl, +15 san. Sürət)",
+          "effect": { "gold": 40, "speed_boost_sec": 15 }
+        }
+      ]
+    },
+    {
+      "event_id": "evt_gabala_6th_century",
+      "era": "IV–VI əsrlər (Qafqaz Albaniyası)",
+      "region": "Qəbələ / Şəki Yolu",
+      "near_city": "City_Sheki",
+      "npc_role": "NPC_Historian",
+      "npc_name": "Alban Salnaməçisi",
+      "title": "VI Əsr Qəbələ Sikkə Tapıntısı",
+      "story_text": "Şəkiyə gedən qədim dağ keçidində VI əsrə aid Qafqaz Albaniyası karvan düşərgəsinin izləri və gümüş sikkələr aşkarlandı.",
+      "history_fact": "Qəbələ uzun əsrlər Qafqaz Albaniyasının paytaxtı olmuş və Böyük İpək Yolunun şimal qolunda mühüm ticarət mərkəzinə çevrilmişdir.",
+      "choices": [
+        {
+          "label": "Sikkələri qoruyub muzey-salnaməyə əlavə et (+85 Qızıl)",
+          "effect": { "gold": 85, "speed_boost_sec": 0 }
+        },
+        {
+          "label": "Qədim kəsə karvan yolunu öyrən (+35 Qızıl, +20 san. Sürət)",
+          "effect": { "gold": 35, "speed_boost_sec": 20 }
+        }
+      ]
+    },
+    {
+      "event_id": "evt_ganja_baku_12th_century",
+      "era": "XII əsr (Azərbaycan İntibahı)",
+      "region": "Şirvan — Gəncə İpək Xətti",
+      "near_city": "City_Baku",
+      "npc_role": "NPC_Ashig",
+      "npc_name": "Səyyar Aşıq və Şair",
+      "title": "XII Əsr Mədəniyyət Karvanı",
+      "story_text": "Yolda Gəncədən Şirvana gedən sənətkarlar və aşıqlarla qarşılaşdınız. XII əsr Azərbaycan ədəbiyyatının, memarlığının və ticarətinin qızıl dövrüdür.",
+      "history_fact": "XII əsrdə Gəncə, Şamaxı və Bakı Şərqin ən mühüm elm, sənətkarlıq və ticarət mərkəzləri idi; Nizami Gəncəvinin 'Xəmsə'si bu dövrdə yaranıb.",
+      "choices": [
+        {
+          "label": "Aşıq məclisinə qoşul (Mənəvi ruh +70 Qızıl)",
+          "effect": { "gold": 70, "speed_boost_sec": 0 }
+        },
+        {
+          "label": "Karvanı qorumaq üçün birgə irəlilə (+30 Qızıl, +18 san. Qoruma)",
+          "effect": { "gold": 30, "guard_boost_sec": 18 }
+        }
+      ]
+    },
+    {
+      "event_id": "evt_sheki_shebeke_18th",
+      "era": "XVIII əsr (Şəki Xanlığı)",
+      "region": "Şəki Karvansarayı",
+      "near_city": "City_Sheki",
+      "npc_role": "NPC_Craftsman",
+      "npc_name": "Şəbəkə Ustası",
+      "title": "Mıxsız və Yapışqansız Şəbəkə Sənəti",
+      "story_text": "Şəki yaxınlığında ustalar rəngli şüşə və ağacdan bir dənə də mıx işlətmədən möhtəşəm şəbəkə pəncərəsi yığırlar.",
+      "history_fact": "XVIII əsrdə inşa edilən Şəki Xan Sarayı və Yuxarı Karvansaray Azərbaycan memarlığının nadir incilərindəndir.",
+      "choices": [
+        {
+          "label": "Ustadan xatirə əsər sifariş et (+75 Qızıl mükafatlı sifariş)",
+          "effect": { "gold": 75, "speed_boost_sec": 0 }
+        },
+        {
+          "label": "Karvan arabasını təmir etdir (+25 Qızıl, +20 san. Sürət)",
+          "effect": { "gold": 25, "speed_boost_sec": 20 }
+        }
+      ]
+    },
+    {
+      "event_id": "evt_shusha_karabakh_horse",
+      "era": "XVIII–XIX əsr (Qarabağ Xanlığı)",
+      "region": "Şuşa — Cıdır Düzü",
+      "near_city": "City_Shusha",
+      "npc_role": "PadishahNPC",
+      "npc_name": "Qarabağ Atçılıq Başçısı",
+      "title": "Qarabağ Atları və Muğam Məclisi",
+      "story_text": "Cıdır Düzündən gələn tar-kamança sədaları altında qızılı rəngli Qarabağ atları karvanınızı salamlayır.",
+      "history_fact": "Şuşa Azərbaycan muğam sənətinin beşiyi, Qarabağ atı isə sürəti və dözümlülüyü ilə dünyada tanınan nadir cinsdir.",
+      "choices": [
+        {
+          "label": "Atçılıq yarışını izlə və qonaqpərvərlik göstər (+90 Qızıl)",
+          "effect": { "gold": 90, "speed_boost_sec": 0 }
+        },
+        {
+          "label": "Karvan atlarını yenilə (+30 Qızıl, +25 san. Sürət)",
+          "effect": { "gold": 30, "speed_boost_sec": 25 }
+        }
+      ]
+    }
+  ]
+}

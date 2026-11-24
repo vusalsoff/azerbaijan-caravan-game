@@ -1,0 +1,39 @@
+{
+  "npc_types": [
+    {
+      "role": "PadishahNPC",
+      "title": "Padşah / Xan Elçisi",
+      "color": "#d4af37",
+      "encounter_types": ["quest", "event"],
+      "description": "Saray sifarişləri, fərmanlar və xanlıq dövrü hadisələri verir."
+    },
+    {
+      "role": "NPC_Craftsman",
+      "title": "Sənətkar / Karvansaray Ustası",
+      "color": "#c96f3b",
+      "encounter_types": ["quest", "event"],
+      "description": "Xalçaçılıq, şəbəkə, ipək və karvansaray tapşırıqları verir."
+    },
+    {
+      "role": "NPC_Traveler",
+      "title": "Yolçu Tacir",
+      "color": "#4f8a8b",
+      "encounter_types": ["quest"],
+      "description": "Yolda qalan karvanlar üçün təcili ticarət və mübadilə istəkləri edir."
+    },
+    {
+      "role": "NPC_Historian",
+      "title": "Salnaməçi / Tarix Səyyahı",
+      "color": "#7c5cbf",
+      "encounter_types": ["event"],
+      "description": "Eramızdan əvvəlki tapıntılar, VI əsr Qəbələ və tarixi faktları açır."
+    },
+    {
+      "role": "NPC_Ashig",
+      "title": "Səyyar Aşıq",
+      "color": "#2f9e66",
+      "encounter_types": ["event"],
+      "description": "XII əsr mədəniyyəti, musiqi və karvan mənəvi dəstəyi hadisələri gətirir."
+    }
+  ]
+}

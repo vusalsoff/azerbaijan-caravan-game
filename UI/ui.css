@@ -1,0 +1,217 @@
+/* UI/ui.css — Qədim perqament, qoz ağacı və qızılı ornament üslubunda responsive HUD */
+
+.btn-primary,
+.btn-secondary,
+.btn-ghost {
+  font-family: var(--font-body);
+  font-weight: 600;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: transform 0.12s ease, background 0.15s ease, box-shadow 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #e7be5b, #b97d1e);
+  color: #1c1308;
+  box-shadow: 0 4px 14px rgba(185, 125, 30, 0.35);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.07);
+}
+
+.btn-secondary {
+  background: rgba(45, 32, 18, 0.85);
+  border-color: rgba(229, 184, 75, 0.45);
+  color: #f6ead0;
+}
+
+.btn-secondary:hover {
+  background: rgba(229, 184, 75, 0.22);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: #cbb896;
+}
+
+/* Flex əsaslı HUD strukturu — dar ekranda heç vaxt üst-üstə düşmür */
+.hud-shell {
+  position: fixed;
+  inset: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+  gap: 10px;
+}
+
+.hud-top-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.hud-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  padding: 9px 14px;
+  background: rgba(28, 20, 12, 0.9);
+  border: 1px solid rgba(229, 184, 75, 0.48);
+  border-radius: 14px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(8px);
+  pointer-events: auto;
+}
+
+.hud-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hud-pill {
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: rgba(244, 224, 182, 0.08);
+  border: 1px solid rgba(229, 184, 75, 0.28);
+  color: #f4e8ce;
+  font-size: 12.5px;
+}
+
+.hud-pill strong {
+  color: #f0c75e;
+}
+
+.hud-quests {
+  align-self: flex-end;
+  width: min(275px, 100%);
+  background: rgba(28, 20, 12, 0.88);
+  border: 1px solid rgba(229, 184, 75, 0.42);
+  border-radius: 14px;
+  padding: 10px 13px;
+  font-size: 12.5px;
+  color: #ede0c5;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  pointer-events: auto;
+}
+
+.hud-quests h4 {
+  font-family: var(--font-display);
+  color: #f0c75e;
+  margin-bottom: 6px;
+  font-size: 13.5px;
+  letter-spacing: 0.03em;
+}
+
+.quest-mini {
+  padding: 7px 8px;
+  border-radius: 8px;
+  background: rgba(244, 224, 182, 0.07);
+  border-left: 2px solid #e5b84b;
+  margin-bottom: 6px;
+}
+
+.hud-bottom-row {
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.hud-bottom-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 8px 16px;
+  background: rgba(28, 20, 12, 0.9);
+  border: 1px solid rgba(229, 184, 75, 0.48);
+  border-radius: 999px;
+  color: #efe1c4;
+  font-size: 12.5px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  pointer-events: auto;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(14, 10, 6, 0.76);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  pointer-events: auto;
+  z-index: 30;
+}
+
+.modal-card {
+  width: min(740px, 100%);
+  max-height: 86vh;
+  overflow-y: auto;
+  background: linear-gradient(165deg, #241910, #17100a);
+  border: 1px solid rgba(229, 184, 75, 0.55);
+  border-radius: 18px;
+  padding: 24px 28px;
+  color: #f4ead4;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.65);
+}
+
+.modal-card h2 {
+  font-family: var(--font-display);
+  color: #f0c75e;
+  margin-bottom: 6px;
+}
+
+.market-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 14px;
+  font-size: 14px;
+}
+
+.market-table th,
+.market-table td {
+  padding: 10px 8px;
+  border-bottom: 1px solid rgba(229, 184, 75, 0.16);
+  text-align: left;
+}
+
+.toast-stack {
+  position: fixed;
+  bottom: 84px;
+  left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: min(360px, calc(100vw - 32px));
+  z-index: 20;
+  pointer-events: none;
+}
+
+.toast-item {
+  padding: 9px 13px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  color: #f7ecd6;
+  background: rgba(28, 20, 12, 0.94);
+  border: 1px solid rgba(229, 184, 75, 0.3);
+  border-left: 4px solid #e5b84b;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.toast-item.success { border-left-color: #36b37e; }
+.toast-item.warn { border-left-color: #f39c12; }
+.toast-item.danger { border-left-color: #d94b3d; }
+.toast-item.info { border-left-color: #e5b84b; }

@@ -1,0 +1,18 @@
+{
+  "name": "azerbaijan-caravan-game",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Azərbaycanın tarixi dövrlərini əks etdirən 3D Açıq Xəritə karvan ticarəti oyunu (Demo MVP)",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "three": "^0.172.0"
+  },
+  "devDependencies": {
+    "vite": "^6.1.0"
+  }
+}
