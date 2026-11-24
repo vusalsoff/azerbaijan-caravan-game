@@ -43,6 +43,39 @@
       "required_amount": 2,
       "target_city": "ANY",
       "reward_gold": 110
+    },
+    {
+      "quest_id": "quest_farmer_apples",
+      "npc_role": "NPC_Farmer",
+      "npc_name": "Dağ Bağbanı Kərim",
+      "title": "Təzə Alma Karvanı",
+      "description": "Bakı liman bazarı təzə dağ alması gözləyir! 3 səbət Dağ Almasını vaxtında Bakıya çatdır.",
+      "required_item": "apple",
+      "required_amount": 3,
+      "target_city": "City_Baku",
+      "reward_gold": 145
+    },
+    {
+      "quest_id": "quest_farmer_pomegranate",
+      "npc_role": "NPC_Farmer",
+      "npc_name": "Nar Bağı Sahibi",
+      "title": "Şəki Bazarına Təzə Nar",
+      "description": "Şəki Karvansarayında nar şirəsi hazırlayırlar — 2 yeşik Qarabağ/Göyçay Narı apar, yaxşı qızıl qazan.",
+      "required_item": "pomegranate",
+      "required_amount": 2,
+      "target_city": "City_Sheki",
+      "reward_gold": 135
+    },
+    {
+      "quest_id": "quest_shamakhi_carpet",
+      "npc_role": "PadishahNPC",
+      "npc_name": "Şamaxı Karvansaray Ağsaqqalı",
+      "title": "Naxışlı Qarabağ Xalçası Sifarişi",
+      "description": "Bakıdakı xarici səfirlər üçün 1 ədəd nadir Naxışlı Qarabağ Xalçası çatdır, həm qızıl, həm hörmət qazan!",
+      "required_item": "carpet",
+      "required_amount": 1,
+      "target_city": "City_Baku",
+      "reward_gold": 250
     }
   ]
 }

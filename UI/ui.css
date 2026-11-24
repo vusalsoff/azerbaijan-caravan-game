@@ -1,11 +1,12 @@
-/* UI/ui.css — Qədim perqament, qoz ağacı və qızılı ornament üslubunda responsive HUD */
+/* UI/ui.css — "İRS — Tacirin Yolu" qədim karvansaray, qoz ağacı və qızılı ornament üslubu */
 
 .btn-primary,
 .btn-secondary,
+.btn-emerald,
 .btn-ghost {
   font-family: var(--font-body);
   font-weight: 600;
-  border-radius: 10px;
+  border-radius: 9px;
   padding: 8px 14px;
   font-size: 13px;
   cursor: pointer;
@@ -25,9 +26,21 @@
   filter: brightness(1.07);
 }
 
+.btn-emerald {
+  background: linear-gradient(135deg, #4b8641, #2e5d28);
+  border-color: rgba(190, 224, 152, 0.45);
+  color: #f6f4e8;
+  box-shadow: 0 4px 12px rgba(34, 72, 28, 0.45);
+}
+
+.btn-emerald:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+}
+
 .btn-secondary {
-  background: rgba(45, 32, 18, 0.85);
-  border-color: rgba(229, 184, 75, 0.45);
+  background: rgba(45, 32, 18, 0.88);
+  border-color: rgba(229, 184, 75, 0.48);
   color: #f6ead0;
 }
 
@@ -35,12 +48,20 @@
   background: rgba(229, 184, 75, 0.22);
 }
 
+.btn-secondary:disabled,
+.btn-emerald:disabled,
+.btn-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .btn-ghost {
   background: transparent;
   color: #cbb896;
 }
 
-/* Flex əsaslı HUD strukturu — dar ekranda heç vaxt üst-üstə düşmür */
+/* Flex əsaslı HUD strukturu — heç bir ekran ölçüsündə üst-üstə düşmür */
 .hud-shell {
   position: fixed;
   inset: 12px;
@@ -51,37 +72,80 @@
   gap: 10px;
 }
 
-.hud-top-stack {
+.hud-top-row {
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
-.hud-bar {
+/* Sol-yuxarı "İRS — Tacirin yolu" gerbi + qızıl/çanta */
+.irs-brand-box {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px 12px;
-  padding: 9px 14px;
-  background: rgba(28, 20, 12, 0.9);
-  border: 1px solid rgba(229, 184, 75, 0.48);
-  border-radius: 14px;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+  gap: 12px;
+  padding: 8px 14px;
+  background: rgba(26, 18, 11, 0.9);
+  border: 1px solid rgba(229, 184, 75, 0.55);
+  border-radius: 12px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(8px);
+  pointer-events: auto;
+  flex-wrap: wrap;
+}
+
+.irs-logo {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+  padding-right: 10px;
+  border-right: 1px solid rgba(229, 184, 75, 0.32);
+}
+
+.irs-logo-main {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #f4d078;
+  text-shadow: 0 2px 10px rgba(229, 184, 75, 0.3);
+}
+
+.irs-logo-sub {
+  font-size: 11px;
+  color: #d6c29f;
+  font-style: italic;
+}
+
+/* Orta-yuxarı "Şamaxı • XVI əsr" üslublu dövr lövhəsi */
+.irs-era-banner {
+  padding: 8px 22px;
+  background: linear-gradient(180deg, rgba(42, 29, 17, 0.94), rgba(24, 16, 10, 0.94));
+  border: 1px solid rgba(229, 184, 75, 0.65);
+  border-radius: 999px;
+  color: #f6e7c6;
+  font-family: var(--font-display);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45);
   pointer-events: auto;
 }
 
-.hud-group {
+.hud-actions-bar {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
+  padding: 6px 8px;
+  background: rgba(26, 18, 11, 0.88);
+  border: 1px solid rgba(229, 184, 75, 0.45);
+  border-radius: 12px;
+  pointer-events: auto;
 }
 
 .hud-pill {
-  padding: 5px 11px;
+  padding: 5px 10px;
   border-radius: 999px;
   background: rgba(244, 224, 182, 0.08);
   border: 1px solid rgba(229, 184, 75, 0.28);
@@ -93,36 +157,81 @@
   color: #f0c75e;
 }
 
-.hud-quests {
-  align-self: flex-end;
-  width: min(275px, 100%);
-  background: rgba(28, 20, 12, 0.88);
-  border: 1px solid rgba(229, 184, 75, 0.42);
-  border-radius: 14px;
-  padding: 10px 13px;
+.hud-middle-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.hud-side-card {
+  width: min(265px, 100%);
+  background: rgba(26, 18, 11, 0.88);
+  border: 1px solid rgba(229, 184, 75, 0.45);
+  border-radius: 12px;
+  padding: 10px 12px;
   font-size: 12.5px;
   color: #ede0c5;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.42);
   pointer-events: auto;
 }
 
-.hud-quests h4 {
+.hud-side-card h4 {
   font-family: var(--font-display);
   color: #f0c75e;
   margin-bottom: 6px;
-  font-size: 13.5px;
-  letter-spacing: 0.03em;
+  font-size: 13px;
+  letter-spacing: 0.04em;
 }
 
 .quest-mini {
-  padding: 7px 8px;
+  padding: 6px 8px;
   border-radius: 8px;
   background: rgba(244, 224, 182, 0.07);
   border-left: 2px solid #e5b84b;
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
 
-.hud-bottom-row {
+/* Aşağı sətir: Sol Xarizma/Zəka + Orta [E] Tacirlə danış */
+.hud-bottom-grid {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  pointer-events: none;
+}
+
+.irs-stats-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: auto;
+}
+
+.irs-stat-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-width: 142px;
+  padding: 7px 12px;
+  background: linear-gradient(135deg, rgba(38, 26, 15, 0.94), rgba(22, 15, 9, 0.94));
+  border: 1px solid rgba(229, 184, 75, 0.58);
+  border-radius: 10px;
+  font-size: 13px;
+  color: #f4e6c7;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+}
+
+.irs-stat-badge strong {
+  color: #f4cf72;
+  font-size: 15px;
+}
+
+.hud-bottom-center {
+  flex: 1;
   display: flex;
   justify-content: center;
   pointer-events: none;
@@ -135,8 +244,8 @@
   flex-wrap: wrap;
   gap: 10px;
   padding: 8px 16px;
-  background: rgba(28, 20, 12, 0.9);
-  border: 1px solid rgba(229, 184, 75, 0.48);
+  background: rgba(26, 18, 11, 0.92);
+  border: 1px solid rgba(229, 184, 75, 0.55);
   border-radius: 999px;
   color: #efe1c4;
   font-size: 12.5px;
@@ -144,58 +253,191 @@
   pointer-events: auto;
 }
 
+.key-cap {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: rgba(244, 224, 182, 0.14);
+  border: 1px solid rgba(229, 184, 75, 0.65);
+  color: #f4d078;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+/* Təzəlik (Freshness) barları */
+.freshness-row {
+  display: grid;
+  grid-template-columns: 1fr 78px 46px;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 12px;
+}
+
+.freshness-track {
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+  border: 1px solid rgba(229, 184, 75, 0.25);
+}
+
+.freshness-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.25s ease;
+}
+
+/* Modal & "İRS" İki Sütunlu Bazar Kartı */
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(14, 10, 6, 0.76);
+  background: rgba(12, 8, 5, 0.78);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 18px;
   pointer-events: auto;
   z-index: 30;
 }
 
 .modal-card {
-  width: min(740px, 100%);
-  max-height: 86vh;
+  width: min(860px, 100%);
+  max-height: 88vh;
   overflow-y: auto;
-  background: linear-gradient(165deg, #241910, #17100a);
-  border: 1px solid rgba(229, 184, 75, 0.55);
-  border-radius: 18px;
-  padding: 24px 28px;
+  background: linear-gradient(165deg, #271b11, #160f09);
+  border: 1.5px solid rgba(229, 184, 75, 0.6);
+  border-radius: 16px;
+  padding: 22px 24px;
   color: #f4ead4;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.65);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7);
 }
 
 .modal-card h2 {
   font-family: var(--font-display);
   color: #f0c75e;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
-.market-table {
-  width: 100%;
-  border-collapse: collapse;
+.irs-market-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 18px;
   margin-top: 14px;
-  font-size: 14px;
 }
 
-.market-table th,
-.market-table td {
-  padding: 10px 8px;
-  border-bottom: 1px solid rgba(229, 184, 75, 0.16);
-  text-align: left;
+@media (max-width: 720px) {
+  .irs-market-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.irs-goods-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.irs-good-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: rgba(244, 224, 182, 0.05);
+  border: 1px solid rgba(229, 184, 75, 0.18);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.irs-good-row:hover,
+.irs-good-row.selected {
+  background: rgba(229, 184, 75, 0.16);
+  border-color: rgba(229, 184, 75, 0.7);
+}
+
+.irs-cat-tag {
+  font-size: 10.5px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #d6c29f;
+}
+
+.irs-cat-tag.agriculture {
+  background: rgba(96, 165, 68, 0.22);
+  color: #b8e994;
+}
+
+.irs-cat-tag.luxury {
+  background: rgba(229, 184, 75, 0.22);
+  color: #f6d57a;
+}
+
+/* Sağdakı konsept Ticarət Kartı */
+.irs-trade-card {
+  background: linear-gradient(180deg, rgba(35, 24, 14, 0.96), rgba(20, 14, 9, 0.98));
+  border: 1.5px solid rgba(229, 184, 75, 0.65);
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.irs-trade-card-title {
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 17px;
+  letter-spacing: 0.06em;
+  color: #f4d078;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(229, 184, 75, 0.3);
+}
+
+.irs-trade-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13.5px;
+  color: #e6d7b9;
+}
+
+.irs-trade-row.profit {
+  padding-top: 8px;
+  border-top: 1px solid rgba(229, 184, 75, 0.22);
+  font-weight: 700;
+  font-size: 14.5px;
+}
+
+.trust-bar-track {
+  height: 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(229, 184, 75, 0.4);
+  overflow: hidden;
+}
+
+.trust-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #c68826, #f5cf6b);
+}
+
+.irs-freshness-box {
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(229, 184, 75, 0.28);
 }
 
 .toast-stack {
   position: fixed;
-  bottom: 84px;
+  bottom: 108px;
   left: 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  max-width: min(360px, calc(100vw - 32px));
+  gap: 7px;
+  max-width: min(350px, calc(100vw - 32px));
   z-index: 20;
   pointer-events: none;
 }
@@ -206,12 +448,12 @@
   font-size: 12.5px;
   color: #f7ecd6;
   background: rgba(28, 20, 12, 0.94);
-  border: 1px solid rgba(229, 184, 75, 0.3);
+  border: 1px solid rgba(229, 184, 75, 0.35);
   border-left: 4px solid #e5b84b;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
 }
 
-.toast-item.success { border-left-color: #36b37e; }
+.toast-item.success { border-left-color: #46b86f; }
 .toast-item.warn { border-left-color: #f39c12; }
 .toast-item.danger { border-left-color: #d94b3d; }
 .toast-item.info { border-left-color: #e5b84b; }

@@ -15,12 +15,20 @@ export class DataLoader {
 
     this.cityMap = new Map(this.cities.map((c) => [c.city_id, c]));
     this.npcMap = new Map(this.npcTypes.map((n) => [n.role, n]));
-    this.itemNameMap = new Map();
+    this.itemMetaMap = new Map();
 
     for (const city of this.cities) {
       for (const good of city.goods) {
-        if (!this.itemNameMap.has(good.item_id)) {
-          this.itemNameMap.set(good.item_id, good.name);
+        if (!this.itemMetaMap.has(good.item_id)) {
+          this.itemMetaMap.set(good.item_id, {
+            item_id: good.item_id,
+            name: good.name,
+            icon: good.icon || '📦',
+            category: good.category || 'craft',
+            quality: good.quality || 'Yaxşı',
+            travel_cost: good.travel_cost ?? 12,
+            max_freshness_days: good.max_freshness_days ?? null,
+          });
         }
       }
     }
@@ -30,8 +38,26 @@ export class DataLoader {
     return this.cityMap.get(cityId) || null;
   }
 
+  getItemMeta(itemId) {
+    return (
+      this.itemMetaMap.get(itemId) || {
+        item_id: itemId,
+        name: itemId,
+        icon: '📦',
+        category: 'craft',
+        quality: 'Yaxşı',
+        travel_cost: 12,
+        max_freshness_days: null,
+      }
+    );
+  }
+
   getItemName(itemId) {
-    return this.itemNameMap.get(itemId) || itemId;
+    return this.getItemMeta(itemId).name;
+  }
+
+  getItemIcon(itemId) {
+    return this.getItemMeta(itemId).icon;
   }
 
   getNpcMeta(role) {

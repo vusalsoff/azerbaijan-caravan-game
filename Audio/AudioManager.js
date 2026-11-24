@@ -137,6 +137,14 @@ export class AudioManager {
         this._playPluck(783.99, 0.08, 0.14, 'sine');
         setTimeout(() => this._playPluck(1046.5, 0.08, 0.22, 'triangle'), 65);
         break;
+      case 'haggle_ok':
+        this._playPluck(587.33, 0.08, 0.14, 'triangle');
+        setTimeout(() => this._playPluck(880.0, 0.09, 0.24, 'triangle'), 75);
+        break;
+      case 'haggle_fail':
+        this._playPluck(261.63, 0.08, 0.18, 'sawtooth');
+        setTimeout(() => this._playPluck(220.0, 0.08, 0.22, 'sawtooth'), 100);
+        break;
       case 'quest':
         this._playPluck(440.0, 0.075, 0.18, 'triangle');
         setTimeout(() => this._playPluck(659.25, 0.085, 0.28, 'triangle'), 95);

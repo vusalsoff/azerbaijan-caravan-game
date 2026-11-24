@@ -12,12 +12,12 @@
       "history_fact": "Qobustan qayaüstü incəsənəti e.ə. dövrlərdən qalma 6000-dən çox təsvirlə UNESCO Dünya İrsi siyahısındadır.",
       "choices": [
         {
-          "label": "Tapıntını salnaməyə yaz (+60 Qızıl, Tarix Salnaməsi)",
-          "effect": { "gold": 60, "speed_boost_sec": 0 }
+          "label": "Tapıntını salnaməyə yaz (+60 Qızıl, +1 Zəka)",
+          "effect": { "gold": 60, "intelligence": 1 }
         },
         {
-          "label": "Səyyaha yol azuqəsi ver (+40 Qızıl, +15 san. Sürət)",
-          "effect": { "gold": 40, "speed_boost_sec": 15 }
+          "label": "Səyyaha yol azuqəsi ver (+40 Qızıl, +1 Xarizma, +15s Sürət)",
+          "effect": { "gold": 40, "charisma": 1, "speed_boost_sec": 15 }
         }
       ]
     },
@@ -33,11 +33,11 @@
       "history_fact": "Qəbələ uzun əsrlər Qafqaz Albaniyasının paytaxtı olmuş və Böyük İpək Yolunun şimal qolunda mühüm ticarət mərkəzinə çevrilmişdir.",
       "choices": [
         {
-          "label": "Sikkələri qoruyub muzey-salnaməyə əlavə et (+85 Qızıl)",
-          "effect": { "gold": 85, "speed_boost_sec": 0 }
+          "label": "Sikkələrin tarixini araşdır (+85 Qızıl, +1 Zəka)",
+          "effect": { "gold": 85, "intelligence": 1 }
         },
         {
-          "label": "Qədim kəsə karvan yolunu öyrən (+35 Qızıl, +20 san. Sürət)",
+          "label": "Qədim kəsə karvan yolunu öyrən (+35 Qızıl, +20s Sürət)",
           "effect": { "gold": 35, "speed_boost_sec": 20 }
         }
       ]
@@ -54,12 +54,54 @@
       "history_fact": "XII əsrdə Gəncə, Şamaxı və Bakı Şərqin ən mühüm elm, sənətkarlıq və ticarət mərkəzləri idi; Nizami Gəncəvinin 'Xəmsə'si bu dövrdə yaranıb.",
       "choices": [
         {
-          "label": "Aşıq məclisinə qoşul (Mənəvi ruh +70 Qızıl)",
-          "effect": { "gold": 70, "speed_boost_sec": 0 }
+          "label": "Aşıq məclisinə qoşul (+70 Qızıl, +1 Xarizma)",
+          "effect": { "gold": 70, "charisma": 1 }
         },
         {
-          "label": "Karvanı qorumaq üçün birgə irəlilə (+30 Qızıl, +18 san. Qoruma)",
+          "label": "Karvanı qorumaq üçün birgə irəlilə (+30 Qızıl, +18s Qoruma)",
           "effect": { "gold": 30, "guard_boost_sec": 18 }
+        }
+      ]
+    },
+    {
+      "event_id": "evt_shamakhi_16th_carpet",
+      "era": "XVI əsr (Şamaxı İpək & Xalça Bazarı)",
+      "region": "Şamaxı Karvansarayı",
+      "near_city": "City_Baku",
+      "npc_role": "NPC_Craftsman",
+      "npc_name": "Şamaxılı Xalça Taciri",
+      "title": "Şamaxı Karvansarayında Bazarlıq Sənəti",
+      "story_text": "XVI əsrdə Şamaxı bazarı Şərqin ən canlı xalça və ipək mərkəzi idi. Yaşlı tacir sənə yaxşı xalçanı necə seçməyi və bazarlıq etməyin sirrini öyrədir.",
+      "history_fact": "XVI əsrdə Şamaxıdan Venesiya, Moskva və Şərq ölkələrinə minlərlə tay xam ipək və əl toxuması Azərbaycan xalçası göndərilirdi.",
+      "choices": [
+        {
+          "label": "Bazarlıq sirlərini öyrən (+55 Qızıl, +2 Xarizma)",
+          "effect": { "gold": 55, "charisma": 2 }
+        },
+        {
+          "label": "Xalça keyfiyyətini qiymətləndirməyi öyrən (+50 Qızıl, +2 Zəka)",
+          "effect": { "gold": 50, "intelligence": 2 }
+        }
+      ]
+    },
+    {
+      "event_id": "evt_quba_sheki_orchards",
+      "era": "XVII–XVIII əsr (Kənd Təsərrüfatı İrsi)",
+      "region": "Quba — Şəki Meyvə Bağları",
+      "near_city": "City_Sheki",
+      "npc_role": "NPC_Farmer",
+      "npc_name": "Bağban Ağsaqqal",
+      "title": "Bərəkətli Meyvə Bağları və Təzəlik Sirri",
+      "story_text": "Dağ ətəyindəki alma və armud bağbanları karvanını sərin bulaq suyu və samanla meyvələri uzun müddət təzə saxlamaq üsulu ilə tanış edir.",
+      "history_fact": "Azərbaycanın Quba, Şəki və Göyçay bölgələri əsrlərdir alma, armud, nar və təmiz dağ balı ilə karvan ticarətinin əsas kənd təsərrüfatı dayağı olub.",
+      "choices": [
+        {
+          "label": "Bütün meyvələrin təzəliyini yenilə (+45 Qızıl, Təzəlik 100%)",
+          "effect": { "gold": 45, "refresh_produce": true }
+        },
+        {
+          "label": "Bağçılıq təqvimini öyrən (+55 Qızıl, +1 Zəka)",
+          "effect": { "gold": 55, "intelligence": 1 }
         }
       ]
     },
@@ -75,11 +117,11 @@
       "history_fact": "XVIII əsrdə inşa edilən Şəki Xan Sarayı və Yuxarı Karvansaray Azərbaycan memarlığının nadir incilərindəndir.",
       "choices": [
         {
-          "label": "Ustadan xatirə əsər sifariş et (+75 Qızıl mükafatlı sifariş)",
-          "effect": { "gold": 75, "speed_boost_sec": 0 }
+          "label": "Ustadan xatirə əsər sifariş et (+75 Qızıl, +1 Xarizma)",
+          "effect": { "gold": 75, "charisma": 1 }
         },
         {
-          "label": "Karvan arabasını təmir etdir (+25 Qızıl, +20 san. Sürət)",
+          "label": "Karvan arabasını təmir etdir (+25 Qızıl, +20s Sürət)",
           "effect": { "gold": 25, "speed_boost_sec": 20 }
         }
       ]
@@ -96,12 +138,33 @@
       "history_fact": "Şuşa Azərbaycan muğam sənətinin beşiyi, Qarabağ atı isə sürəti və dözümlülüyü ilə dünyada tanınan nadir cinsdir.",
       "choices": [
         {
-          "label": "Atçılıq yarışını izlə və qonaqpərvərlik göstər (+90 Qızıl)",
-          "effect": { "gold": 90, "speed_boost_sec": 0 }
+          "label": "Muğam məclisinə qoşul (+90 Qızıl, +1 Xarizma)",
+          "effect": { "gold": 90, "charisma": 1 }
         },
         {
-          "label": "Karvan atlarını yenilə (+30 Qızıl, +25 san. Sürət)",
+          "label": "Karvan atlarını yenilə (+30 Qızıl, +25s Sürət)",
           "effect": { "gold": 30, "speed_boost_sec": 25 }
+        }
+      ]
+    },
+    {
+      "event_id": "evt_goychay_pomegranate_harvest",
+      "era": "XIX əsr (Kənd Təsərrüfatı & Nar Festivalı)",
+      "region": "Göyçay — Kür Vadisi",
+      "near_city": "City_Shusha",
+      "npc_role": "NPC_Farmer",
+      "npc_name": "Narçı Usta",
+      "title": "Qızıl Payız — Nar və Buğda Bərəkəti",
+      "story_text": "Kür-Araz vadisində məhsul yığımı qızğın çağındadır. Kəndlilər karvan yolçularına qırmızı nar və təzə çörək təklif edirlər.",
+      "history_fact": "Azərbaycanın Göyçay və Qarabağ nar sortları ənənəvi kənd təsərrüfatının simvoludur və UNESCO qeyri-maddi irs siyahısına daxil edilib.",
+      "choices": [
+        {
+          "label": "Məhsul bayramına qatıl (+65 Qızıl, +1 Xarizma, Təzəlik +1 gün)",
+          "effect": { "gold": 65, "charisma": 1, "refresh_produce": true }
+        },
+        {
+          "label": "Ticarət yolları barədə məlumat al (+50 Qızıl, +1 Zəka)",
+          "effect": { "gold": 50, "intelligence": 1 }
         }
       ]
     }

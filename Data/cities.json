@@ -3,40 +3,57 @@
     {
       "city_id": "City_Baku",
       "display_name": "Bakı (İçərişəhər)",
-      "era_name": "Şirvanşahlar Dövrü (XII–XV əsr)",
+      "short_name": "Bakı",
+      "era_name": "Şirvanşahlar Dövrü · XII–XV əsr",
       "music_track": "audio_baku_shirvan",
-      "culture_note": "Xəzər sahili liman şəhəri, duz və neft karvanlarının qovşağı.",
+      "carpet_variant": "shirvan",
+      "culture_note": "Xəzər sahili liman şəhəri, duz, neft, üzüm və uzaq xalça karvanlarının qovşağı.",
       "goods": [
-        { "item_id": "salt", "name": "Abşeron Duzu", "buy_price": 20, "sell_price": 18 },
-        { "item_id": "oil", "name": "Qara Neft (Tuluq)", "buy_price": 35, "sell_price": 30 },
-        { "item_id": "silk", "name": "Şəki İpəyi", "buy_price": 90, "sell_price": 80 },
-        { "item_id": "carpet", "name": "Qarabağ Xalçası", "buy_price": 140, "sell_price": 125 }
+        { "item_id": "salt", "name": "Abşeron Duzu", "icon": "🧂", "category": "craft", "quality": "Yaxşı", "buy_price": 20, "sell_price": 18, "travel_cost": 8, "max_freshness_days": null },
+        { "item_id": "oil", "name": "Qara Neft (Tuluq)", "icon": "🛢️", "category": "craft", "quality": "Əla", "buy_price": 35, "sell_price": 30, "travel_cost": 12, "max_freshness_days": null },
+        { "item_id": "grape", "name": "Abşeron Üzümü", "icon": "🍇", "category": "agriculture", "quality": "Yaxşı", "buy_price": 18, "sell_price": 15, "travel_cost": 10, "max_freshness_days": 3 },
+        { "item_id": "apple", "name": "Dağ Alması", "icon": "🍎", "category": "agriculture", "quality": "Yaxşı", "buy_price": 46, "sell_price": 42, "travel_cost": 12, "max_freshness_days": 3 },
+        { "item_id": "pomegranate", "name": "Göyçay / Qarabağ Narı", "icon": "🌺", "category": "agriculture", "quality": "Əla", "buy_price": 52, "sell_price": 46, "travel_cost": 14, "max_freshness_days": 4 },
+        { "item_id": "silk", "name": "Şəki İpəyi", "icon": "🧵", "category": "luxury", "quality": "Əla", "buy_price": 98, "sell_price": 88, "travel_cost": 18, "max_freshness_days": null },
+        { "item_id": "carpet", "name": "Naxışlı Qarabağ Xalçası", "icon": "🧶", "category": "luxury", "quality": "Nadir", "buy_price": 178, "sell_price": 165, "travel_cost": 20, "max_freshness_days": null }
       ]
     },
     {
       "city_id": "City_Sheki",
       "display_name": "Şəki (Yuxarı Karvansaray)",
-      "era_name": "Şəki Xanlığı Dövrü (XVIII əsr)",
+      "short_name": "Şəki",
+      "era_name": "Şəki Xanlığı · XVIII əsr",
       "music_track": "audio_sheki_silk",
-      "culture_note": "Böyük İpək Yolunun əsas ipəkçilik və şirniyyat mərkəzi.",
+      "carpet_variant": "sheki",
+      "culture_note": "Böyük İpək Yolunun ipəkçilik, halva, dağ alması, armud və təmiz dağ balı mərkəzi.",
       "goods": [
-        { "item_id": "silk", "name": "Şəki İpəyi", "buy_price": 45, "sell_price": 40 },
-        { "item_id": "halva", "name": "Şəki Halvası", "buy_price": 25, "sell_price": 22 },
-        { "item_id": "salt", "name": "Abşeron Duzu", "buy_price": 50, "sell_price": 45 },
-        { "item_id": "oil", "name": "Qara Neft (Tuluq)", "buy_price": 75, "sell_price": 68 }
+        { "item_id": "apple", "name": "Dağ Alması", "icon": "🍎", "category": "agriculture", "quality": "Əla", "buy_price": 16, "sell_price": 14, "travel_cost": 10, "max_freshness_days": 3 },
+        { "item_id": "pear", "name": "Şəki Armudu", "icon": "🍐", "category": "agriculture", "quality": "Yaxşı", "buy_price": 18, "sell_price": 15, "travel_cost": 10, "max_freshness_days": 2 },
+        { "item_id": "honey", "name": "Dağ Balı (Küp)", "icon": "🍯", "category": "agriculture", "quality": "Əla", "buy_price": 32, "sell_price": 28, "travel_cost": 12, "max_freshness_days": null },
+        { "item_id": "halva", "name": "Şəki Halvası", "icon": "🥮", "category": "craft", "quality": "Əla", "buy_price": 25, "sell_price": 22, "travel_cost": 10, "max_freshness_days": 4 },
+        { "item_id": "silk", "name": "Şəki İpəyi", "icon": "🧵", "category": "luxury", "quality": "Əla", "buy_price": 45, "sell_price": 40, "travel_cost": 15, "max_freshness_days": null },
+        { "item_id": "grape", "name": "Abşeron Üzümü", "icon": "🍇", "category": "agriculture", "quality": "Yaxşı", "buy_price": 44, "sell_price": 40, "travel_cost": 12, "max_freshness_days": 3 },
+        { "item_id": "salt", "name": "Abşeron Duzu", "icon": "🧂", "category": "craft", "quality": "Yaxşı", "buy_price": 52, "sell_price": 46, "travel_cost": 10, "max_freshness_days": null },
+        { "item_id": "oil", "name": "Qara Neft (Tuluq)", "icon": "🛢️", "category": "craft", "quality": "Yaxşı", "buy_price": 78, "sell_price": 70, "travel_cost": 14, "max_freshness_days": null }
       ]
     },
     {
       "city_id": "City_Shusha",
       "display_name": "Şuşa (Qala Şəhəri)",
-      "era_name": "Qarabağ Xanlığı Dövrü (XVIII–XIX əsr)",
+      "short_name": "Şuşa",
+      "era_name": "Qarabağ Xanlığı · XVIII–XIX əsr",
       "music_track": "audio_shusha_mugham",
-      "culture_note": "Xalçaçılıq, muğam və sürətli Qarabağ atlarının vətəni.",
+      "carpet_variant": "karabakh",
+      "culture_note": "Xalçaçılıq, muğam, sürətli Qarabağ atları, bərəkətli buğda və nar bağlarının vətəni.",
       "goods": [
-        { "item_id": "carpet", "name": "Qarabağ Xalçası", "buy_price": 75, "sell_price": 70 },
-        { "item_id": "horse_gear", "name": "Qarabağ Atı Ləvazimatı", "buy_price": 110, "sell_price": 95 },
-        { "item_id": "silk", "name": "Şəki İpəyi", "buy_price": 85, "sell_price": 78 },
-        { "item_id": "halva", "name": "Şəki Halvası", "buy_price": 60, "sell_price": 52 }
+        { "item_id": "carpet", "name": "Naxışlı Qarabağ Xalçası", "icon": "🧶", "category": "luxury", "quality": "Yaxşı", "buy_price": 95, "sell_price": 86, "travel_cost": 20, "max_freshness_days": null },
+        { "item_id": "horse_gear", "name": "Qarabağ Atı Ləvazimatı", "icon": "🐎", "category": "luxury", "quality": "Nadir", "buy_price": 110, "sell_price": 95, "travel_cost": 15, "max_freshness_days": null },
+        { "item_id": "pomegranate", "name": "Göyçay / Qarabağ Narı", "icon": "🌺", "category": "agriculture", "quality": "Əla", "buy_price": 20, "sell_price": 17, "travel_cost": 12, "max_freshness_days": 4 },
+        { "item_id": "wheat", "name": "Qarabağ Buğdası (Kisə)", "icon": "🌾", "category": "agriculture", "quality": "Yaxşı", "buy_price": 15, "sell_price": 13, "travel_cost": 8, "max_freshness_days": null },
+        { "item_id": "pear", "name": "Şəki Armudu", "icon": "🍐", "category": "agriculture", "quality": "Yaxşı", "buy_price": 48, "sell_price": 44, "travel_cost": 12, "max_freshness_days": 2 },
+        { "item_id": "honey", "name": "Dağ Balı (Küp)", "icon": "🍯", "category": "agriculture", "quality": "Əla", "buy_price": 68, "sell_price": 62, "travel_cost": 14, "max_freshness_days": null },
+        { "item_id": "silk", "name": "Şəki İpəyi", "icon": "🧵", "category": "luxury", "quality": "Yaxşı", "buy_price": 88, "sell_price": 82, "travel_cost": 16, "max_freshness_days": null },
+        { "item_id": "halva", "name": "Şəki Halvası", "icon": "🥮", "category": "craft", "quality": "Yaxşı", "buy_price": 62, "sell_price": 55, "travel_cost": 12, "max_freshness_days": 4 }
       ]
     }
   ]

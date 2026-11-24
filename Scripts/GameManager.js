@@ -12,8 +12,9 @@ import { UIManager } from '../UI/UIManager.js';
 import { AudioManager } from '../Audio/AudioManager.js';
 
 /**
- * GameManager — Bütün səhnələri (Story_Intro ↔ World_Azerbaijan),
- * Core AI sistemlərini, GTA/Qədim Xəritə kamera rejimlərini, UI və Audio modullarını birləşdirir.
+ * GameManager — "İRS — Tacirin Yolu" əsas orkestratoru:
+ * Story_Intro ↔ World_Azerbaijan keçidi, GTA/Qədim Xəritə rejimləri,
+ * Bazarlıq/Ticarət/Təzəlik, Save/Load, UI və Audio bağlantısı.
  */
 export class GameManager {
   constructor({ sceneRoot, uiRoot }) {
@@ -30,12 +31,12 @@ export class GameManager {
     this.thief = new Thief(this.merchant, this.tradeManager, this.eventBus);
 
     this.audio = new AudioManager(this.eventBus);
-    this.ui = new UIManager(this.uiRoot, this.eventBus, this.data);
+    this.ui = new UIManager(this.uiRoot, this.eventBus, this.data, this.tradeManager);
 
     this.currentSceneName = null;
     this.storyScene = null;
     this.worldScene = null;
-    this.cameraMode = 'map'; // 'map' (Qədim 3D Xəritə) | 'gta' (GTA Yaxın 3D Sürüş)
+    this.cameraMode = 'map';
 
     this.paused = false;
     this.rafId = null;
@@ -68,7 +69,7 @@ export class GameManager {
       this.ui.showToast(
         next === 'gta'
           ? 'GTA 3D Sürüş Rejimi: W/S sür, A/D döndər (V ilə xəritəyə qayıt)'
-          : 'Qədim 3D Xəritə Görünüşü: İstənilən yerə kliklə və ya 2 kliklə içinə en!',
+          : 'Qədim 3D Xəritə Görünüşü: İstənilən yerə kliklə!',
         'info'
       );
       this.tradeManager.emitState();
@@ -98,7 +99,7 @@ export class GameManager {
     this.eventBus.on('market:open', () => {
       const snap = this.tradeManager.getSnapshot();
       if (!snap.currentCity) {
-        this.ui.showToast('Bazar açmaq üçün şəhər zonasına yaxınlaşın.', 'info');
+        this.ui.showToast('Tacirlə danışmaq üçün şəhər zonasına yaxınlaşın.', 'info');
         return;
       }
       this.paused = true;
@@ -117,6 +118,14 @@ export class GameManager {
 
     this.eventBus.on('trade:sell', ({ cityId, itemId }) => {
       this.tradeManager.sellItem(cityId, itemId, 1);
+    });
+
+    this.eventBus.on('trade:haggle', ({ cityId, itemId }) => {
+      this.tradeManager.haggleItem(cityId, itemId);
+    });
+
+    this.eventBus.on('game:reset', () => {
+      this.tradeManager.resetProgress();
     });
 
     this.eventBus.on('encounter:quest', ({ quest, npc }) => {
@@ -200,7 +209,6 @@ export class GameManager {
       this.paused = false;
     });
 
-    // Qısa klaviatura düymələri: E (Bazar), M (2D Salnamə), V (GTA ↔ Qədim Xəritə)
     window.addEventListener('keydown', (e) => {
       if (this.currentSceneName !== 'World_Azerbaijan') return;
       if (e.code === 'KeyE') {
