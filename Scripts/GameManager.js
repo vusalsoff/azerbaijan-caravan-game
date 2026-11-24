@@ -1,28 +1,33 @@
-import { EventBus } from './EventBus.js';
 import { DataLoader } from './DataLoader.js';
+import { EventBus } from './EventBus.js';
 import { TradeAndQuestManager } from './TradeAndQuestManager.js';
 import { HistoricalEventManager } from './HistoricalEventManager.js';
 import { Merchant } from './Merchant.js';
 import { Guard } from './Guard.js';
 import { Thief } from './Thief.js';
-
+import { UIManager } from '../UI/UIManager.js';
+import { AudioManager } from '../Audio/AudioManager.js';
 import { StoryIntroScene } from '../Scenes/Story_Intro.js';
 import { WorldAzerbaijanScene } from '../Scenes/World_Azerbaijan.js';
 import { CaravanseraiBazaarScene } from '../Scenes/Caravanserai_Bazaar.js';
-import { UIManager } from '../UI/UIManager.js';
-import { AudioManager } from '../Audio/AudioManager.js';
 
 /**
- * GameManager — "İRS — Tacirin Yolu" əsas orkestratoru:
- * Story_Intro → Caravanserai_Bazaar (3D Tacir baxışı) ↔ World_Azerbaijan (3D Qədim Xəritə + GTA).
+ * GameManager — Bütün səhnələri, Karvan Heybəsini, Bazar ticarətini və tarixi hadisələri birləşdirir.
  */
 export class GameManager {
-  constructor({ sceneRoot, uiRoot }) {
-    this.sceneRoot = sceneRoot;
-    this.uiRoot = uiRoot;
+  constructor(opts, maybeUiRoot) {
+    if (opts && typeof opts === 'object' && 'sceneRoot' in opts) {
+      this.sceneRoot = opts.sceneRoot;
+      this.uiRoot = opts.uiRoot;
+    } else {
+      this.sceneRoot = opts;
+      this.uiRoot = maybeUiRoot;
+    }
 
     this.eventBus = new EventBus();
     this.data = new DataLoader();
+    this.audio = new AudioManager();
+
     this.tradeManager = new TradeAndQuestManager(this.data, this.eventBus);
     this.historicalEvents = new HistoricalEventManager(this.data, this.tradeManager, this.eventBus);
 
@@ -30,20 +35,19 @@ export class GameManager {
     this.guard = new Guard(this.merchant, this.tradeManager, this.eventBus);
     this.thief = new Thief(this.merchant, this.tradeManager, this.eventBus);
 
-    this.audio = new AudioManager(this.eventBus);
     this.ui = new UIManager(this.uiRoot, this.eventBus, this.data, this.tradeManager);
 
-    this.currentSceneName = null;
     this.storyScene = null;
     this.worldScene = null;
     this.bazaarScene = null;
+    this.currentSceneName = 'Story_Intro';
     this.bazaarCityId = 'City_Baku';
-    this.bazaarProximity = null;
-    this.cameraMode = 'map';
 
+    this.cameraMode = 'map';
+    this.bazaarProximity = null;
     this.paused = false;
     this.rafId = null;
-    this.lastTime = 0;
+    this.lastTime = performance.now();
 
     this._bindEvents();
   }
@@ -60,7 +64,6 @@ export class GameManager {
   _bindEvents() {
     this.eventBus.on('story:complete', () => {
       this.audio.init();
-      // İlk olaraq 3D Tacirin öz baxışından Karvansaray Bazarında başla!
       this.loadBazaarScene('City_Baku');
     });
 
@@ -85,6 +88,8 @@ export class GameManager {
         this.ui.showMarket(snapshot.currentCity, enriched, {
           dockedRight: this.currentSceneName === 'Caravanserai_Bazaar',
         });
+      } else if (this.ui.isInventoryOpen()) {
+        this.ui.renderInventoryModal(enriched);
       }
     });
 
@@ -98,8 +103,8 @@ export class GameManager {
       }
       this.ui.showToast(
         next === 'gta'
-          ? 'GTA 3D Sürüş Rejimi: W/S sür, A/D döndər (V ilə xəritəyə qayıt)'
-          : 'Qədim 3D Xəritə Görünüşü: İstənilən yerə kliklə!',
+          ? 'Yaxın Karvan Baxışı: W/S hərəkət, A/D istiqamət (V ilə xəritəyə qayıdış).'
+          : 'Qədim Xəritə Baxışı: Səfər üçün istənilən nöqtəyə klikləyin.',
         'info'
       );
       this.tradeManager.emitState();
@@ -129,7 +134,7 @@ export class GameManager {
     this.eventBus.on('market:open', (opts = {}) => {
       const snap = this.tradeManager.getSnapshot();
       if (!snap.currentCity) {
-        this.ui.showToast('Tacirlə danışmaq üçün şəhər zonasına yaxınlaşın.', 'info');
+        this.ui.showToast('Yaxınlıqda tacir piştaxtası yoxdur — şəhər mənzilinə yaxınlaşın.', 'info');
         return;
       }
 
@@ -144,6 +149,7 @@ export class GameManager {
         if (focusTarget?.defaultItem) {
           this.ui.selectedMarketItemId = focusTarget.defaultItem;
         }
+        this.ui.dockedMarketTab = 'stall';
       } else {
         this.paused = true;
         this.merchant.clearWaypoint();
@@ -162,12 +168,24 @@ export class GameManager {
       this.paused = false;
     });
 
-    this.eventBus.on('trade:buy', ({ cityId, itemId }) => {
-      this.tradeManager.buyItem(cityId, itemId, 1);
+    this.eventBus.on('ui:toggle_inventory', () => {
+      if (this.bazaarScene && this.ui.isMarketOpen()) {
+        this.bazaarScene.setDialogueFocus(null);
+      }
+      const isOpen = this.ui.toggleInventory(this._getUIState(this.tradeManager.getSnapshot()));
+      this.paused = isOpen && this.currentSceneName === 'World_Azerbaijan';
     });
 
-    this.eventBus.on('trade:sell', ({ cityId, itemId }) => {
-      this.tradeManager.sellItem(cityId, itemId, 1);
+    this.eventBus.on('trade:buy', ({ cityId, itemId, qty = 1 }) => {
+      this.tradeManager.buyItem(cityId, itemId, qty);
+    });
+
+    this.eventBus.on('trade:sell', ({ cityId, itemId, qty = 1 }) => {
+      this.tradeManager.sellItem(cityId, itemId, qty);
+    });
+
+    this.eventBus.on('trade:discard', ({ itemId, qty = 1 }) => {
+      this.tradeManager.discardItem(itemId, qty);
     });
 
     this.eventBus.on('trade:haggle', ({ cityId, itemId }) => {
@@ -208,11 +226,11 @@ export class GameManager {
 
     this.eventBus.on('ui:toggle_map', () => {
       const isOpen = this.ui.toggleMapChronicle(
-        this.tradeManager.getSnapshot(),
+        this._getUIState(this.tradeManager.getSnapshot()),
         this.merchant.position,
         this.worldScene ? this.worldScene.getCityPositions() : null
       );
-      this.paused = isOpen;
+      this.paused = isOpen && this.currentSceneName === 'World_Azerbaijan';
     });
 
     this.eventBus.on('map:navigate_city', (cityId) => {
@@ -237,8 +255,7 @@ export class GameManager {
       if (this.worldScene?.setWaypointVisual) {
         this.worldScene.setWaypointVisual(target.x, target.z);
       }
-      this.eventBus.emit('camera:set_mode', 'gta');
-      this.ui.showToast(`GPS marşrutu quruldu: ${target.label}`, 'info');
+      this.ui.showToast(`Marşrut müəyyən edildi: ${target.label}`, 'info');
     });
 
     this.eventBus.on('world:click_move', ({ x, z, enterGTA }) => {
@@ -252,10 +269,13 @@ export class GameManager {
 
     this.eventBus.on('world:trigger_event_now', () => {
       if (!this.paused) {
-        this.historicalEvents.triggerRoadEncounter(
-          this.merchant.position,
-          this.worldScene ? this.worldScene.getCityPositions() : null
-        );
+        const cityMap =
+          this.currentSceneName === 'Caravanserai_Bazaar' && this.bazaarCityId
+            ? { [this.bazaarCityId]: { x: this.merchant.position.x, z: this.merchant.position.z } }
+            : this.worldScene
+            ? this.worldScene.getCityPositions()
+            : null;
+        this.historicalEvents.triggerRoadEncounter(this.merchant.position, cityMap);
       }
     });
 
@@ -270,38 +290,54 @@ export class GameManager {
     });
 
     window.addEventListener('keydown', (e) => {
+      // Basılı tutulan düymələrin (məs. E, I, M, V) təkrar-təkrar spam etməsini tam blokla
+      if (e.repeat) return;
+
       if (this.currentSceneName === 'Caravanserai_Bazaar') {
         if (e.code === 'KeyE') {
           if (this.ui.isMarketOpen()) {
             this.eventBus.emit('market:close');
           } else if (this.bazaarProximity?.type === 'exit_to_map') {
             this.eventBus.emit('scene:exit_to_world');
-          } else {
+          } else if (this.bazaarProximity?.type === 'market') {
             this.eventBus.emit('market:open', { interactable: this.bazaarProximity });
+          } else {
+            this.ui.showToast('Sövdələşmək üçün tacir və ya bağban piştaxtasına yaxınlaşın.', 'info');
           }
-        } else if (e.code === 'KeyX' && !this.ui.isMarketOpen()) {
+        } else if (e.code === 'KeyI' || e.code === 'Tab') {
+          if (e.code === 'Tab') e.preventDefault();
+          this.eventBus.emit('ui:toggle_inventory');
+        } else if (e.code === 'KeyX' && !this.ui.isAnyModalOpen()) {
           this.eventBus.emit('scene:exit_to_world');
         } else if (e.code === 'KeyM') {
           this.eventBus.emit('ui:toggle_map');
-        } else if (e.code === 'Escape' && this.ui.isMarketOpen()) {
-          this.eventBus.emit('market:close');
+        } else if (e.code === 'Escape') {
+          if (this.ui.isMarketOpen()) this.eventBus.emit('market:close');
+          else if (this.ui.isInventoryOpen()) this.eventBus.emit('ui:toggle_inventory');
+          else if (this.ui.mapOpen) this.eventBus.emit('ui:toggle_map');
         }
         return;
       }
 
       if (this.currentSceneName !== 'World_Azerbaijan') return;
+
       if (e.code === 'KeyE') {
         if (this.ui.isMarketOpen()) {
           this.eventBus.emit('market:close');
         } else if (!this.paused) {
           this.eventBus.emit('market:open');
         }
+      } else if (e.code === 'KeyI' || e.code === 'Tab') {
+        if (e.code === 'Tab') e.preventDefault();
+        this.eventBus.emit('ui:toggle_inventory');
       } else if (e.code === 'KeyM') {
         this.eventBus.emit('ui:toggle_map');
       } else if (e.code === 'KeyV' && !this.paused) {
         this.eventBus.emit('camera:toggle_mode');
-      } else if (e.code === 'Escape' && this.ui.isMarketOpen()) {
-        this.eventBus.emit('market:close');
+      } else if (e.code === 'Escape') {
+        if (this.ui.isMarketOpen()) this.eventBus.emit('market:close');
+        else if (this.ui.isInventoryOpen()) this.eventBus.emit('ui:toggle_inventory');
+        else if (this.ui.mapOpen) this.eventBus.emit('ui:toggle_map');
       }
     });
   }
@@ -312,8 +348,7 @@ export class GameManager {
 
   _clearActiveScenes() {
     this._stopLoop();
-    this._stopLoop();
-    this.ui.hideMarket();
+    this.ui.closeAllModals();
     this.paused = false;
     this.bazaarProximity = null;
     if (this.storyScene) {
@@ -397,7 +432,7 @@ export class GameManager {
 
       if (this.currentSceneName === 'Caravanserai_Bazaar' && this.bazaarScene) {
         if (!this.paused) {
-          this.tradeManager.update(dt * 0.35); // Bazar içində vaxt daha yavaş axır
+          this.tradeManager.update(dt * 0.35);
         }
         this.bazaarScene.update(dt);
         return;

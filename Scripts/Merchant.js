@@ -36,6 +36,10 @@ export class Merchant {
     this._onKeyUp = (e) => {
       this.keys.delete(e.code);
     };
+
+    this._onBlur = () => {
+      this.keys.clear();
+    };
   }
 
   setControlMode(mode) {
@@ -45,11 +49,13 @@ export class Merchant {
   attachControls() {
     window.addEventListener('keydown', this._onKeyDown);
     window.addEventListener('keyup', this._onKeyUp);
+    window.addEventListener('blur', this._onBlur);
   }
 
   detachControls() {
     window.removeEventListener('keydown', this._onKeyDown);
     window.removeEventListener('keyup', this._onKeyUp);
+    window.removeEventListener('blur', this._onBlur);
     this.keys.clear();
   }
 

@@ -1,11 +1,12 @@
+import { renderItemSvg, renderSigil, renderSeljukStarDivider } from './AntiqueIcons.js';
+
 /**
- * UI/UIManager.js — "İRS — Tacirin Yolu" konsept UI:
- * - Yuxarı-sol: İRS brend + qızıl/çanta/gün
- * - Yuxarı-orta: Şəhər • Dövr lövhəsi
- * - Aşağı-sol: Xarizma & Zəka RPG göstəriciləri
- * - Aşağı-orta: [E] • Tacirlə danış
- * - Sağ bazar kartı: Alış, Təxmini satış, Yol xərci, Xalis qazanc, Proqnoza etibar %,
- *   Keyfiyyət, "Bazarlıq et" + "Al" / "Sat" və "Təzəlik" (kənd təsərrüfatı) paneli.
+ * UI/UIManager.js — "İRS — Tacirin Yolu"
+ * Qədim Divan Əlyazması & Əmlak Mücrüsü (Lord of the Mysteries × Tarixi Azərbaycan estetikası):
+ * - Mis-qravür vektor simvollar, ikiqat bürünc çərçivəli lövhələr, surğuç möhürləri
+ * - 12 gözlü "Karvan Heybəsi" (FIFO partiyalar, alış maya dəyəri, tarixi mənşə, tacir sirri, yük boşaltma)
+ * - Karvansaray sağ bazar panelində "Piştaxta" və "Heybəm (Satış)" sekmələri (şəhərlərarası tam satış)
+ * - Antispam (cooldown + dublikat birləşdirmə) bildiriş sistemi
  */
 export class UIManager {
   constructor(rootEl, eventBus, data, tradeManager) {
@@ -17,13 +18,20 @@ export class UIManager {
     this.mounted = false;
     this.marketOpen = false;
     this.mapOpen = false;
+    this.inventoryOpen = false;
     this.muted = false;
+
     this.selectedMarketItemId = null;
+    this.dockedMarketTab = 'stall'; // 'stall' | 'bag'
+    this.selectedVaultItemId = null;
 
     this.hudEl = null;
     this.modalEl = null;
     this.toastEl = null;
     this.lastState = null;
+
+    // Toast antispam izləyicisi: Map<message, { el, timerId, count, lastAt }>
+    this._activeToasts = new Map();
   }
 
   mount() {
@@ -43,11 +51,21 @@ export class UIManager {
     this.mounted = false;
     this.marketOpen = false;
     this.mapOpen = false;
+    this.inventoryOpen = false;
+    this._activeToasts.clear();
     this.rootEl.innerHTML = '';
   }
 
   isMarketOpen() {
     return this.marketOpen;
+  }
+
+  isInventoryOpen() {
+    return this.inventoryOpen;
+  }
+
+  isAnyModalOpen() {
+    return this.marketOpen || this.mapOpen || this.inventoryOpen;
   }
 
   setMuted(muted) {
@@ -56,24 +74,28 @@ export class UIManager {
   }
 
   _freshnessColor(ratio) {
-    if (ratio >= 0.6) return 'linear-gradient(90deg, #4b8f42, #87c454)';
-    if (ratio >= 0.3) return 'linear-gradient(90deg, #b88a28, #e6b84c)';
-    return 'linear-gradient(90deg, #a83328, #e05a47)';
+    if (ratio >= 0.6) return 'linear-gradient(90deg, #3d6e47, #72a868)';
+    if (ratio >= 0.3) return 'linear-gradient(90deg, #966d22, #d4a448)';
+    return 'linear-gradient(90deg, #8a2c24, #c95244)';
   }
 
   _renderFreshnessRows(perishables) {
     if (!perishables || perishables.length === 0) {
-      return '<div style="font-size:12px;color:#b8a382;">Çantada tez xarab olan kənd təsərrüfatı məhsulu yoxdur.</div>';
+      return '<div style="font-size:12px;color:#9e8b6e;font-style:italic;">Heybədə tez xarab olan bağ neməti yoxdur.</div>';
     }
     return perishables
       .map(
         (p) => `
       <div class="freshness-row">
-        <span>${p.icon} ${p.name} <small style="color:#bda986">(${p.owned}×)</small></span>
+        <span style="display:inline-flex;align-items:center;gap:5px;color:#e6d7bc;">
+          ${renderItemSvg(p.itemId, 15)}
+          <span>${p.name}</span>
+          <small style="color:#a89474">(${p.owned}×)</small>
+        </span>
         <div class="freshness-track">
           <div class="freshness-fill" style="width:${Math.round(p.ratio * 100)}%;background:${this._freshnessColor(p.ratio)};"></div>
         </div>
-        <span style="text-align:right;color:#e7d5b2;">${p.daysLeft} g.</span>
+        <span style="text-align:right;color:#dfd0b4;">${p.daysLeft} g.</span>
       </div>`
       )
       .join('');
@@ -86,86 +108,102 @@ export class UIManager {
     const isGTA = state.cameraMode === 'gta';
     const isBazaar = state.sceneName === 'Caravanserai_Bazaar';
     const eraBanner = state.currentCity
-      ? `${state.currentCity.short_name || state.currentCity.display_name} • ${state.currentCity.era_name}`
-      : `Qədim İpək Yolu • Gün ${state.gameDay}`;
+      ? `${state.currentCity.short_name || state.currentCity.display_name} · ${state.currentCity.era_name}`
+      : `Qədim İpək Yolu · Gün ${state.gameDay}`;
 
     const bonuses = [];
-    if (state.hasHorseBonus) bonuses.push('🐎 +35% Sürət');
-    if (state.speedBoostTimer > 0) bonuses.push(`⚡ ${state.speedBoostTimer}s`);
-    if (state.guardBoostTimer > 0) bonuses.push(`🛡️ ${state.guardBoostTimer}s`);
+    if (state.hasHorseBonus) bonuses.push('Köhlən +35%');
+    if (state.speedBoostTimer > 0) bonuses.push(`Çeviklik ${state.speedBoostTimer}s`);
+    if (state.guardBoostTimer > 0) bonuses.push(`Keşik ${state.guardBoostTimer}s`);
 
     const prox = state.bazaarProximity;
     const bottomActionHtml = isBazaar
       ? prox?.type === 'exit_to_map'
-        ? `<button id="btn-exit-map" class="btn-primary" style="display:flex;align-items:center;gap:8px;">
-            <span class="key-cap" style="background:rgba(28,19,8,0.22);border-color:#1c1308;color:#1c1308;">E</span>
-            <span>• Qədim 3D Xəritəyə Çıx</span>
+        ? `<button id="btn-exit-map" class="btn-primary">
+            <span class="key-cap">E</span>
+            <span>Qədim Xəritəyə Çıx</span>
           </button>`
-        : `<button id="btn-open-market" class="btn-primary" style="display:flex;align-items:center;gap:8px;">
-            <span class="key-cap" style="background:rgba(28,19,8,0.22);border-color:#1c1308;color:#1c1308;">E</span>
-            <span>• ${prox?.label || 'Tacirlə danış'}</span>
+        : `<button id="btn-open-market" class="btn-primary">
+            <span class="key-cap">E</span>
+            <span>${prox?.label || 'Tacirlə Sövdələş'}</span>
           </button>
-          <span style="color:#d2c09d;">WASD: Gəz · Siçan: Kamera</span>`
+          <span style="color:#b8a484;font-size:12.5px;">WASD: Gəz · Siçan: Baxış · <span class="key-cap">I</span> Heybə</span>`
       : state.currentCity
-      ? `<button id="btn-enter-bazaar" class="btn-emerald">🏛️ Karvansaraya Gir (3D Tacir)</button>
-         <button id="btn-open-market" class="btn-primary" style="display:flex;align-items:center;gap:8px;">
-           <span class="key-cap" style="background:rgba(28,19,8,0.22);border-color:#1c1308;color:#1c1308;">E</span>
-           <span>• Bazar (${state.currentCity.short_name || state.currentCity.display_name})</span>
+      ? `<button id="btn-enter-bazaar" class="btn-emerald">
+           ${renderSigil('gate', 15)}
+           <span>Karvansaraya Daxil Ol</span>
+         </button>
+         <button id="btn-open-market" class="btn-primary">
+           <span class="key-cap">E</span>
+           <span>Bazar Dəftəri (${state.currentCity.short_name || state.currentCity.display_name})</span>
          </button>`
-      : `<span>${
-          isGTA
-            ? '<strong>GTA Rejimi:</strong> W/S sür · A/D döndər · Sağ klik kamera · <span class="key-cap">V</span> Xəritə'
-            : '<strong>Qədim Xəritə:</strong> Kliklə (GTA GPS ilə enər) · <span class="key-cap">M</span> Salnamə'
-        }</span>`;
+      : `<span><strong>Qədim Mənzil Xəritəsi:</strong> Səfər üçün xəritədə istənilən mənzilə klikləyin · <span class="key-cap">WASD</span> Hərəkət · <span class="key-cap">I</span> Heybə · <span class="key-cap">M</span> Salnamə</span>`;
 
     this.hudEl.innerHTML = `
       <div class="hud-shell">
         <div class="hud-top-row">
-          <div class="irs-brand-box">
+          <div class="irs-brand-box lotm-plate">
             <div class="irs-logo">
               <span class="irs-logo-main">İRS</span>
-              <span class="irs-logo-sub">Tacirin yolu</span>
+              <span class="irs-logo-sub">Tacirin Yolu</span>
             </div>
-            <div class="hud-pill">💰 <strong>${state.gold}</strong> / ${state.winGoldGoal}</div>
-            <div class="hud-pill">🎒 <strong>${state.totalItems}/${state.maxInventory}</strong></div>
-            <div class="hud-pill">☀️ Gün <strong>${state.gameDay}</strong></div>
+            <div class="hud-pill" title="Xəzinə və Hədəf">
+              ${renderSigil('coin', 15)}
+              <span><strong>${state.gold}</strong> / ${state.winGoldGoal}</span>
+            </div>
+            <button id="btn-hud-inventory" class="hud-pill clickable" title="Karvan Heybəsini Aç (I)">
+              ${renderSigil('satchel', 15)}
+              <span>Heybə: <strong>${state.totalItems}/${state.maxInventory}</strong></span>
+            </button>
+            <div class="hud-pill" title="Səfər Günü">
+              ${renderSigil('sun', 15)}
+              <span>Gün <strong>${state.gameDay}</strong></span>
+            </div>
             ${bonuses.map((b) => `<div class="hud-pill">${b}</div>`).join('')}
           </div>
 
-          <div class="irs-era-banner">✦ ${eraBanner} ✦</div>
+          <div class="irs-era-banner lotm-plate">✦ ${eraBanner} ✦</div>
 
-          <div class="hud-actions-bar">
+          <div class="hud-actions-bar lotm-plate">
             ${
               isBazaar
-                ? `<button id="btn-exit-map-top" class="btn-primary">🗺️ Qədim Xəritə (X)</button>`
-                : `<button id="btn-cam-mode" class="btn-primary">
-                    ${isGTA ? '🗺️ Xəritə (V)' : '🎥 GTA 3D (V)'}
-                  </button>`
+                ? `<button id="btn-exit-map-top" class="btn-primary">${renderSigil('compass', 15)} <span>Qədim Xəritə (X)</span></button>`
+                : ''
             }
-            <button id="btn-map" class="btn-secondary">📜 Salnamə (${state.discoveredEvents.length}/${state.totalEventsCount})</button>
-            <button id="btn-event-test" class="btn-secondary" title="Yol hadisəsi">✨ Hadisə</button>
-            <button id="btn-mute" class="btn-secondary" title="Səsi aç/bağla">${this.muted ? '🔇' : '🔊'}</button>
-            <button id="btn-reset" class="btn-secondary" title="Yeni oyun">↺</button>
+            <button id="btn-inv-top" class="btn-secondary" title="Karvan Heybəsi (I)">
+              ${renderSigil('satchel', 15)}
+              <span>Heybə (I)</span>
+            </button>
+            <button id="btn-map" class="btn-secondary" title="Tarixi Salnamə (M)">
+              ${renderSigil('scroll', 15)}
+              <span>Salnamə (${state.discoveredEvents.length}/${state.totalEventsCount})</span>
+            </button>
+            <button id="btn-event-test" class="btn-secondary" title="Yol Qarşılaşması">
+              ${renderSigil('seal', 15)}
+              <span>Rəvayət</span>
+            </button>
+            <button id="btn-mute" class="btn-secondary" title="Səs">${this.muted ? 'Səssiz' : 'Səs'}</button>
+            <button id="btn-reset" class="btn-secondary" title="Səfəri Yenidən Başlat">↺</button>
           </div>
         </div>
 
         <div class="hud-middle-right" style="${isBazaar && this.marketOpen ? 'display:none;' : ''}">
-          <div class="hud-side-card">
-            <h4>Aktiv Tapşırıqlar (${state.activeQuests.length})</h4>
+          <div class="hud-side-card lotm-plate">
+            <h4>Divan Əmanətləri (${state.activeQuests.length})</h4>
             ${
               state.activeQuests.length === 0
-                ? '<div style="color:#bda986">Yolda irəlilədikcə Padşah, Bağban və Salnaməçilər çıxacaq.</div>'
+                ? '<div style="color:#a89474;font-style:italic;">Yol boyu el ağsaqqalları, bağbanlar və xan qasidləri sizə əmanət tapşıracaq.</div>'
                 : state.activeQuests
                     .map(
                       (q) => `
                   <div class="quest-mini">
-                    <strong>${q.title}</strong><br/>
-                    <span style="color:#cbb896">${q.npc_name}: ${q.required_amount}× ${this.data.getItemName(q.required_item)} → ${
+                    <strong style="color:#efe1c6;">${q.title}</strong><br/>
+                    <span style="color:#bda886;">${q.npc_name}: ${q.required_amount}× ${this.data.getItemName(q.required_item)} → ${
                         q.target_city === 'ANY'
-                          ? 'İstənilən yer'
+                          ? 'Hər hansı mənzil'
                           : this.data.getCityById(q.target_city)?.short_name || q.target_city
                       }</span><br/>
-                    <span style="color:#f0c75e">+${q.reward_gold} qızıl</span>
+                    <span style="color:var(--gold-bright);">Ənam: +${q.reward_gold} qızıl</span>
                   </div>`
                     )
                     .join('')
@@ -174,8 +212,8 @@ export class UIManager {
 
           ${
             state.perishables && state.perishables.length > 0
-              ? `<div class="hud-side-card">
-                  <h4>✦ Təzəlik (Kənd Təsərrüfatı) ✦</h4>
+              ? `<div class="hud-side-card lotm-plate">
+                  <h4>Bağ Nemətlərinin Möhləti</h4>
                   ${this._renderFreshnessRows(state.perishables)}
                 </div>`
               : ''
@@ -184,17 +222,23 @@ export class UIManager {
 
         <div class="hud-bottom-grid">
           <div class="irs-stats-stack">
-            <div class="irs-stat-badge"><span>🤝 Xarizma</span><strong>${state.charisma}</strong></div>
-            <div class="irs-stat-badge"><span>📖 Zəka</span><strong>${state.intelligence}</strong></div>
+            <div class="irs-stat-badge lotm-plate">
+              <span style="display:inline-flex;align-items:center;gap:6px;">${renderSigil('charisma', 15)} Nüfuz (Xarizma)</span>
+              <strong>${state.charisma}</strong>
+            </div>
+            <div class="irs-stat-badge lotm-plate">
+              <span style="display:inline-flex;align-items:center;gap:6px;">${renderSigil('intelligence', 15)} Fərasət (Zəka)</span>
+              <strong>${state.intelligence}</strong>
+            </div>
           </div>
 
           <div class="hud-bottom-center">
-            <div class="hud-bottom-hint">
+            <div class="hud-bottom-hint lotm-plate">
               ${bottomActionHtml}
             </div>
           </div>
 
-          <div style="width:142px;"></div>
+          <div style="width:158px;"></div>
         </div>
       </div>
     `;
@@ -214,6 +258,12 @@ export class UIManager {
     this.hudEl.querySelector('#btn-open-market')?.addEventListener('click', () => {
       this.eventBus.emit('market:open');
     });
+    this.hudEl.querySelector('#btn-hud-inventory')?.addEventListener('click', () => {
+      this.eventBus.emit('ui:toggle_inventory');
+    });
+    this.hudEl.querySelector('#btn-inv-top')?.addEventListener('click', () => {
+      this.eventBus.emit('ui:toggle_inventory');
+    });
     this.hudEl.querySelector('#btn-map')?.addEventListener('click', () => {
       this.eventBus.emit('ui:toggle_map');
     });
@@ -224,16 +274,255 @@ export class UIManager {
       this.eventBus.emit('audio:toggle_mute');
     });
     this.hudEl.querySelector('#btn-reset')?.addEventListener('click', () => {
-      if (window.confirm('Bütün yadda saxlanılmış irəliləyiş sıfırlansın?')) {
+      if (window.confirm('Bütün səfər dəftəri və yaddaş sıfırlansın?')) {
         this.eventBus.emit('game:reset');
       }
     });
+  }
+
+  /**
+   * 12 Gözlü Karvan Heybəsi & Əmlak Mücrüsü (Lord of the Mysteries Təftiş Üslubu)
+   */
+  toggleInventory(state) {
+    if (!this.modalEl) return false;
+    if (this.inventoryOpen) {
+      this.inventoryOpen = false;
+      this.modalEl.innerHTML = '';
+      return false;
+    }
+    this.marketOpen = false;
+    this.mapOpen = false;
+    this.inventoryOpen = true;
+    this.renderInventoryModal(state);
+    return true;
+  }
+
+  closeAllModals() {
+    this.marketOpen = false;
+    this.mapOpen = false;
+    this.inventoryOpen = false;
+    if (this.modalEl) this.modalEl.innerHTML = '';
+    if (this.lastState) this.updateHUD(this.lastState);
+  }
+
+  renderInventoryModal(state) {
+    if (!this.modalEl || !this.inventoryOpen) return;
+
+    const detailed = state.detailedInventory || [];
+    if (detailed.length > 0) {
+      const exists = detailed.some((d) => d.itemId === this.selectedVaultItemId);
+      if (!exists) this.selectedVaultItemId = detailed[0].itemId;
+    } else {
+      this.selectedVaultItemId = null;
+    }
+
+    const selectedEntry = detailed.find((d) => d.itemId === this.selectedVaultItemId) || null;
+
+    // 12 fiziki heybə gözünü doldur (hər vahid və ya mal yığını göz kimi + boş gözlər)
+    const slotsHtml = [];
+    for (const item of detailed) {
+      const isSel = item.itemId === this.selectedVaultItemId;
+      slotsHtml.push(`
+        <div class="lotm-slot ${isSel ? 'selected' : ''}" data-vault-item="${item.itemId}">
+          <span class="lotm-slot-qty">${item.qty}×</span>
+          ${renderItemSvg(item.itemId, 28)}
+          <div class="lotm-slot-name">${item.meta.name}</div>
+          ${
+            item.freshness
+              ? `<div class="freshness-track" style="width:82%;height:4px;">
+                   <div class="freshness-fill" style="width:${Math.round(item.freshness.ratio * 100)}%;background:${this._freshnessColor(item.freshness.ratio)};"></div>
+                 </div>`
+              : `<span style="font-size:10px;color:#9f8b6c;">${item.meta.unit_label}</span>`
+          }
+        </div>
+      `);
+    }
+
+    const emptyCount = Math.max(0, 12 - slotsHtml.length);
+    for (let i = 0; i < emptyCount; i++) {
+      slotsHtml.push(`
+        <div class="lotm-slot empty">
+          ${renderSigil('seal', 18)}
+          <span style="font-size:10.5px;">Boş Göz</span>
+        </div>
+      `);
+    }
+
+    const cityShort = state.currentCity?.short_name || null;
+
+    this.modalEl.innerHTML = `
+      <div id="InventoryModal" class="modal-backdrop">
+        <div class="modal-card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+            <div>
+              <div class="wax-seal-tag">${renderSigil('seal', 12)} Divan Əmlak Mücrüsü</div>
+              <h2 style="margin-top:6px;">Karvan Heybəsi və Əmtəə Təftişi</h2>
+              <div style="font-size:13px;color:var(--text-muted);">
+                Tutum: <strong style="color:var(--gold-bright)">${state.totalItems} / ${state.maxInventory}</strong> bağlama ·
+                Xəzinə: <strong style="color:var(--gold-bright)">${state.gold} qızıl</strong> ·
+                Karvan Sürəti: <strong>${state.hasHorseBonus ? '+35% (Köhlən)' : 'Adi gediş'}</strong>
+              </div>
+            </div>
+            <button id="inv-close" class="btn-secondary">✕ Bağla (I / Esc)</button>
+          </div>
+
+          ${renderSeljukStarDivider()}
+
+          <div class="lotm-vault-grid">
+            <div>
+              <div style="font-family:var(--font-display);font-size:14px;color:var(--gold-bright);letter-spacing:0.06em;margin-bottom:8px;text-transform:uppercase;">
+                Heybə Gözləri (${detailed.length} çeşid əmtəə, ${state.totalItems}/${state.maxInventory} yük)
+              </div>
+              <div class="lotm-slots-matrix">
+                ${slotsHtml.join('')}
+              </div>
+            </div>
+
+            <div class="irs-trade-card">
+              ${
+                selectedEntry
+                  ? `
+                <div class="irs-trade-card-title">Əmtəənin Möhür və Mənşə Təftişi</div>
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <div class="lotm-emblem-box">
+                    ${renderItemSvg(selectedEntry.itemId, 30)}
+                  </div>
+                  <div>
+                    <span class="wax-seal-tag">${selectedEntry.meta.seal_title}</span>
+                    <div style="font-family:var(--font-display);font-size:20px;font-weight:700;color:#f5e7cb;margin-top:3px;">
+                      ${selectedEntry.meta.name}
+                    </div>
+                    <div style="font-size:12px;color:var(--text-muted);">
+                      Mənşə: ${selectedEntry.meta.origin_region}
+                    </div>
+                  </div>
+                </div>
+
+                <div class="lotm-lore-box">
+                  <div>${selectedEntry.meta.lore}</div>
+                  <div class="lotm-whisper">${selectedEntry.meta.merchant_whisper}</div>
+                </div>
+
+                <div class="irs-trade-row">
+                  <span>Heybədəki miqdar</span>
+                  <strong>${selectedEntry.qty}× (${selectedEntry.meta.unit_label})</strong>
+                </div>
+                <div class="irs-trade-row">
+                  <span>Orta alış maya dəyəri</span>
+                  <strong>${selectedEntry.avgBuy} qızıl</strong>
+                </div>
+                <div class="irs-trade-row">
+                  <span>Ən sərfəli mənzil</span>
+                  <strong style="color:var(--gold-bright);">${selectedEntry.bestTargetCity} (~${selectedEntry.bestTargetPrice} q.)</strong>
+                </div>
+                ${
+                  cityShort && selectedEntry.unitSellHere != null
+                    ? `<div class="irs-trade-row profit">
+                        <span>Cari mənzildə (${cityShort}) satış</span>
+                        <span style="color:${selectedEntry.netPerUnitHere >= 0 ? '#84c994' : '#d9786e'};">
+                          ${selectedEntry.unitSellHere} q. (${selectedEntry.netPerUnitHere >= 0 ? '+' : ''}${selectedEntry.netPerUnitHere} xalis)
+                        </span>
+                      </div>`
+                    : ''
+                }
+
+                <div>
+                  <div style="font-family:var(--font-display);font-size:13px;color:var(--gold-bright);letter-spacing:0.05em;margin-bottom:4px;">
+                    Partiyalar (Köhnə partiya əvvəl satılır — FIFO)
+                  </div>
+                  <div class="lotm-batch-table">
+                    ${selectedEntry.batches
+                      .map(
+                        (b) => `
+                      <div class="lotm-batch-row">
+                        <span>#${b.index} · <strong>${b.qty}×</strong> (${b.originName}, alış: ${b.buyPrice} q.)</span>
+                        <span style="color:${b.daysLeft != null && b.daysLeft <= 1.2 ? '#e07a6f' : '#cbb896'};">
+                          ${b.daysLeft != null ? `${b.daysLeft} gün möhlət` : 'Xarab olmur'}
+                        </span>
+                      </div>`
+                      )
+                      .join('')}
+                  </div>
+                </div>
+
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
+                  ${
+                    state.currentCityId
+                      ? `<button id="vault-sell-one" class="btn-primary" style="flex:1;">
+                           1× Sat (+${selectedEntry.unitSellHere} q.)
+                         </button>
+                         ${
+                           selectedEntry.qty > 1
+                             ? `<button id="vault-sell-all" class="btn-emerald" style="flex:1;">
+                                  Hamısını Sat (${selectedEntry.qty}×)
+                                </button>`
+                             : ''
+                         }`
+                      : ''
+                  }
+                  <button id="vault-discard-one" class="btn-crimson" title="Karvan yükünü azaltmaq üçün 1 ədəd boşalt">
+                    1× Yükdən Boşalt
+                  </button>
+                </div>
+              `
+                  : `
+                <div style="padding:36px 16px;text-align:center;color:var(--text-muted);">
+                  <div style="margin-bottom:10px;color:var(--gold-dim);">${renderSigil('satchel', 36)}</div>
+                  <div style="font-family:var(--font-display);font-size:19px;color:var(--gold-bright);margin-bottom:6px;">
+                    Karvan Heybəsi Boşdur
+                  </div>
+                  <p style="font-size:13px;line-height:1.55;">
+                    Şəhər karvansaraylarında piştaxtaya yaxınlaşıb (<span class="key-cap">E</span>) duz, ipək, xalça və ya bağ nemətləri tədarük edin. Alınan hər bir malın möhürü və mənşə tarixçəsi burada görünəcək.
+                  </p>
+                </div>
+              `
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    this.modalEl.querySelector('#inv-close')?.addEventListener('click', () => {
+      this.eventBus.emit('ui:toggle_inventory');
+    });
+
+    this.modalEl.querySelectorAll('.lotm-slot[data-vault-item]').forEach((el) => {
+      el.addEventListener('click', () => {
+        this.selectedVaultItemId = el.dataset.vaultItem;
+        this.renderInventoryModal(this.lastState || state);
+      });
+    });
+
+    if (selectedEntry) {
+      this.modalEl.querySelector('#vault-sell-one')?.addEventListener('click', () => {
+        this.eventBus.emit('trade:sell', {
+          cityId: state.currentCityId,
+          itemId: selectedEntry.itemId,
+          qty: 1,
+        });
+      });
+      this.modalEl.querySelector('#vault-sell-all')?.addEventListener('click', () => {
+        this.eventBus.emit('trade:sell', {
+          cityId: state.currentCityId,
+          itemId: selectedEntry.itemId,
+          qty: selectedEntry.qty,
+        });
+      });
+      this.modalEl.querySelector('#vault-discard-one')?.addEventListener('click', () => {
+        this.eventBus.emit('trade:discard', {
+          itemId: selectedEntry.itemId,
+          qty: 1,
+        });
+      });
+    }
   }
 
   showMarket(city, state, options = {}) {
     if (!this.modalEl) return;
     this.marketOpen = true;
     this.mapOpen = false;
+    this.inventoryOpen = false;
     const dockedRight = Boolean(options.dockedRight);
 
     const validIds = city.goods.map((g) => g.item_id);
@@ -243,102 +532,185 @@ export class UIManager {
 
     const analysis = this.tradeManager.getMarketAnalysis(city.city_id, this.selectedMarketItemId);
     const selectedOwned = this.selectedMarketItemId ? state.inventory[this.selectedMarketItemId] || 0 : 0;
+    const heldItems = state.detailedInventory || [];
 
-    // Karvansaray 3D səhnəsində arxanı qaraltmadan konsept şəklinizdəki kimi SAĞ TƏRƏFDƏ açılır!
+    // Karvansaray 3D səhnəsində sağ tərəfdə açılan ikili (Piştaxta + Heybəm) Divan Lövhəsi
     if (dockedRight && analysis) {
       if (this.lastState) this.updateHUD(this.lastState);
+
+      const stallBodyHtml = `
+        <div class="irs-item-chips">
+          ${city.goods
+            .map(
+              (g) => `
+            <button class="irs-item-chip ${g.item_id === this.selectedMarketItemId ? 'active' : ''}" data-select="${g.item_id}">
+              ${renderItemSvg(g.item_id, 14)}
+              <span>${g.name.split(' ')[0]}</span>
+            </button>`
+            )
+            .join('')}
+        </div>
+
+        <div style="display:flex;align-items:center;gap:11px;">
+          <div class="lotm-emblem-box">
+            ${renderItemSvg(analysis.good.item_id, 28)}
+          </div>
+          <div>
+            <span class="wax-seal-tag">${analysis.good.seal_title}</span>
+            <div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:#f5e7cb;margin-top:2px;">
+              ${analysis.good.name}
+            </div>
+            <div style="font-size:12px;color:var(--text-muted);">
+              Ən sərfəli mənzil: <strong style="color:var(--gold-bright)">${analysis.bestCityName}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="lotm-lore-box">
+          <div>${analysis.good.lore}</div>
+          <div class="lotm-whisper">${analysis.good.merchant_whisper}</div>
+        </div>
+
+        <div class="irs-trade-row">
+          <span>Alış dəyəri</span>
+          <strong style="color:var(--gold-bright);">
+            ${analysis.effectiveBuy} qızıl
+            ${analysis.haggle.status === 'won' ? '<small style="color:#84c994"> (Endirimli)</small>' : ''}
+          </strong>
+        </div>
+        <div class="irs-trade-row">
+          <span>Digər bazarlarda satış</span>
+          <strong>${analysis.estSellMin}–${analysis.estSellMax} qızıl</strong>
+        </div>
+        <div class="irs-trade-row">
+          <span>Karvan yol xərci</span>
+          <span>${analysis.travelCost} qızıl</span>
+        </div>
+        <div class="irs-trade-row profit">
+          <span>Gözlənilən xalis qazanc</span>
+          <span style="color:${analysis.netMax >= 0 ? '#84c994' : '#d9786e'};">
+            ${analysis.netMin >= 0 ? '+' : ''}${analysis.netMin} .. ${analysis.netMax >= 0 ? '+' : ''}${analysis.netMax} qızıl
+          </span>
+        </div>
+
+        <div>
+          <div class="irs-trade-row" style="margin-bottom:4px;font-size:12px;">
+            <span>Fərasət təxmini etibarı</span>
+            <strong style="color:var(--gold-bright)">${analysis.trustPercent}%</strong>
+          </div>
+          <div class="trust-bar-track">
+            <div class="trust-bar-fill" style="width:${analysis.trustPercent}%;"></div>
+          </div>
+        </div>
+
+        <div style="font-size:12.5px;color:#dfd0b4;">
+          Keyfiyyət dərəcəsi: <strong style="color:var(--gold-bright)">${analysis.quality}</strong> ·
+          ${
+            analysis.good.max_freshness_days
+              ? `Möhlət: <strong>${analysis.good.max_freshness_days} gün</strong>`
+              : 'Xarab olmur'
+          }
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <button id="btn-haggle-sel" class="btn-secondary" ${analysis.haggle.attempted ? 'disabled' : ''}>
+            ${renderSigil('scale', 14)}
+            <span>Bazarlıq Et</span>
+          </button>
+          <button id="btn-buy-sel" class="btn-emerald">
+            <span>1× Tədarük Al (${analysis.effectiveBuy} q.)</span>
+          </button>
+        </div>
+
+        ${
+          selectedOwned > 0
+            ? `<div style="display:flex;gap:6px;">
+                 <button id="btn-sell-sel" class="btn-primary" style="flex:1;">
+                   1× Sat (+${analysis.effectiveSell} q. · Heybədə: ${selectedOwned})
+                 </button>
+                 ${
+                   selectedOwned > 1
+                     ? `<button id="btn-sell-all-sel" class="btn-secondary">Hamısını Sat</button>`
+                     : ''
+                 }
+               </div>`
+            : ''
+        }
+
+        <div class="irs-freshness-box">
+          <div style="text-align:center;font-family:var(--font-display);font-size:13px;color:var(--gold-bright);margin-bottom:5px;letter-spacing:0.06em;">
+            ✦ Bağ Nemətlərinin Möhləti ✦
+          </div>
+          ${this._renderFreshnessRows(state.perishables)}
+        </div>
+      `;
+
+      const bagBodyHtml =
+        heldItems.length === 0
+          ? `<div style="padding:26px 12px;text-align:center;color:var(--text-muted);font-size:13px;">
+               Heybənizdə satılacaq əmtəə yoxdur. «Piştaxta» bölməsindən mal tədarük edin.
+             </div>`
+          : `<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">
+               Digər şəhərlərdən gətirdiyiniz idxal malları da daxil olmaqla bütün heybəni buradan sata bilərsiniz:
+             </div>
+             <div class="irs-goods-list">
+               ${heldItems
+                 .map(
+                   (entry) => `
+                 <div class="irs-good-row" style="cursor:default;flex-direction:column;align-items:stretch;gap:7px;">
+                   <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+                     <span style="display:inline-flex;align-items:center;gap:7px;font-weight:600;color:#f3e5c8;">
+                       ${renderItemSvg(entry.itemId, 18)}
+                       <span>${entry.meta.name} (${entry.qty}×)</span>
+                     </span>
+                     <span style="font-size:12px;color:${entry.netPerUnitHere >= 0 ? '#84c994' : '#d9786e'};">
+                       Satış: <strong>${entry.unitSellHere} q.</strong> (${entry.netPerUnitHere >= 0 ? '+' : ''}${entry.netPerUnitHere})
+                     </span>
+                   </div>
+                   <div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:var(--text-muted);">
+                     <span>Alış maya: ${entry.avgBuy} q. · ${entry.isImportedHere ? 'İdxal tələbi' : 'Yerli bazar'}</span>
+                     <span>${entry.freshness ? `Möhlət: ${entry.freshness.daysLeft} g.` : 'Sabit mal'}</span>
+                   </div>
+                   <div style="display:flex;gap:6px;">
+                     <button class="btn-primary btn-bag-sell-one" data-item="${entry.itemId}" style="flex:1;padding:5px 8px;font-size:12px;">
+                       1× Sat (+${entry.unitSellHere} q.)
+                     </button>
+                     ${
+                       entry.qty > 1
+                         ? `<button class="btn-emerald btn-bag-sell-all" data-item="${entry.itemId}" data-qty="${entry.qty}" style="padding:5px 9px;font-size:12px;">
+                              Hamısını (${entry.qty}×)
+                            </button>`
+                         : ''
+                     }
+                     <button class="btn-crimson btn-bag-drop" data-item="${entry.itemId}" style="padding:5px 8px;font-size:12px;" title="1 ədəd yükdən boşalt">
+                       At
+                     </button>
+                   </div>
+                 </div>`
+                 )
+                 .join('')}
+             </div>`;
+
       this.modalEl.innerHTML = `
         <div id="MarketPanel" class="irs-docked-market">
-          <div class="irs-trade-card" style="box-shadow:0 20px 52px rgba(0,0,0,0.65);">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:8px;border-bottom:1px solid rgba(229,184,75,0.3);">
-              <span style="font-family:var(--font-display);font-size:15.5px;letter-spacing:0.05em;color:#f4d078;">
-                ${analysis.good.item_id === 'carpet' ? 'XALÇA TİCARƏTİ' : analysis.good.category === 'agriculture' ? 'KƏND TƏSƏRRÜFATI' : 'BAZAR TİCARƏTİ'}
+          <div class="irs-trade-card">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:6px;border-bottom:1px solid rgba(196,152,76,0.28);">
+              <span style="font-family:var(--font-display);font-size:17px;font-weight:700;letter-spacing:0.06em;color:var(--gold-bright);">
+                ${city.short_name || city.display_name} Divan Bazarı
               </span>
               <button id="market-close" class="btn-secondary" style="padding:4px 9px;font-size:12px;">✕ (Esc)</button>
             </div>
 
-            <div class="irs-item-chips">
-              ${city.goods
-                .map(
-                  (g) => `
-                <button class="irs-item-chip ${g.item_id === this.selectedMarketItemId ? 'active' : ''}" data-select="${g.item_id}">
-                  ${g.icon || '📦'} ${g.name.split(' ')[0]}
-                </button>`
-                )
-                .join('')}
-            </div>
-
-            <div style="display:flex;align-items:center;gap:12px;">
-              <div style="width:52px;height:52px;border-radius:10px;background:rgba(229,184,75,0.14);border:1px solid rgba(229,184,75,0.55);display:flex;align-items:center;justify-content:center;font-size:28px;">
-                ${analysis.good.icon || '📦'}
-              </div>
-              <div>
-                <div style="font-size:16px;font-weight:700;color:#f8edd4;">${analysis.good.name}</div>
-                <div style="font-size:12px;color:#cbb896;">Ən sərfəli bazar: <strong style="color:#f0c75e">${analysis.bestCityName}</strong></div>
-              </div>
-            </div>
-
-            <div class="irs-trade-row">
-              <span>Alış qiyməti</span>
-              <strong style="color:#ffd479;">🪙 ${analysis.effectiveBuy} ${
-                analysis.haggle.status === 'won' ? '<small style="color:#6ee7b7">(Endirim!)</small>' : ''
-              }</strong>
-            </div>
-            <div class="irs-trade-row">
-              <span>Təxmini satış</span>
-              <strong>🪙 ${analysis.estSellMin}–${analysis.estSellMax}</strong>
-            </div>
-            <div class="irs-trade-row">
-              <span>Yol xərci</span>
-              <span>🪙 ${analysis.travelCost}</span>
-            </div>
-            <div class="irs-trade-row profit">
-              <span>Xalis qazanc</span>
-              <span style="color:${analysis.netMax >= 0 ? '#7ce38b' : '#f28b82'};">
-                🪙 ${analysis.netMin >= 0 ? '+' : ''}${analysis.netMin}..${analysis.netMax >= 0 ? '+' : ''}${analysis.netMax}
-              </span>
-            </div>
-
-            <div>
-              <div class="irs-trade-row" style="margin-bottom:5px;font-size:12.5px;">
-                <span>Proqnoza etibar</span>
-                <strong style="color:#f0c75e">${analysis.trustPercent}%</strong>
-              </div>
-              <div class="trust-bar-track">
-                <div class="trust-bar-fill" style="width:${analysis.trustPercent}%;"></div>
-              </div>
-            </div>
-
-            <div style="font-size:13px;color:#e6d7b9;">
-              🏅 Keyfiyyət: <strong style="color:#f0c75e">${analysis.quality}</strong>
-              ${
-                analysis.good.max_freshness_days
-                  ? ` · 🌿 ${analysis.good.max_freshness_days} gün`
-                  : ''
-              }
-            </div>
-
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-              <button id="btn-haggle-sel" class="btn-secondary" ${analysis.haggle.attempted ? 'disabled' : ''}>
-                Bazarlıq et
+            <div class="lotm-tabs">
+              <button class="lotm-tab ${this.dockedMarketTab === 'stall' ? 'active' : ''}" data-tab="stall">
+                Piştaxta (${city.goods.length})
               </button>
-              <button id="btn-buy-sel" class="btn-emerald">Al</button>
+              <button class="lotm-tab ${this.dockedMarketTab === 'bag' ? 'active' : ''}" data-tab="bag">
+                Heybəm · Satış (${state.totalItems}/${state.maxInventory})
+              </button>
             </div>
 
-            ${
-              selectedOwned > 0
-                ? `<button id="btn-sell-sel" class="btn-primary" style="width:100%;">
-                    💰 1× Sat (+${analysis.effectiveSell} qızıl · Səndə: ${selectedOwned})
-                  </button>`
-                : ''
-            }
-
-            <div class="irs-freshness-box">
-              <div style="text-align:center;font-family:var(--font-display);font-size:12.5px;color:#f0c75e;margin-bottom:6px;">
-                ✦ Təzəlik ✦
-              </div>
-              ${this._renderFreshnessRows(state.perishables)}
-            </div>
+            ${this.dockedMarketTab === 'stall' ? stallBodyHtml : bagBodyHtml}
           </div>
         </div>
       `;
@@ -346,42 +718,90 @@ export class UIManager {
       this.modalEl.querySelector('#market-close')?.addEventListener('click', () => {
         this.eventBus.emit('market:close');
       });
+
+      this.modalEl.querySelectorAll('.lotm-tab[data-tab]').forEach((tabBtn) => {
+        tabBtn.addEventListener('click', () => {
+          this.dockedMarketTab = tabBtn.dataset.tab;
+          this.showMarket(city, state, { dockedRight: true });
+        });
+      });
+
       this.modalEl.querySelectorAll('.irs-item-chip[data-select]').forEach((btn) => {
         btn.addEventListener('click', () => {
           this.selectedMarketItemId = btn.dataset.select;
           this.showMarket(city, state, { dockedRight: true });
         });
       });
+
       this.modalEl.querySelector('#btn-haggle-sel')?.addEventListener('click', () => {
         this.eventBus.emit('trade:haggle', {
           cityId: city.city_id,
           itemId: this.selectedMarketItemId,
         });
       });
+
       this.modalEl.querySelector('#btn-buy-sel')?.addEventListener('click', () => {
         this.eventBus.emit('trade:buy', {
           cityId: city.city_id,
           itemId: this.selectedMarketItemId,
         });
       });
+
       this.modalEl.querySelector('#btn-sell-sel')?.addEventListener('click', () => {
         this.eventBus.emit('trade:sell', {
           cityId: city.city_id,
           itemId: this.selectedMarketItemId,
+          qty: 1,
+        });
+      });
+
+      this.modalEl.querySelector('#btn-sell-all-sel')?.addEventListener('click', () => {
+        this.eventBus.emit('trade:sell', {
+          cityId: city.city_id,
+          itemId: this.selectedMarketItemId,
+          qty: selectedOwned,
+        });
+      });
+
+      this.modalEl.querySelectorAll('.btn-bag-sell-one').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          this.eventBus.emit('trade:sell', {
+            cityId: city.city_id,
+            itemId: btn.dataset.item,
+            qty: 1,
+          });
+        });
+      });
+
+      this.modalEl.querySelectorAll('.btn-bag-sell-all').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          this.eventBus.emit('trade:sell', {
+            cityId: city.city_id,
+            itemId: btn.dataset.item,
+            qty: Number(btn.dataset.qty) || 1,
+          });
+        });
+      });
+
+      this.modalEl.querySelectorAll('.btn-bag-drop').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          this.eventBus.emit('trade:discard', {
+            itemId: btn.dataset.item,
+            qty: 1,
+          });
         });
       });
       return;
     }
 
+    // Tam ekran Bazar Dəftəri (Xəritə üzərindən açıldıqda)
     const cityGoodsIds = new Set(validIds);
-    const extraOwned = Object.entries(state.inventory).filter(
-      ([id, qty]) => qty > 0 && !cityGoodsIds.has(id)
-    );
+    const extraOwned = heldItems.filter((entry) => !cityGoodsIds.has(entry.itemId));
 
     const catLabels = {
-      agriculture: 'Kənd təsərrüfatı',
-      luxury: 'Nadir / İpək-Xalça',
-      craft: 'Sənətkarlıq',
+      agriculture: 'Bağ və Əkin',
+      luxury: 'Xanlıq Xəzinəsi',
+      craft: 'Sənət və Mədən',
     };
 
     this.modalEl.innerHTML = `
@@ -389,18 +809,21 @@ export class UIManager {
         <div class="modal-card">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
             <div>
-              <h2>✦ ${city.display_name} Bazarı</h2>
-              <div style="color:#cbb896;font-size:13px;">${city.era_name} — ${city.culture_note}</div>
+              <div class="wax-seal-tag">${renderSigil('seal', 12)} Şəhər Ticarət Divanı</div>
+              <h2 style="margin-top:5px;">${city.display_name}</h2>
+              <div style="color:var(--text-muted);font-size:13px;">${city.era_name} — ${city.culture_note}</div>
             </div>
             <button id="market-close" class="btn-secondary">✕ Bağla (Esc)</button>
           </div>
 
-          <div style="margin-top:10px;display:flex;gap:14px;flex-wrap:wrap;font-size:13.5px;">
-            <span>💰 Qızıl: <strong style="color:#f0c75e">${state.gold}</strong></span>
-            <span>🎒 Çanta: <strong>${state.totalItems}/${state.maxInventory}</strong></span>
-            <span>🤝 Xarizma: <strong style="color:#f0c75e">${state.charisma}</strong></span>
-            <span>📖 Zəka: <strong style="color:#f0c75e">${state.intelligence}</strong></span>
+          <div style="margin-top:10px;display:flex;gap:16px;flex-wrap:wrap;font-size:13.5px;">
+            <span>${renderSigil('coin', 14)} Xəzinə: <strong style="color:var(--gold-bright)">${state.gold} qızıl</strong></span>
+            <span>${renderSigil('satchel', 14)} Heybə: <strong>${state.totalItems}/${state.maxInventory}</strong></span>
+            <span>${renderSigil('charisma', 14)} Nüfuz: <strong style="color:var(--gold-bright)">${state.charisma}</strong></span>
+            <span>${renderSigil('intelligence', 14)} Fərasət: <strong style="color:var(--gold-bright)">${state.intelligence}</strong></span>
           </div>
+
+          ${renderSeljukStarDivider()}
 
           <div class="irs-market-grid">
             <div class="irs-goods-list">
@@ -411,16 +834,19 @@ export class UIManager {
                   const isSel = g.item_id === this.selectedMarketItemId;
                   return `
                   <div class="irs-good-row ${isSel ? 'selected' : ''}" data-select="${g.item_id}">
-                    <div>
-                      <div style="font-weight:600;font-size:13.5px;">${g.icon || '📦'} ${g.name}</div>
-                      <div style="display:flex;gap:6px;align-items:center;margin-top:3px;">
-                        <span class="irs-cat-tag ${g.category || 'craft'}">${catLabels[g.category] || 'Mal'}</span>
-                        ${owned > 0 ? `<span style="font-size:11.5px;color:#87e0a8;">Səndə: ${owned}</span>` : ''}
+                    <div style="display:flex;align-items:center;gap:10px;">
+                      <span style="color:var(--gold-bright);">${renderItemSvg(g.item_id, 22)}</span>
+                      <div>
+                        <div style="font-weight:600;font-size:14px;color:#f3e5c8;">${a.good.name}</div>
+                        <div style="display:flex;gap:6px;align-items:center;margin-top:2px;">
+                          <span class="irs-cat-tag ${g.category || 'craft'}">${catLabels[g.category] || 'Əmtəə'}</span>
+                          ${owned > 0 ? `<span style="font-size:11.5px;color:#84c994;">Heybədə: ${owned}×</span>` : ''}
+                        </div>
                       </div>
                     </div>
                     <div style="text-align:right;font-size:12.5px;">
-                      <div style="color:#ffd479;">Alış: <strong>${a.effectiveBuy}</strong> q.</div>
-                      <div style="color:#87e0a8;">Satış: ${a.effectiveSell} q.</div>
+                      <div style="color:var(--gold-bright);">Alış: <strong>${a.effectiveBuy}</strong> q.</div>
+                      <div style="color:#84c994;">Satış: ${a.effectiveSell} q.</div>
                     </div>
                   </div>`;
                 })
@@ -428,16 +854,31 @@ export class UIManager {
 
               ${
                 extraOwned.length > 0
-                  ? `<div style="margin-top:8px;font-size:12px;color:#cbb896;">Digər bölgələrdən gətirdiyin mallar:</div>
+                  ? `<div style="margin-top:8px;font-family:var(--font-display);font-size:14px;color:var(--gold-bright);">
+                       Uzaq Mənzildən Gətirdiyiniz İdxal Malları:
+                     </div>
                     ${extraOwned
-                      .map(([itemId, owned]) => {
-                        const meta = this.data.getItemMeta(itemId);
-                        return `
+                      .map(
+                        (entry) => `
                         <div class="irs-good-row" style="cursor:default;">
-                          <span>${meta.icon} ${meta.name} (${owned}×)</span>
-                          <button class="btn-secondary btn-sell" data-item="${itemId}" style="padding:5px 12px;font-size:12px;">Sat</button>
-                        </div>`;
-                      })
+                          <span style="display:inline-flex;align-items:center;gap:8px;">
+                            ${renderItemSvg(entry.itemId, 18)}
+                            <span>${entry.meta.name} (${entry.qty}×) · Alış: ${entry.avgBuy} q.</span>
+                          </span>
+                          <div style="display:flex;gap:6px;">
+                            <button class="btn-primary btn-sell" data-item="${entry.itemId}" data-qty="1" style="padding:5px 10px;font-size:12px;">
+                              1× Sat (+${entry.unitSellHere} q.)
+                            </button>
+                            ${
+                              entry.qty > 1
+                                ? `<button class="btn-emerald btn-sell" data-item="${entry.itemId}" data-qty="${entry.qty}" style="padding:5px 10px;font-size:12px;">
+                                     Hamısı
+                                   </button>`
+                                : ''
+                            }
+                          </div>
+                        </div>`
+                      )
                       .join('')}`
                   : ''
               }
@@ -446,75 +887,75 @@ export class UIManager {
             ${
               analysis
                 ? `<div class="irs-trade-card">
-                    <div class="irs-trade-card-title">${analysis.good.category === 'agriculture' ? 'KƏND TƏSƏRRÜFATI TİCARƏTİ' : 'KARVANSARAY TİCARƏTİ'}</div>
+                    <div class="irs-trade-card-title">Əmtəə və Qiymət Təftişi</div>
                     <div style="display:flex;align-items:center;gap:12px;">
-                      <div style="width:52px;height:52px;border-radius:10px;background:rgba(229,184,75,0.14);border:1px solid rgba(229,184,75,0.5);display:flex;align-items:center;justify-content:center;font-size:28px;">
-                        ${analysis.good.icon || '📦'}
+                      <div class="lotm-emblem-box">
+                        ${renderItemSvg(analysis.good.item_id, 28)}
                       </div>
                       <div>
-                        <div style="font-size:16px;font-weight:700;color:#f8edd4;">${analysis.good.name}</div>
-                        <div style="font-size:12px;color:#cbb896;">Ən sərfəli bazar: <strong style="color:#f0c75e">${analysis.bestCityName}</strong></div>
+                        <span class="wax-seal-tag">${analysis.good.seal_title}</span>
+                        <div style="font-family:var(--font-display);font-size:19px;font-weight:700;color:#f5e7cb;margin-top:2px;">
+                          ${analysis.good.name}
+                        </div>
+                        <div style="font-size:12px;color:var(--text-muted);">
+                          Ən sərfəli bazar: <strong style="color:var(--gold-bright)">${analysis.bestCityName}</strong>
+                        </div>
                       </div>
                     </div>
 
+                    <div class="lotm-lore-box">
+                      <div>${analysis.good.lore}</div>
+                      <div class="lotm-whisper">${analysis.good.merchant_whisper}</div>
+                    </div>
+
                     <div class="irs-trade-row">
-                      <span>Alış qiyməti</span>
-                      <strong style="color:#ffd479;">🪙 ${analysis.effectiveBuy} ${
-                        analysis.haggle.status === 'won' ? '<small style="color:#6ee7b7">(Endirim!)</small>' : ''
-                      }</strong>
+                      <span>Alış dəyəri</span>
+                      <strong style="color:var(--gold-bright);">
+                        ${analysis.effectiveBuy} qızıl
+                        ${analysis.haggle.status === 'won' ? '<small style="color:#84c994">(Endirimli)</small>' : ''}
+                      </strong>
                     </div>
                     <div class="irs-trade-row">
                       <span>Təxmini satış</span>
-                      <strong>🪙 ${analysis.estSellMin}–${analysis.estSellMax}</strong>
+                      <strong>${analysis.estSellMin}–${analysis.estSellMax} qızıl</strong>
                     </div>
                     <div class="irs-trade-row">
                       <span>Yol xərci</span>
-                      <span>🪙 ${analysis.travelCost}</span>
+                      <span>${analysis.travelCost} qızıl</span>
                     </div>
                     <div class="irs-trade-row profit">
                       <span>Xalis qazanc</span>
-                      <span style="color:${analysis.netMax >= 0 ? '#7ce38b' : '#f28b82'};">
-                        🪙 ${analysis.netMin >= 0 ? '+' : ''}${analysis.netMin}..${analysis.netMax >= 0 ? '+' : ''}${analysis.netMax}
+                      <span style="color:${analysis.netMax >= 0 ? '#84c994' : '#d9786e'};">
+                        ${analysis.netMin >= 0 ? '+' : ''}${analysis.netMin} .. ${analysis.netMax >= 0 ? '+' : ''}${analysis.netMax} qızıl
                       </span>
-                    </div>
-
-                    <div>
-                      <div class="irs-trade-row" style="margin-bottom:5px;font-size:12.5px;">
-                        <span>Proqnoza etibar</span>
-                        <strong style="color:#f0c75e">${analysis.trustPercent}%</strong>
-                      </div>
-                      <div class="trust-bar-track">
-                        <div class="trust-bar-fill" style="width:${analysis.trustPercent}%;"></div>
-                      </div>
-                    </div>
-
-                    <div style="font-size:13px;color:#e6d7b9;">
-                      🏅 Keyfiyyət: <strong style="color:#f0c75e">${analysis.quality}</strong>
-                      ${
-                        analysis.good.max_freshness_days
-                          ? ` · 🌿 Təzəlik: <strong>${analysis.good.max_freshness_days} gün</strong>`
-                          : ' · ⏳ Xarab olmur'
-                      }
                     </div>
 
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px;">
                       <button id="btn-haggle-sel" class="btn-secondary" ${analysis.haggle.attempted ? 'disabled' : ''}>
-                        🤝 Bazarlıq et
+                        ${renderSigil('scale', 14)}
+                        <span>Bazarlıq Et</span>
                       </button>
-                      <button id="btn-buy-sel" class="btn-emerald">Al (${analysis.effectiveBuy} q.)</button>
+                      <button id="btn-buy-sel" class="btn-emerald">1× Al (${analysis.effectiveBuy} q.)</button>
                     </div>
 
                     ${
                       selectedOwned > 0
-                        ? `<button id="btn-sell-sel" class="btn-primary" style="width:100%;">
-                            💰 1× Sat (+${analysis.effectiveSell} qızıl · Səndə: ${selectedOwned})
-                          </button>`
+                        ? `<div style="display:flex;gap:6px;">
+                             <button id="btn-sell-sel" class="btn-primary" style="flex:1;">
+                               1× Sat (+${analysis.effectiveSell} q. · Heybədə: ${selectedOwned})
+                             </button>
+                             ${
+                               selectedOwned > 1
+                                 ? `<button id="btn-sell-all-sel" class="btn-secondary">Hamısını Sat</button>`
+                                 : ''
+                             }
+                           </div>`
                         : ''
                     }
 
                     <div class="irs-freshness-box">
-                      <div style="text-align:center;font-family:var(--font-display);font-size:12.5px;color:#f0c75e;margin-bottom:6px;">
-                        ✦ Təzəlik ✦
+                      <div style="text-align:center;font-family:var(--font-display);font-size:13px;color:var(--gold-bright);margin-bottom:6px;">
+                        ✦ Bağ Nemətlərinin Möhləti ✦
                       </div>
                       ${this._renderFreshnessRows(state.perishables)}
                     </div>
@@ -555,12 +996,25 @@ export class UIManager {
       this.eventBus.emit('trade:sell', {
         cityId: city.city_id,
         itemId: this.selectedMarketItemId,
+        qty: 1,
+      });
+    });
+
+    this.modalEl.querySelector('#btn-sell-all-sel')?.addEventListener('click', () => {
+      this.eventBus.emit('trade:sell', {
+        cityId: city.city_id,
+        itemId: this.selectedMarketItemId,
+        qty: selectedOwned,
       });
     });
 
     this.modalEl.querySelectorAll('.btn-sell').forEach((btn) => {
       btn.addEventListener('click', () => {
-        this.eventBus.emit('trade:sell', { cityId: city.city_id, itemId: btn.dataset.item });
+        this.eventBus.emit('trade:sell', {
+          cityId: city.city_id,
+          itemId: btn.dataset.item,
+          qty: Number(btn.dataset.qty) || 1,
+        });
       });
     });
   }
@@ -575,28 +1029,31 @@ export class UIManager {
     if (!this.modalEl) return;
     this.marketOpen = false;
     this.mapOpen = false;
+    this.inventoryOpen = false;
 
     const targetCityName =
       quest.target_city === 'ANY'
-        ? 'İstənilən yerdə (avtomatik)'
+        ? 'Hər hansı şəhər divanı (avtomatik təhvil)'
         : this.data.getCityById(quest.target_city)?.display_name || quest.target_city;
 
     this.modalEl.innerHTML = `
       <div id="QuestPopupPanel" class="modal-backdrop">
-        <div class="modal-card" style="max-width:600px;">
-          <div style="color:${npc?.color || '#f0c75e'};font-size:13px;font-weight:700;margin-bottom:6px;">
-            ${npc?.title || quest.npc_role} · ${quest.npc_name}
-          </div>
-          <h2>${quest.title}</h2>
-          <p style="margin:12px 0 18px;line-height:1.6;color:#efe4cf;">${quest.description}</p>
-          <div style="padding:12px;border-radius:10px;background:rgba(244,224,182,0.07);margin-bottom:20px;font-size:14px;">
-            <div>📦 Tələb: <strong>${quest.required_amount}× ${this.data.getItemIcon(quest.required_item)} ${this.data.getItemName(quest.required_item)}</strong></div>
-            <div>📍 Təhvil yeri: <strong>${targetCityName}</strong></div>
-            <div>💰 Mükafat: <strong style="color:#f0c75e">+${quest.reward_gold} Qızıl & +1 Xarizma</strong></div>
+        <div class="modal-card" style="max-width:610px;">
+          <div class="wax-seal-tag">${renderSigil('seal', 12)} ${npc?.title || quest.npc_role} · ${quest.npc_name}</div>
+          <h2 style="margin-top:8px;">${quest.title}</h2>
+          ${renderSeljukStarDivider()}
+          <p style="margin:10px 0 16px;line-height:1.68;color:#eadcc3;font-size:14.5px;">${quest.description}</p>
+          <div class="lotm-lore-box" style="margin-bottom:18px;font-size:13.5px;">
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px;">
+              ${renderItemSvg(quest.required_item, 18)}
+              <span>Tələb olunan əmanət: <strong>${quest.required_amount}× ${this.data.getItemName(quest.required_item)}</strong></span>
+            </div>
+            <div>Çatdırılacaq mənzil: <strong>${targetCityName}</strong></div>
+            <div>Vəd olunan ənam: <strong style="color:var(--gold-bright);">+${quest.reward_gold} qızıl və +1 Nüfuz</strong></div>
           </div>
           <div style="display:flex;gap:10px;justify-content:flex-end;">
-            <button id="quest-decline" class="btn-secondary">Sonra</button>
-            <button id="quest-accept" class="btn-emerald">Tapşırığı Qəbul Et</button>
+            <button id="quest-decline" class="btn-secondary">Üzr İstəyib Keç</button>
+            <button id="quest-accept" class="btn-emerald">Əhd Bağla və Qəbul Et</button>
           </div>
         </div>
       </div>
@@ -616,25 +1073,29 @@ export class UIManager {
     if (!this.modalEl) return;
     this.marketOpen = false;
     this.mapOpen = false;
+    this.inventoryOpen = false;
 
     this.modalEl.innerHTML = `
       <div id="EventPopupPanel" class="modal-backdrop">
-        <div class="modal-card" style="max-width:650px;">
-          <div style="display:inline-block;padding:4px 12px;border-radius:999px;background:${npc?.color || '#8f6bd4'}33;border:1px solid ${npc?.color || '#8f6bd4'};font-size:12px;margin-bottom:10px;">
-            📜 Tarixi Hadisə · ${evt.era} · ${evt.region}
+        <div class="modal-card" style="max-width:660px;">
+          <div class="wax-seal-tag">
+            ${renderSigil('scroll', 12)} Salnamə Vərəqi · ${evt.era} · ${evt.region}
           </div>
-          <h2>${evt.title}</h2>
-          <div style="font-size:13px;color:#cbb896;margin-bottom:10px;">${evt.npc_name} (${npc?.title || evt.npc_role})</div>
-          <p style="line-height:1.65;color:#f2e7d2;margin-bottom:14px;">${evt.story_text}</p>
-          <div style="padding:12px 14px;border-radius:10px;background:rgba(229,184,75,0.12);border-left:3px solid #f0c75e;font-size:13px;color:#f6e6be;margin-bottom:20px;">
-            <strong>Tarixi Fakt:</strong> ${evt.history_fact}
+          <h2 style="margin-top:8px;">${evt.title}</h2>
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;font-style:italic;">
+            Rəvayətçi: ${evt.npc_name} (${npc?.title || evt.npc_role})
           </div>
-          <div style="display:flex;flex-direction:column;gap:10px;">
+          ${renderSeljukStarDivider()}
+          <p style="line-height:1.7;color:#ede0c7;margin-bottom:14px;font-size:14.5px;">${evt.story_text}</p>
+          <div class="lotm-lore-box" style="margin-bottom:18px;">
+            <strong style="color:var(--gold-bright);">Tarixi Qeyd:</strong> ${evt.history_fact}
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
             ${evt.choices
               .map(
                 (c, idx) => `
-              <button class="btn-primary evt-choice" data-idx="${idx}" style="text-align:left;padding:12px 16px;">
-                ${c.label}
+              <button class="btn-primary evt-choice" data-idx="${idx}" style="justify-content:flex-start;text-align:left;padding:11px 15px;">
+                <span>❖ ${c.label}</span>
               </button>`
               )
               .join('')}
@@ -662,6 +1123,7 @@ export class UIManager {
 
     this.mapOpen = true;
     this.marketOpen = false;
+    this.inventoryOpen = false;
 
     const toSvg = (x, z) => ({
       sx: ((x + 62) / 124) * 520 + 20,
@@ -676,42 +1138,47 @@ export class UIManager {
         <div class="modal-card">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
             <div>
-              <h2>İRS — Qədim Tarixi Xəritə & Salnamə</h2>
-              <div style="font-size:12.5px;color:#cbb896;">GTA GPS marşrutu üçün istənilən şəhərə klikləyin!</div>
+              <div class="wax-seal-tag">${renderSigil('scroll', 12)} Karvan Salnaməsi</div>
+              <h2 style="margin-top:5px;">Mənzil Xəritəsi və Dövr Salnaməsi</h2>
+              <div style="font-size:12.5px;color:var(--text-muted);">Səfər marşrutu qurmaq üçün istənilən şəhər möhürünə klikləyin.</div>
             </div>
             <button id="map-close" class="btn-secondary">✕ Bağla (M)</button>
           </div>
-          <svg viewBox="0 0 560 280" style="width:100%;height:auto;background:radial-gradient(circle at 42% 50%, #e5cfa2, #bfa06c);border-radius:12px;border:2px solid #966d32;margin:14px 0;">
-            <rect x="415" y="0" width="145" height="280" fill="#2c596b" opacity="0.82" />
-            <text x="485" y="145" text-anchor="middle" fill="#ead8b2" font-size="13" font-family="Georgia, serif" font-style="italic">Xəzər Dənizi</text>
+
+          ${renderSeljukStarDivider()}
+
+          <svg viewBox="0 0 560 260" style="width:100%;height:auto;background:radial-gradient(circle at 42% 50%, #2b2015, #16100a);border:1px solid rgba(207,163,85,0.45);margin:10px 0 14px;">
+            <rect x="415" y="0" width="145" height="260" fill="#132936" opacity="0.85" />
+            <text x="486" y="135" text-anchor="middle" fill="#9ab8c7" font-size="13" font-family="Georgia, serif" font-style="italic">Xəzər Dənizi</text>
             ${Object.entries(cities)
               .map(([id, c]) => {
                 const p = toSvg(c.x, c.z);
                 const visited = state.visitedCityIds.includes(id);
                 return `
                   <g class="svg-city-target" data-city="${id}" style="cursor:pointer;">
-                    <circle cx="${p.sx}" cy="${p.sy}" r="13" fill="${visited ? '#b83728' : '#5e4022'}" stroke="#f7e7c0" stroke-width="2.5" />
-                    <text x="${p.sx}" y="${p.sy - 18}" text-anchor="middle" fill="#2b1a0c" font-weight="bold" font-size="12" font-family="Georgia, serif">${c.label}</text>
+                    <circle cx="${p.sx}" cy="${p.sy}" r="12" fill="${visited ? '#7e2323' : '#3d2c1a'}" stroke="#cfa355" stroke-width="2" />
+                    <text x="${p.sx}" y="${p.sy - 17}" text-anchor="middle" fill="#eadcc3" font-weight="bold" font-size="12" font-family="Georgia, serif">${c.label}</text>
                   </g>
                 `;
               })
               .join('')}
-            <circle cx="${mSvg.sx}" cy="${mSvg.sy}" r="7" fill="#1f8a5b" stroke="#fff" stroke-width="2" />
-            <text x="${mSvg.sx}" y="${mSvg.sy + 19}" text-anchor="middle" fill="#1b4332" font-weight="bold" font-size="11">Karvanın</text>
+            <circle cx="${mSvg.sx}" cy="${mSvg.sy}" r="6.5" fill="#cfa355" stroke="#fff3d6" stroke-width="2" />
+            <text x="${mSvg.sx}" y="${mSvg.sy + 18}" text-anchor="middle" fill="#e4be74" font-size="11">Karvan</text>
           </svg>
 
-          <h3 style="font-family:var(--font-display);color:#f0c75e;font-size:15px;margin-bottom:10px;">
-            Kəşf Olunmuş Tarixi Dövr Salnaməsi (${state.discoveredEvents.length}/${state.totalEventsCount})
+          <h3 style="font-family:var(--font-display);color:var(--gold-bright);font-size:18px;margin-bottom:8px;">
+            Açılmış Tarixi Vərəqlər (${state.discoveredEvents.length}/${state.totalEventsCount})
           </h3>
           ${
             state.discoveredEvents.length === 0
-              ? '<p style="color:#cbb896;font-size:13.5px;">Hələ tarixi salnamə açılmayıb — karvanla yolları gəzdikcə Qobustan (e.ə.), Qəbələ (VI əsr), Şamaxı (XVI əsr), Quba-Şəki bağları və Şuşa hadisələri burada toplanacaq.</p>'
+              ? '<p style="color:var(--text-muted);font-size:13.5px;font-style:italic;">Hələ heç bir salnamə vərəqi açılmayıb — karvan yollarında qarşılaşdığınız salnaməçilər, ustadlar və aşıqlar qədim irsi burada toplayacaq.</p>'
               : state.discoveredEvents
                   .map(
                     (e) => `
-                <div style="padding:10px 12px;border-radius:10px;background:rgba(244,224,182,0.07);border-left:3px solid #f0c75e;margin-bottom:8px;font-size:13px;">
-                  <strong style="color:#f0c75e">${e.era} — ${e.title}</strong> (${e.region})<br/>
-                  <span style="color:#eadec6">${e.history_fact}</span>
+                <div class="lotm-lore-box" style="margin-bottom:8px;">
+                  <strong style="color:var(--gold-bright);font-family:var(--font-display);font-size:15.5px;">${e.era} — ${e.title}</strong>
+                  <span style="color:var(--text-muted);font-size:12px;"> (${e.region})</span><br/>
+                  <span>${e.history_fact}</span>
                 </div>`
                   )
                   .join('')
@@ -738,14 +1205,16 @@ export class UIManager {
     this.modalEl.innerHTML = `
       <div class="modal-backdrop">
         <div class="modal-card" style="text-align:center;max-width:560px;">
-          <h2>🏆 İRS — Böyük Karvan Ustası!</h2>
-          <p style="margin:12px 0 18px;color:#f3e7d0;">
-            Təbriklər! <strong>${state.gold} Qızıl</strong> toplayaraq Azərbaycan İpək Yolunun ən nüfuzlu taciri oldunuz.
+          <div class="wax-seal-tag">${renderSigil('seal', 12)} Baş Tacir Mərtəbəsi</div>
+          <h2 style="margin-top:10px;font-size:28px;">İRS — Böyük Karvanbaşı!</h2>
+          ${renderSeljukStarDivider()}
+          <p style="margin:12px 0 18px;color:#eadcc3;line-height:1.65;">
+            Xəzinənizi <strong>${state.gold} qızıla</strong> çatdıraraq Azərbaycan İpək Yolunun ən mötəbər karvanbaşısı adını qazandınız.
           </p>
-          <div style="margin-bottom:20px;font-size:13.5px;color:#cbb896;">
-            Xarizma: ${state.charisma} · Zəka: ${state.intelligence} · Uğurlu bazarlıq: ${state.stats.hagglesWon} · Salnamə: ${state.discoveredEvents.length}/${state.totalEventsCount}
+          <div style="margin-bottom:20px;font-size:13.5px;color:var(--text-muted);">
+            Nüfuz: ${state.charisma} · Fərasət: ${state.intelligence} · Uğurlu sövdələşmə: ${state.stats.hagglesWon} · Salnamə: ${state.discoveredEvents.length}/${state.totalEventsCount}
           </div>
-          <button id="victory-continue" class="btn-primary">Səyahətə Davam Et</button>
+          <button id="victory-continue" class="btn-primary">Səfərə Davam Et</button>
         </div>
       </div>
     `;
@@ -755,14 +1224,48 @@ export class UIManager {
     });
   }
 
+  /**
+   * Antispam Toast — eyni mesaj dalbadal gəldikdə üst-üstə yığmır,
+   * mövcud sətiri yeniləyir və ekranda maksimum 3 bildiriş saxlayır.
+   */
   showToast(message, type = 'info') {
-    if (!this.toastEl) return;
+    if (!this.toastEl || !message) return;
+    const now = performance.now();
+
+    const existing = this._activeToasts.get(message);
+    if (existing) {
+      if (now - existing.lastAt < 1800) {
+        existing.lastAt = now;
+        clearTimeout(existing.timerId);
+        existing.timerId = setTimeout(() => {
+          existing.el.remove();
+          this._activeToasts.delete(message);
+        }, 3400);
+        return;
+      }
+    }
+
+    // Maksimum 3 aktiv bildiriş saxla
+    while (this._activeToasts.size >= 3) {
+      const oldestKey = this._activeToasts.keys().next().value;
+      const oldest = this._activeToasts.get(oldestKey);
+      if (oldest) {
+        clearTimeout(oldest.timerId);
+        oldest.el.remove();
+      }
+      this._activeToasts.delete(oldestKey);
+    }
+
     const item = document.createElement('div');
     item.className = `toast-item ${type}`;
     item.textContent = message;
     this.toastEl.appendChild(item);
-    setTimeout(() => {
+
+    const timerId = setTimeout(() => {
       item.remove();
-    }, 4200);
+      this._activeToasts.delete(message);
+    }, 3600);
+
+    this._activeToasts.set(message, { el: item, timerId, lastAt: now });
   }
 }

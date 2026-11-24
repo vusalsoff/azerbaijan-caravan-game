@@ -60,6 +60,10 @@ export class CaravanseraiBazaarScene {
     this._onResize = () => this._handleResize();
     this._onKeyDown = (e) => this._handleKeyDown(e);
     this._onKeyUp = (e) => this.keys.delete(e.code);
+    this._onBlur = () => {
+      this.keys.clear();
+      this.isDragging = false;
+    };
     this._onPointerDown = (e) => {
       if (e.button === 0 || e.button === 2) {
         this.isDragging = true;
@@ -135,6 +139,7 @@ export class CaravanseraiBazaarScene {
     window.addEventListener('resize', this._onResize);
     window.addEventListener('keydown', this._onKeyDown);
     window.addEventListener('keyup', this._onKeyUp);
+    window.addEventListener('blur', this._onBlur);
     const dom = this.renderer.domElement;
     dom.addEventListener('pointerdown', this._onPointerDown);
     window.addEventListener('pointermove', this._onPointerMove);
@@ -588,14 +593,19 @@ export class CaravanseraiBazaarScene {
     this.scene.add(elderTrader);
     this.animatedNPCs.push({ group: elderTrader, phase: 0, baseY: 0 });
 
+    const primaryLuxuryItem =
+      this.city?.goods?.find((g) => g.item_id === 'carpet' || g.category === 'luxury')?.item_id ||
+      this.city?.goods?.[0]?.item_id ||
+      'carpet';
+
     this.interactables.push({
       id: 'trader_carpet',
       type: 'market',
-      label: `Tacirlə danış (${this.city?.short_name || 'Bazar'})`,
+      label: `Baş Tacirlə Sövdələş (${this.city?.short_name || 'Bazar'})`,
       pos: new THREE.Vector3(0.8, 0, -2.1),
       npcPos: new THREE.Vector3(0.9, 1.45, -4.4),
       radius: 3.6,
-      defaultItem: 'carpet',
+      defaultItem: primaryLuxuryItem,
     });
 
     // --- 2. KƏND TƏSƏRRÜFATI / MEYVƏ TEZGAHI (Sol tərəfdə, alma/armud/nar səbətləri!) ---
@@ -650,14 +660,19 @@ export class CaravanseraiBazaarScene {
     this.scene.add(farmerNPC);
     this.animatedNPCs.push({ group: farmerNPC, phase: 2.1, baseY: 0 });
 
+    const primaryAgriItem =
+      this.city?.goods?.find((g) => g.category === 'agriculture')?.item_id ||
+      this.city?.goods?.[0]?.item_id ||
+      'apple';
+
     this.interactables.push({
       id: 'trader_farmer',
       type: 'market',
-      label: 'Bağbanla danış (Kənd Təsərrüfatı)',
+      label: 'Bağbanla Sövdələş (Bağ Nemətləri)',
       pos: new THREE.Vector3(-4.5, 0, -0.6),
       npcPos: new THREE.Vector3(-5.0, 1.45, -3.0),
       radius: 3.4,
-      defaultItem: 'apple',
+      defaultItem: primaryAgriItem,
     });
 
     // --- 3. QORUYUCU & KARVAN ARABASI (Həyətin sağ/arxa hissəsində canlı atmosfer) ---
@@ -882,10 +897,11 @@ export class CaravanseraiBazaarScene {
       this.dustPoints.rotation.y += dt * 0.025;
     }
 
-    // 4. Oynanıla bilən 3D Tacirin hərəkəti (söhbət rejimi açıq deyilsə)
+    // 4. Oynanıla bilən 3D Tacirin hərəkəti (söhbət və ya mücrü açıq deyilsə)
     let moveX = 0;
     let moveZ = 0;
-    if (!this.dialogueFocus) {
+    const modalBlocking = this.gameManager?.ui?.isInventoryOpen?.() || this.gameManager?.ui?.mapOpen;
+    if (!this.dialogueFocus && !modalBlocking) {
       const forward = new THREE.Vector3(-Math.sin(this.camYaw), 0, -Math.cos(this.camYaw));
       const right = new THREE.Vector3(Math.cos(this.camYaw), 0, -Math.sin(this.camYaw));
 
@@ -920,15 +936,15 @@ export class CaravanseraiBazaarScene {
       const nx = moveX / len;
       const nz = moveZ / len;
       const step = this.player.speed * dt;
-      const nextX = Math.max(-10.8, Math.min(10.8, this.player.pos.x + nx * step));
-      const nextZ = Math.max(-8.2, Math.min(12.6, this.player.pos.z + nz * step));
+      const candX = Math.max(-10.8, Math.min(10.8, this.player.pos.x + nx * step));
+      const candZ = Math.max(-8.2, Math.min(12.6, this.player.pos.z + nz * step));
 
-      // Hovuz və əsas tezgah toqquşması
-      const distFountain = Math.hypot(nextX + 7.2, nextZ - 3.2);
-      const inMainStall = nextX > -1.3 && nextX < 3.0 && nextZ > -4.6 && nextZ < -1.8;
-      if (distFountain > 2.75 && !inMainStall) {
-        this.player.pos.x = nextX;
-        this.player.pos.z = nextZ;
+      // Bütün bazar köşkləri, meyvə səbətləri, küplər, sandıqlar, araba və hovuz üçün sürüşməli toqquşma yoxlaması
+      if (!this._isBlockedAt(candX, this.player.pos.z)) {
+        this.player.pos.x = candX;
+      }
+      if (!this._isBlockedAt(this.player.pos.x, candZ)) {
+        this.player.pos.z = candZ;
       }
 
       const targetYaw = Math.atan2(nx, nz);
@@ -1024,10 +1040,30 @@ export class CaravanseraiBazaarScene {
     this.renderer.render(this.scene, this.camera);
   }
 
+  _isBlockedAt(x, z) {
+    // 1. Mərmər fəvvarə hovuzu (-7.2, 3.2) və keşikçi / NPC nöqtələri
+    if (Math.hypot(x + 7.2, z - 3.2) < 2.75) return true;
+    if (Math.hypot(x - 6.4, z - 2.2) < 0.78) return true;
+    if (Math.hypot(x + 5.2, z + 3.2) < 0.75) return true;
+
+    // 2. Əsas xalça tezgahı + sağ önündəki mis səhənglər
+    if (x > -1.55 && x < 3.15 && z > -4.85 && z < -1.25) return true;
+
+    // 3. Sol meyvə səbətləri və taxta bazar sandıqları
+    if (x > -7.55 && x < -3.35 && z > -3.55 && z < -0.75) return true;
+
+    // 4. Sağ arxadakı karvan arabası və əlavə xalça stendi
+    if (x > 5.35 && x < 8.35 && z > 5.45 && z < 8.95) return true;
+    if (x > 6.3 && x < 9.3 && z > -5.5 && z < -2.9) return true;
+
+    return false;
+  }
+
   unmount() {
     window.removeEventListener('resize', this._onResize);
     window.removeEventListener('keydown', this._onKeyDown);
     window.removeEventListener('keyup', this._onKeyUp);
+    window.removeEventListener('blur', this._onBlur);
     window.removeEventListener('pointermove', this._onPointerMove);
     window.removeEventListener('pointerup', this._onPointerUp);
     if (this.renderer) {
