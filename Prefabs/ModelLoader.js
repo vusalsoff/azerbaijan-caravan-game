@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 
 const CARPET_PALETTES = {
   karabakh: { bg: '#7b191d', border: '#d9a441', inner: '#1c2b4a', accent: '#f3dfb6' },
@@ -26,35 +27,36 @@ export class ModelLoader {
   }
 
   async loadOptionalGLB(modelName, scale = 1) {
-    if (this.cache.has(modelName)) {
-      const cached = this.cache.get(modelName);
-      if (!cached) return null;
-      const clone = cached.clone(true);
-      clone.scale.setScalar(scale);
-      return clone;
+    const loaded = await this.loadAnimatedGLB(modelName, scale);
+    return loaded ? loaded.model : null;
+  }
+
+  /**
+   * Skeletli və animasiyalı .glb modelini ({ model, animations }) qaytarır.
+   * SkeletonUtils.clone istifadə etdiyi üçün SkinnedMesh sümükləri qorunur.
+   */
+  async loadAnimatedGLB(modelName, scale = 1) {
+    let entry = this.cache.get(modelName);
+
+    if (entry === undefined) {
+      if (this.pending.has(modelName)) {
+        entry = await this.pending.get(modelName);
+      } else {
+        const loadPromise = this._fetchAndParse(modelName);
+        this.pending.set(modelName, loadPromise);
+        try {
+          entry = await loadPromise;
+          this.cache.set(modelName, entry);
+        } finally {
+          this.pending.delete(modelName);
+        }
+      }
     }
 
-    if (this.pending.has(modelName)) {
-      const base = await this.pending.get(modelName);
-      if (!base) return null;
-      const clone = base.clone(true);
-      clone.scale.setScalar(scale);
-      return clone;
-    }
-
-    const loadPromise = this._fetchAndParse(modelName);
-    this.pending.set(modelName, loadPromise);
-
-    try {
-      const base = await loadPromise;
-      this.cache.set(modelName, base);
-      if (!base) return null;
-      const clone = base.clone(true);
-      clone.scale.setScalar(scale);
-      return clone;
-    } finally {
-      this.pending.delete(modelName);
-    }
+    if (!entry) return null;
+    const clone = entry.hasSkinned ? SkeletonUtils.clone(entry.scene) : entry.scene.clone(true);
+    clone.scale.setScalar(scale);
+    return { model: clone, animations: entry.animations || [] };
   }
 
   async preloadModels(modelNames = []) {
@@ -194,7 +196,12 @@ export class ModelLoader {
 
       const gltf = await this.loader.loadAsync(url);
       const scene = gltf.scene;
+      let hasSkinned = false;
       scene.traverse((obj) => {
+        if (obj.isSkinnedMesh) {
+          hasSkinned = true;
+          obj.frustumCulled = false;
+        }
         if (obj.isMesh) {
           obj.castShadow = true;
           obj.receiveShadow = true;
@@ -203,7 +210,7 @@ export class ModelLoader {
           }
         }
       });
-      return scene;
+      return { scene, animations: gltf.animations || [], hasSkinned };
     } catch {
       return null;
     }

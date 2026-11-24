@@ -28,10 +28,13 @@ export class CaravanseraiBazaarScene {
       group: null,
       pos: new THREE.Vector3(0, 0, 7.5),
       yaw: Math.PI, // Bazar tezgahına (-Z) tərəf baxır
-      speed: 6.8,
+      speed: 5.2,
       walkPhase: 0,
       isMoving: false,
       parts: { leftLeg: null, rightLeg: null, leftArm: null, rightArm: null, torso: null },
+      mixer: null,
+      actions: {},
+      activeActionName: null,
     };
 
     // Kamera (3-cü şəxs RPG + söhbət çiyinüstü rejimi)
@@ -127,7 +130,7 @@ export class CaravanseraiBazaarScene {
     this._buildHangingCanopies();
     this._buildFloatingDust();
     await this._buildBazaarStallsAndProps();
-    this._buildPlayableMerchant();
+    await this._buildPlayableMerchant();
 
     window.addEventListener('resize', this._onResize);
     window.addEventListener('keydown', this._onKeyDown);
@@ -761,21 +764,64 @@ export class CaravanseraiBazaarScene {
     return g;
   }
 
-  _buildPlayableMerchant() {
-    // Konsept şəklinizdəki əsas Tacir: qəhvəyi naxışlı çuxa, qoyun dərisi papaq, qırmızı-qızılı kəmər
-    const mesh = this._createDetailedHuman({
-      coatColor: 0x4f3422,
-      sashColor: 0x8f2924,
-      hatType: 'papaq',
-      hatColor: 0x332114,
-      hasBeard: false,
-    });
+  async _buildPlayableMerchant() {
+    // Blender-də hazırlanmış detallı "İRS" Taciri (merchant_hero.glb — Idle & Walk animasiyalı)
+    const loaded = await this.modelLoader.loadAnimatedGLB('merchant_hero', 1.05);
+    let mesh;
+
+    if (loaded) {
+      mesh = loaded.model;
+      mesh.name = 'Merchant';
+      if (loaded.animations && loaded.animations.length > 0) {
+        const mixer = new THREE.AnimationMixer(mesh);
+        this.player.mixer = mixer;
+
+        const idleClip =
+          THREE.AnimationClip.findByName(loaded.animations, 'Idle') || loaded.animations[0];
+        const walkClip =
+          THREE.AnimationClip.findByName(loaded.animations, 'Walk') ||
+          loaded.animations[1] ||
+          loaded.animations[0];
+
+        if (idleClip) {
+          this.player.actions.Idle = mixer.clipAction(idleClip);
+          this.player.actions.Idle.play();
+          this.player.activeActionName = 'Idle';
+        }
+        if (walkClip && walkClip !== idleClip) {
+          this.player.actions.Walk = mixer.clipAction(walkClip);
+          this.player.actions.Walk.setEffectiveTimeScale(1.15);
+        }
+      }
+    } else {
+      mesh = this._createDetailedHuman({
+        coatColor: 0x4f3422,
+        sashColor: 0x8f2924,
+        hatType: 'papaq',
+        hatColor: 0x332114,
+        hasBeard: false,
+      });
+      this.player.parts = mesh.userData.parts;
+    }
+
     mesh.position.copy(this.player.pos);
     mesh.rotation.y = this.player.yaw;
     this.scene.add(mesh);
 
     this.player.group = mesh;
-    this.player.parts = mesh.userData.parts;
+  }
+
+  _switchPlayerAnimation(targetName) {
+    if (!this.player.mixer || this.player.activeActionName === targetName) return;
+    const nextAction = this.player.actions[targetName];
+    const prevAction = this.player.actions[this.player.activeActionName];
+    if (!nextAction) return;
+
+    nextAction.reset().setEffectiveTimeScale(targetName === 'Walk' ? 1.15 : 1.0).setEffectiveWeight(1).play();
+    if (prevAction) {
+      prevAction.crossFadeTo(nextAction, 0.2, true);
+    }
+    this.player.activeActionName = targetName;
   }
 
   _handleResize() {
@@ -870,18 +916,24 @@ export class CaravanseraiBazaarScene {
       this.player.walkPhase += dt * 10.5;
     }
 
-    // Addım animasiyası
+    // Addım və skelet animasiyası
     if (this.player.group) {
       this.player.group.position.copy(this.player.pos);
       this.player.group.rotation.y = this.player.yaw;
-      const p = this.player.parts;
-      const swing = this.player.isMoving ? Math.sin(this.player.walkPhase) * 0.55 : 0;
-      if (p.leftLeg) p.leftLeg.rotation.x = swing;
-      if (p.rightLeg) p.rightLeg.rotation.x = -swing;
-      if (p.leftArm) p.leftArm.rotation.x = -swing * 0.7;
-      if (p.rightArm) p.rightArm.rotation.x = swing * 0.7;
-      if (p.torso) {
-        p.torso.position.y = 1.18 + (this.player.isMoving ? Math.abs(Math.cos(this.player.walkPhase)) * 0.05 : 0);
+
+      if (this.player.mixer) {
+        this._switchPlayerAnimation(this.player.isMoving ? 'Walk' : 'Idle');
+        this.player.mixer.update(dt);
+      } else {
+        const p = this.player.parts;
+        const swing = this.player.isMoving ? Math.sin(this.player.walkPhase) * 0.55 : 0;
+        if (p.leftLeg) p.leftLeg.rotation.x = swing;
+        if (p.rightLeg) p.rightLeg.rotation.x = -swing;
+        if (p.leftArm) p.leftArm.rotation.x = -swing * 0.7;
+        if (p.rightArm) p.rightArm.rotation.x = swing * 0.7;
+        if (p.torso) {
+          p.torso.position.y = 1.18 + (this.player.isMoving ? Math.abs(Math.cos(this.player.walkPhase)) * 0.05 : 0);
+        }
       }
     }
 
@@ -922,20 +974,20 @@ export class CaravanseraiBazaarScene {
         .addScaledVector(right, 0.75)
         .add(new THREE.Vector3(0, 1.38, 0));
     } else {
-      // 3-cü şəxs çiyinüstü RPG kamerası (sağ çiyin üzərindən baxır)
-      const camDist = 4.6;
-      const rightX = Math.cos(this.camYaw) * 0.65;
-      const rightZ = -Math.sin(this.camYaw) * 0.65;
+      // 3-cü şəxs GTA-üslublu çiyinüstü RPG kamerası (sağ çiyin üzərindən detallı baxış)
+      const camDist = 3.85;
+      const rightX = Math.cos(this.camYaw) * 0.58;
+      const rightZ = -Math.sin(this.camYaw) * 0.58;
 
       desiredCamPos = new THREE.Vector3(
         this.player.pos.x + Math.sin(this.camYaw) * camDist * Math.cos(this.camPitch) + rightX,
-        this.player.pos.y + 1.85 + Math.sin(this.camPitch) * camDist,
+        this.player.pos.y + 1.65 + Math.sin(this.camPitch) * camDist,
         this.player.pos.z + Math.cos(this.camYaw) * camDist * Math.cos(this.camPitch) + rightZ
       );
 
       desiredLookAt = new THREE.Vector3(
         this.player.pos.x - Math.sin(this.camYaw) * 3.2 + rightX * 0.35,
-        this.player.pos.y + 1.55,
+        this.player.pos.y + 1.48,
         this.player.pos.z - Math.cos(this.camYaw) * 3.2 + rightZ * 0.35
       );
     }
