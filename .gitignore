@@ -2,3 +2,4 @@ node_modules/
 dist/
 .DS_Store
 *.log
+Art/_ph_cache/

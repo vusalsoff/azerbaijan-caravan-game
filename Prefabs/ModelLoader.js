@@ -188,6 +188,48 @@ export class ModelLoader {
     return tex;
   }
 
+  /**
+   * public/textures/pbr/<folder>/<assetPrefix>_{diff,nor,rough}.jpg PBR setini yükləyir.
+   * Fayl tapılmazsa null qaytarır.
+   */
+  async loadPBRMaterialOptions(folder, assetPrefix, repeatX = 4, repeatY = 4) {
+    const base = `./textures/pbr/${folder}/${assetPrefix}`;
+    try {
+      const head = await fetch(`${base}_diff.jpg`, { method: 'HEAD' });
+      if (!head.ok) return null;
+
+      const loadTex = (url, isColor) =>
+        new Promise((resolve) => {
+          this.textureLoader.load(
+            url,
+            (tex) => {
+              if (isColor) tex.colorSpace = THREE.SRGBColorSpace;
+              tex.wrapS = THREE.RepeatWrapping;
+              tex.wrapT = THREE.RepeatWrapping;
+              tex.repeat.set(repeatX, repeatY);
+              resolve(tex);
+            },
+            undefined,
+            () => resolve(null)
+          );
+        });
+
+      const [map, normalMap, roughnessMap] = await Promise.all([
+        loadTex(`${base}_diff.jpg`, true),
+        loadTex(`${base}_nor.jpg`, false),
+        loadTex(`${base}_rough.jpg`, false),
+      ]);
+
+      if (!map) return null;
+      const opts = { map };
+      if (normalMap) opts.normalMap = normalMap;
+      if (roughnessMap) opts.roughnessMap = roughnessMap;
+      return opts;
+    } catch {
+      return null;
+    }
+  }
+
   async _fetchAndParse(modelName) {
     const url = `./models/${modelName}.glb`;
     try {

@@ -125,8 +125,8 @@ export class CaravanseraiBazaarScene {
     this.container.appendChild(this.renderer.domElement);
 
     this._buildSkyAndLighting();
-    this._buildCourtyardFloor();
-    this._buildCaravanseraiArchitecture();
+    await this._buildCourtyardFloor();
+    await this._buildCaravanseraiArchitecture();
     this._buildHangingCanopies();
     this._buildFloatingDust();
     await this._buildBazaarStallsAndProps();
@@ -258,12 +258,22 @@ export class CaravanseraiBazaarScene {
     return tex;
   }
 
-  _buildCourtyardFloor() {
-    const floorTex = this._createCobblestoneTexture();
-    const floor = new THREE.Mesh(
-      new THREE.PlaneGeometry(46, 46),
-      new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.9, metalness: 0.04 })
+  async _buildCourtyardFloor() {
+    const pbrOpts = await this.modelLoader.loadPBRMaterialOptions(
+      'cobblestone',
+      'cobblestone_floor_08',
+      11,
+      11
     );
+    const floorMat = pbrOpts
+      ? new THREE.MeshStandardMaterial({ ...pbrOpts, roughness: 0.92, metalness: 0.04 })
+      : new THREE.MeshStandardMaterial({
+          map: this._createCobblestoneTexture(),
+          roughness: 0.9,
+          metalness: 0.04,
+        });
+
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(46, 46), floorMat);
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
     this.scene.add(floor);
@@ -287,9 +297,16 @@ export class CaravanseraiBazaarScene {
   /**
    * İkimərtəbəli daş tağlı Karvansaray divarları, mavi kaşı bəzəkləri, günbəz və çıxış qapısı
    */
-  _buildCaravanseraiArchitecture() {
-    const wallTex = this._createSandstoneTexture();
-    const stoneMat = new THREE.MeshStandardMaterial({ map: wallTex, roughness: 0.85 });
+  async _buildCaravanseraiArchitecture() {
+    const pbrWall = await this.modelLoader.loadPBRMaterialOptions(
+      'stone_wall',
+      'coral_stone_wall',
+      2.2,
+      1.8
+    );
+    const stoneMat = pbrWall
+      ? new THREE.MeshStandardMaterial({ ...pbrWall, color: 0xebd7b7, roughness: 0.88 })
+      : new THREE.MeshStandardMaterial({ map: this._createSandstoneTexture(), roughness: 0.85 });
     const trimMat = new THREE.MeshStandardMaterial({ color: 0x9c7b50, roughness: 0.8 });
     const tileMat = new THREE.MeshStandardMaterial({ color: 0x265d82, roughness: 0.35, metalness: 0.15 });
     const woodDoorMat = new THREE.MeshStandardMaterial({ color: 0x4f2e17, roughness: 0.85 });
@@ -529,30 +546,31 @@ export class CaravanseraiBazaarScene {
       stallGroup.add(roll);
     });
 
-    // Ön sağda parlayan Mis Səhənglər (prop_copper_jugs.glb varsa yüklə + zərif mis səhənglər)
-    const glbJugs = await this.modelLoader.loadOptionalGLB('prop_copper_jugs', 0.9);
+    // Ön sağda parlayan Mis və Saxsı Səhənglər (Poly Haven CC0 .glb varsa yalnız onu göstər)
+    const glbJugs = await this.modelLoader.loadOptionalGLB('prop_copper_jugs', 1.35);
     if (glbJugs) {
-      glbJugs.position.set(1.5, 0, 1.5);
+      glbJugs.position.set(1.65, 0, 1.55);
       stallGroup.add(glbJugs);
-    }
-    for (const [jx, jz, sc] of [
-      [1.1, 1.55, 1.0],
-      [1.65, 1.4, 1.25],
-      [2.1, 1.65, 0.85],
-    ]) {
-      const jug = new THREE.Group();
-      const belly = new THREE.Mesh(new THREE.SphereGeometry(0.28 * sc, 14, 12), copperMat);
-      belly.position.y = 0.34 * sc;
-      belly.scale.set(1, 1.2, 1);
-      belly.castShadow = true;
-      jug.add(belly);
+    } else {
+      for (const [jx, jz, sc] of [
+        [1.1, 1.55, 1.0],
+        [1.65, 1.4, 1.25],
+        [2.1, 1.65, 0.85],
+      ]) {
+        const jug = new THREE.Group();
+        const belly = new THREE.Mesh(new THREE.SphereGeometry(0.28 * sc, 14, 12), copperMat);
+        belly.position.y = 0.34 * sc;
+        belly.scale.set(1, 1.2, 1);
+        belly.castShadow = true;
+        jug.add(belly);
 
-      const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.08 * sc, 0.14 * sc, 0.42 * sc, 10), copperMat);
-      neck.position.y = 0.75 * sc;
-      jug.add(neck);
+        const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.08 * sc, 0.14 * sc, 0.42 * sc, 10), copperMat);
+        neck.position.y = 0.75 * sc;
+        jug.add(neck);
 
-      jug.position.set(jx, 0, jz);
-      stallGroup.add(jug);
+        jug.position.set(jx, 0, jz);
+        stallGroup.add(jug);
+      }
     }
 
     this.scene.add(stallGroup);
@@ -584,33 +602,39 @@ export class CaravanseraiBazaarScene {
     const fruitGroup = new THREE.Group();
     fruitGroup.position.set(-4.8, 0, -1.8);
 
-    const glbBaskets = await this.modelLoader.loadOptionalGLB('prop_fruit_baskets', 1.15);
+    const glbBaskets = await this.modelLoader.loadOptionalGLB('prop_fruit_baskets', 1.45);
     if (glbBaskets) {
-      glbBaskets.position.set(0, 0, 0);
+      glbBaskets.position.set(0, 0, 0.25);
       fruitGroup.add(glbBaskets);
+    } else {
+      const basketMat = new THREE.MeshStandardMaterial({ color: 0x9c6e3b, roughness: 0.92 });
+      const fruitConfigs = [
+        { x: -0.9, z: 0.7, fruitColor: 0xc92a2a },
+        { x: 0.4, z: 1.0, fruitColor: 0xc2b838 },
+        { x: 1.4, z: 0.3, fruitColor: 0x9e1b32 },
+      ];
+      for (const fc of fruitConfigs) {
+        const basket = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.48, 0.62, 12), basketMat);
+        basket.position.set(fc.x, 0.31, fc.z);
+        basket.castShadow = true;
+        fruitGroup.add(basket);
+
+        const fMat = new THREE.MeshStandardMaterial({ color: fc.fruitColor, roughness: 0.45 });
+        for (let i = 0; i < 9; i++) {
+          const ang = (i / 9) * Math.PI * 2;
+          const rad = i === 0 ? 0 : 0.28;
+          const fruit = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 8), fMat);
+          fruit.position.set(fc.x + Math.cos(ang) * rad, 0.66 + (i % 2) * 0.08, fc.z + Math.sin(ang) * rad);
+          fruitGroup.add(fruit);
+        }
+      }
     }
 
-    // Əlavə canlı qırmızı alma və sarı armud səbətləri
-    const basketMat = new THREE.MeshStandardMaterial({ color: 0x9c6e3b, roughness: 0.92 });
-    const fruitConfigs = [
-      { x: -0.9, z: 0.7, fruitColor: 0xc92a2a }, // Qırmızı alma
-      { x: 0.4, z: 1.0, fruitColor: 0xc2b838 }, // Sarı armud
-      { x: 1.4, z: 0.3, fruitColor: 0x9e1b32 }, // Nar
-    ];
-    for (const fc of fruitConfigs) {
-      const basket = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.48, 0.62, 12), basketMat);
-      basket.position.set(fc.x, 0.31, fc.z);
-      basket.castShadow = true;
-      fruitGroup.add(basket);
-
-      const fMat = new THREE.MeshStandardMaterial({ color: fc.fruitColor, roughness: 0.45 });
-      for (let i = 0; i < 9; i++) {
-        const ang = (i / 9) * Math.PI * 2;
-        const rad = i === 0 ? 0 : 0.28;
-        const fruit = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 8), fMat);
-        fruit.position.set(fc.x + Math.cos(ang) * rad, 0.66 + (i % 2) * 0.08, fc.z + Math.sin(ang) * rad);
-        fruitGroup.add(fruit);
-      }
+    const glbCrates = await this.modelLoader.loadOptionalGLB('prop_bazaar_crates', 1.15);
+    if (glbCrates) {
+      glbCrates.position.set(-2.2, 0, -1.1);
+      glbCrates.rotation.y = 0.4;
+      fruitGroup.add(glbCrates);
     }
     this.scene.add(fruitGroup);
 
