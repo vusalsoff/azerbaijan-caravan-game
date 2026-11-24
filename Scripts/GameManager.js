@@ -312,6 +312,7 @@ export class GameManager {
 
   _clearActiveScenes() {
     this._stopLoop();
+    this._stopLoop();
     this.ui.hideMarket();
     this.paused = false;
     this.bazaarProximity = null;

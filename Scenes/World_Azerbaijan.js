@@ -3,12 +3,12 @@ import { ModelLoader } from '../Prefabs/ModelLoader.js';
 
 /**
  * Scenes/World_Azerbaijan.js
- * Qədimi perqament kartoqrafiya üslubunda 3D Azərbaycan xəritəsi:
- * - 2048x1536 prosedural qədimi perqament teksturası (kompas gülü, izohipslər, yazı xəttatlığı, Xəzər sahili)
- * - 3D relyef, taxta-bürünc xəritə masası çərçivəsi, animasiyalı gəmi, yellənən şəhər bayraqları
- * - Təkərləri fırlanan, atlı və toz izli animasiyalı Karvan
- * - GTA V məntiqi: Xəritənin içinə klikləyəndə qızılı GPS marşrutu çəkir və kamera axıcı şəkildə
- *   karvanın arxasına enərək 3D GTA sürüş rejiminə keçir (V / scroll ilə qədim xəritəyə qayıdır).
+ * Müasir Müze / Memarlıq üslubunda Abstrakt Topoqrafik 3D Azərbaycan Xəritəsi:
+ * - Faceted (kristallik memarlıq kəsimli) pilləli relyef və qızılı Marching Squares izohips xətləri
+ * - 3D parlaq firuzəyi Kür-Araz çay kanalları, safir Xəzər səthi və qızılı sahil konturu
+ * - İşıqlı İpək Yolu TubeGeometry marşrutları və hərəkətli karvan işıq impulsları
+ * - Obsidian-qoz plintus, fırçalanmış bürünc çərçivə və fırlanan Astrolab dərəcə halqaları
+ * - Bakı, Şəki və Şuşanın vahid abstrakt memarlıq abidələri + GTA V kamera keçidi
  */
 export class WorldAzerbaijanScene {
   constructor(container, eventBus, data, gameManager) {
@@ -24,9 +24,11 @@ export class WorldAzerbaijanScene {
     this.terrainMesh = null;
     this.seaMesh = null;
     this.seaBasePositions = null;
+    this.isMounted = false;
 
-    this.mapWidth = 148;
-    this.mapDepth = 104;
+    this.mapOriginX = -2;
+    this.mapWidth = 118;
+    this.mapDepth = 82;
 
     this.raycaster = new THREE.Raycaster();
     this.pointer = new THREE.Vector2();
@@ -37,31 +39,37 @@ export class WorldAzerbaijanScene {
       City_Shusha: { x: -24, z: 16, radius: 9.0, label: 'Şuşa · Qala Şəhəri' },
     };
 
-    // Kamera rejimi və GTA animasiyalı keçid (0 = Qədim Xəritə, 1 = GTA Yaxın 3D)
+    // Kamera rejimi və GTA V axıcı keçid (0 = Abstrakt 3D Xəritə, 1 = GTA Arxa 3D)
     this.cameraMode = 'map';
     this.gtaBlend = 0;
     this.gtaOrbitOffset = 0;
     this.isRightDragging = false;
     this.lastMouseX = 0;
-    this.camLookTarget = new THREE.Vector3(10, 1, 2);
+    this.camLookTarget = new THREE.Vector3(2, 1.2, 0);
 
     // Animasiya massivləri
     this.elapsed = 0;
-    this.clouds = [];
     this.cityRings = [];
-    this.cityFlags = [];
+    this.cityOuterRings = [];
     this.npcMarkers = [];
     this.roadCurves = [];
+    this.roadPulses = [];
+    this.astrolabeRings = [];
     this.caravanParts = { wheels: [], horseLegs: [], horseHead: null, banner: null };
-    this.caspianShip = null;
+    this.caspianVessel = null;
     this.dustPuffs = [];
     this.dustTimer = 0;
 
-    // GTA GPS Waypoint + dinamik qızılı marşrut xətti
+    // GTA GPS Waypoint + dinamik işıqlı 3D marşrut lenti
     this.waypointGroup = null;
     this.waypointRing = null;
+    this.waypointOuterRing = null;
     this.waypointBeam = null;
-    this.gpsLine = null;
+    this.gpsMesh = null;
+    this._lastGpsKey = '';
+
+    this._createdTextures = [];
+    this.cityHeights = {};
 
     this._onResize = () => this._handleResize();
     this._onPointerDown = (e) => this._handlePointerDown(e);
@@ -95,94 +103,123 @@ export class WorldAzerbaijanScene {
   setWaypointVisual(x, z) {
     if (!this.waypointGroup) return;
     const y = this.getTerrainHeight(x, z);
-    this.waypointGroup.position.set(x, y + 0.18, z);
+    this.waypointGroup.position.set(x, y + 0.16, z);
     this.waypointGroup.visible = true;
   }
 
   _getCoastlineX(z) {
-    const absheronPeninsula = 6.8 * Math.exp(-((z - 4) * (z - 4)) / 52);
-    const wave = Math.sin(z * 0.13) * 2.0 + Math.cos(z * 0.06) * 1.4;
+    const absheronPeninsula = 7.4 * Math.exp(-((z - 4) * (z - 4)) / 48);
+    const wave = Math.sin(z * 0.13) * 1.9 + Math.cos(z * 0.06) * 1.3;
     return 33.5 + absheronPeninsula + wave;
   }
 
-  getTerrainHeight(x, z) {
+  _rawTerrainHeight(x, z) {
     const coastX = this._getCoastlineX(z);
-    if (x > coastX + 2.5) {
-      return -1.4;
+    if (x > coastX + 2.2) {
+      return -1.45;
     }
 
     const greaterCaucasus =
-      Math.exp(-(((x + 8) * (x + 8)) / 780 + ((z + 33) * (z + 33)) / 210)) * 9.6 +
-      Math.exp(-(((x + 28) * (x + 28)) / 420 + ((z + 28) * (z + 28)) / 180)) * 6.4;
+      Math.exp(-(((x + 8) * (x + 8)) / 680 + ((z + 32) * (z + 32)) / 180)) * 9.5 +
+      Math.exp(-(((x + 28) * (x + 28)) / 360 + ((z + 27) * (z + 27)) / 150)) * 6.4;
 
     const lesserCaucasus =
-      Math.exp(-(((x + 33) * (x + 33)) / 480 + ((z - 19) * (z - 19)) / 360)) * 7.2;
+      Math.exp(-(((x + 36) * (x + 36)) / 380 + ((z - 22) * (z - 22)) / 280)) * 7.2;
 
     const shushaPlateau =
-      Math.exp(-(((x + 24) * (x + 24)) / 160 + ((z - 16) * (z - 16)) / 160)) * 2.4;
+      Math.exp(-(((x + 24) * (x + 24)) / 150 + ((z - 16) * (z - 16)) / 150)) * 1.8;
 
     const absheronRidge =
-      Math.exp(-(((x - 26) * (x - 26)) / 140 + ((z - 5) * (z - 5)) / 140)) * 1.1;
+      Math.exp(-(((x - 26) * (x - 26)) / 130 + ((z - 5) * (z - 5)) / 130)) * 1.05;
 
     const kuraLowland =
-      Math.exp(-(((x - 2) * (x - 2)) / 380 + ((z - 4) * (z - 4)) / 260)) * 0.55;
+      Math.exp(-(((x - 2) * (x - 2)) / 360 + ((z - 3) * (z - 3)) / 240)) * 0.55;
 
     const gentleHills =
-      Math.sin(x * 0.085) * Math.cos(z * 0.095) * 0.6 +
-      Math.sin((x + z) * 0.16) * 0.22 +
-      0.75;
+      Math.sin(x * 0.09) * Math.cos(z * 0.095) * 0.45 +
+      Math.sin((x + z) * 0.15) * 0.16 +
+      0.85;
 
     const distToCoast = coastX - x;
-    const coastFade = distToCoast < 7 ? Math.max(0, distToCoast / 7) : 1;
+    const coastFade = distToCoast < 6.5 ? Math.max(0, distToCoast / 6.5) : 1;
 
     let h =
       (greaterCaucasus + lesserCaucasus + shushaPlateau + absheronRidge + gentleHills - kuraLowland) *
       coastFade;
 
+    if (distToCoast <= 0) {
+      return Math.max(-1.45, h - 0.65);
+    }
+
+    // Pilləli abstrakt topoqrafik relyef
+    const step = 0.85;
+    const quantized = Math.floor(h / step) * step;
+    const frac = (h - quantized) / step;
+    const smoothStep = quantized + step * Math.pow(frac, 0.5);
+    h = h * 0.52 + smoothStep * 0.48;
+
+    return Math.max(0.24, h);
+  }
+
+  _initCityHeights() {
+    for (const key of Object.keys(this.cityPositions)) {
+      const c = this.cityPositions[key];
+      const natural = this._rawTerrainHeight(c.x, c.z);
+      this.cityHeights[key] = Math.max(1.0, Math.min(4.2, natural));
+    }
+  }
+
+  getTerrainHeight(x, z) {
+    let h = this._rawTerrainHeight(x, z);
+    if (h <= 0.08) return h;
+
     for (const key of Object.keys(this.cityPositions)) {
       const c = this.cityPositions[key];
       const d = Math.hypot(x - c.x, z - c.z);
-      if (d < 6.8) {
-        const blend = Math.max(0, 1 - d / 6.8);
-        const targetH = key === 'City_Baku' ? 1.0 : key === 'City_Sheki' ? 2.2 : 2.8;
-        h = h * (1 - blend * 0.72) + targetH * (blend * 0.72);
+      if (d < 5.6) {
+        const blend = Math.max(0, 1 - d / 5.6);
+        const smoothBlend = blend * blend * (3 - 2 * blend);
+        const targetH = this.cityHeights[key] ?? h;
+        h = h * (1 - smoothBlend * 0.88) + targetH * (smoothBlend * 0.88);
       }
     }
 
-    return distToCoast <= 0 ? Math.max(-1.4, h - 0.55) : Math.max(0.18, h);
+    return Math.max(0.22, h);
   }
 
   async mount() {
+    this.isMounted = false;
     this.container.innerHTML = '';
+    this._initCityHeights();
 
     this.scene = new THREE.Scene();
-    // İsti şam işığı / qədim karvansaray xəritə masası atmosferi
-    this.scene.background = new THREE.Color(0x231a12);
-    this.scene.fog = new THREE.FogExp2(0x2a1f15, 0.0042);
+    this.scene.background = new THREE.Color(0x070d16);
+    this.scene.fog = new THREE.FogExp2(0x070d16, 0.0022);
 
     const w = this.container.clientWidth || window.innerWidth;
     const h = this.container.clientHeight || window.innerHeight;
 
-    this.camera = new THREE.PerspectiveCamera(46, w / h, 0.5, 420);
-    this.camera.position.set(4, 72, 62);
-    this.camLookTarget.set(4, 1, 2);
+    this.camera = new THREE.PerspectiveCamera(44, w / h, 0.5, 480);
+    this.camera.position.set(4, 90, 68);
+    this.camLookTarget.set(2, 1.0, 0);
     this.camera.lookAt(this.camLookTarget);
 
-    this.renderer = new THREE.WebGLRenderer({ antialias: true });
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     this.renderer.setSize(w, h);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.08;
+    this.renderer.toneMappingExposure = 1.16;
     this.container.appendChild(this.renderer.domElement);
 
     this._buildLights();
-    this._buildAntiqueParchmentTerrain();
-    this._buildMapTableFrame();
-    this._buildAntiqueCaravanRoads();
-    this._buildCaspianShip();
-    this._buildAntiqueClouds();
+    this._buildAbstractTerrain();
+    this._buildCoastlineContour();
+    this._buildAbstractRivers();
+    this._buildAbstractTablePlinth();
+    this._buildSilkRoadSplines();
+    this._buildAbstractCaspianVessel();
     await this._buildCities();
     this._buildDynamicNPCMarkers();
     this._buildWaypointAndGPS();
@@ -195,36 +232,44 @@ export class WorldAzerbaijanScene {
     window.addEventListener('pointerup', this._onPointerUp);
     dom.addEventListener('wheel', this._onWheel, { passive: false });
     dom.addEventListener('contextmenu', this._onContextMenu);
+
+    this.isMounted = true;
   }
 
   _buildLights() {
-    const hemi = new THREE.HemisphereLight(0xffe9c2, 0x4b3522, 0.95);
+    const hemi = new THREE.HemisphereLight(0xbbe2fa, 0x1a2636, 0.92);
     this.scene.add(hemi);
 
-    // İsti qızılı masa/günəş işığı
-    const sun = new THREE.DirectionalLight(0xffdfb0, 1.55);
-    sun.position.set(48, 82, 34);
-    sun.castShadow = true;
-    sun.shadow.mapSize.set(2048, 2048);
-    sun.shadow.camera.left = -85;
-    sun.shadow.camera.right = 85;
-    sun.shadow.camera.top = 75;
-    sun.shadow.camera.bottom = -75;
-    sun.shadow.bias = -0.0005;
-    this.scene.add(sun);
+    // İsti qalereya günəş işığı (kəskin memarlıq kəsimlərini vurğulayır)
+    const keyLight = new THREE.DirectionalLight(0xffe4b8, 1.85);
+    keyLight.position.set(52, 88, 36);
+    keyLight.castShadow = true;
+    keyLight.shadow.mapSize.set(2048, 2048);
+    keyLight.shadow.camera.left = -82;
+    keyLight.shadow.camera.right = 82;
+    keyLight.shadow.camera.top = 70;
+    keyLight.shadow.camera.bottom = -70;
+    keyLight.shadow.bias = -0.0004;
+    this.scene.add(keyLight);
 
-    // Yumşaq əks işıq
-    const fill = new THREE.DirectionalLight(0xd2a872, 0.4);
-    fill.position.set(-55, 38, -30);
-    this.scene.add(fill);
+    // Soyuq firuzəyi Xəzər rim işığı
+    const rimLight = new THREE.DirectionalLight(0x4be0ec, 0.72);
+    rimLight.position.set(68, 30, -38);
+    this.scene.add(rimLight);
+
+    // Qərb mis-qızılı doldurma işığı
+    const fillLight = new THREE.DirectionalLight(0xdf985c, 0.5);
+    fillLight.position.set(-64, 34, 24);
+    this.scene.add(fillLight);
   }
 
   /**
-   * 2048×1536 Qədimi Perqament Kartoqrafiya Teksturası yaradır:
-   * kağız teksturası, yaşlanma ləkələri, kompas gülü, rumba xətləri,
-   * mürəkkəbli dağ ştrixləri, Kür çayı, Xəzər sahil dalğaları və qədim yazılar.
+   * 2048×1536 Yüksək Dəqiqlikli Abstrakt Kartoqrafiya Teksturası:
+   * - İncə memarlıq koordinat şəbəkəsi
+   * - Marching Squares ilə parlaq qızılı izohips xətləri
+   * - Xəzər sularında zərif kartoqrafik kompaz & tipografiya
    */
-  _createAntiqueMapTexture() {
+  _createAbstractMapTexture() {
     const W = 2048;
     const H = 1536;
     const canvas = document.createElement('canvas');
@@ -232,554 +277,595 @@ export class WorldAzerbaijanScene {
     canvas.height = H;
     const ctx = canvas.getContext('2d');
 
+    const minX = this.mapOriginX - this.mapWidth / 2;
+    const minZ = -this.mapDepth / 2;
     const toPx = (wx, wz) => ({
-      px: ((wx + this.mapWidth / 2) / this.mapWidth) * W,
-      py: ((wz + this.mapDepth / 2) / this.mapDepth) * H,
+      px: ((wx - minX) / this.mapWidth) * W,
+      py: ((wz - minZ) / this.mapDepth) * H,
     });
 
-    // 1. Qədim perqament əsas fonu
-    const bgGrad = ctx.createRadialGradient(W * 0.45, H * 0.5, 120, W * 0.5, H * 0.5, W * 0.72);
-    bgGrad.addColorStop(0, '#ebd9b1');
-    bgGrad.addColorStop(0.55, '#d8be8c');
-    bgGrad.addColorStop(1, '#a98555');
-    ctx.fillStyle = bgGrad;
+    // Parlaq neytral memarlıq baza (vertex rənglərini boğmur)
+    ctx.fillStyle = '#f2f4f5';
     ctx.fillRect(0, 0, W, H);
 
-    // 2. Çay ləkələri və perqament dənəvərliyi
-    let seed = 1337;
-    const rand = () => {
-      seed = (seed * 1664525 + 1013904223) % 4294967296;
-      return seed / 4294967296;
+    // 1. Koordinat meridian/paralel şəbəkəsi
+    ctx.strokeStyle = 'rgba(210, 172, 92, 0.16)';
+    ctx.lineWidth = 1.25;
+    for (let wx = -60; wx <= 55; wx += 8) {
+      const a = toPx(wx, minZ);
+      const b = toPx(wx, minZ + this.mapDepth);
+      ctx.beginPath();
+      ctx.moveTo(a.px, a.py);
+      ctx.lineTo(b.px, b.py);
+      ctx.stroke();
+    }
+    for (let wz = -40; wz <= 40; wz += 8) {
+      const a = toPx(minX, wz);
+      const b = toPx(minX + this.mapWidth, wz);
+      ctx.beginPath();
+      ctx.moveTo(a.px, a.py);
+      ctx.lineTo(b.px, b.py);
+      ctx.stroke();
+    }
+
+    // 2. Marching Squares ilə kəskin qızılı topoqrafik izohipslər
+    const gx = 280;
+    const gz = 196;
+    const grid = new Float32Array((gx + 1) * (gz + 1));
+    for (let j = 0; j <= gz; j++) {
+      const wz = minZ + (j / gz) * this.mapDepth;
+      for (let i = 0; i <= gx; i++) {
+        const wx = minX + (i / gx) * this.mapWidth;
+        grid[j * (gx + 1) + i] = this.getTerrainHeight(wx, wz);
+      }
+    }
+
+    const levels = [0.6, 1.25, 1.95, 2.75, 3.6, 4.5, 5.5, 6.6, 7.8, 9.0];
+    const interp = (a, b, va, vb, lvl) => {
+      const denom = vb - va;
+      const t = Math.abs(denom) < 1e-5 ? 0.5 : (lvl - va) / denom;
+      return a + (b - a) * Math.max(0, Math.min(1, t));
     };
 
-    for (let i = 0; i < 65; i++) {
-      const cx = rand() * W;
-      const cy = rand() * H;
-      const r = 40 + rand() * 190;
-      const g = ctx.createRadialGradient(cx, cy, 4, cx, cy, r);
-      g.addColorStop(0, 'rgba(122, 82, 42, 0.09)');
-      g.addColorStop(1, 'rgba(122, 82, 42, 0)');
-      ctx.fillStyle = g;
+    for (let li = 0; li < levels.length; li++) {
+      const lvl = levels[li];
+      const isMajor = li % 2 === 1;
+      ctx.strokeStyle = isMajor ? 'rgba(255, 224, 146, 0.88)' : 'rgba(235, 206, 142, 0.45)';
+      ctx.lineWidth = isMajor ? 2.6 : 1.3;
       ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.fill();
-    }
 
-    // Xırda kağız teksturası
-    ctx.fillStyle = 'rgba(72, 46, 20, 0.05)';
-    for (let i = 0; i < 3500; i++) {
-      ctx.fillRect(rand() * W, rand() * H, 2 + rand() * 3, 1 + rand() * 2);
-    }
+      for (let j = 0; j < gz; j++) {
+        const py0 = (j / gz) * H;
+        const py1 = ((j + 1) / gz) * H;
+        for (let i = 0; i < gx; i++) {
+          const px0 = (i / gx) * W;
+          const px1 = ((i + 1) / gx) * W;
+          const idx = j * (gx + 1) + i;
+          const v0 = grid[idx];
+          const v1 = grid[idx + 1];
+          const v2 = grid[idx + (gx + 1) + 1];
+          const v3 = grid[idx + (gx + 1)];
 
-    // 3. Relyef hündürlüyünə görə köhnə akvarel rəngləndirməsi və izohipslər
-    const step = 16;
-    for (let py = 0; py < H; py += step) {
-      for (let px = 0; px < W; px += step) {
-        const wx = (px / W) * this.mapWidth - this.mapWidth / 2;
-        const wz = (py / H) * this.mapDepth - this.mapDepth / 2;
-        const y = this.getTerrainHeight(wx, wz);
+          const c0 = v0 >= lvl ? 1 : 0;
+          const c1 = v1 >= lvl ? 1 : 0;
+          const c2 = v2 >= lvl ? 1 : 0;
+          const c3 = v3 >= lvl ? 1 : 0;
+          if (c0 === c1 && c1 === c2 && c2 === c3) continue;
 
-        if (y < 0.08) {
-          // Köhnə dəniz xəritəsi mavi-firuzəyi mürəkkəb
-          ctx.fillStyle = 'rgba(42, 84, 98, 0.72)';
-          ctx.fillRect(px, py, step + 1, step + 1);
-        } else if (y > 6.5) {
-          // Qafqaz zirvələri (açıq qədim boz-krem)
-          ctx.fillStyle = 'rgba(130, 100, 68, 0.36)';
-          ctx.fillRect(px, py, step + 1, step + 1);
-        } else if (y > 3.2) {
-          // Dağlıq yamaclar (isti qəhvəyi-zeytun)
-          ctx.fillStyle = 'rgba(148, 114, 65, 0.24)';
-          ctx.fillRect(px, py, step + 1, step + 1);
-        } else if (y > 1.3) {
-          // Vadilər (solğun qədim zeytun tonu)
-          ctx.fillStyle = 'rgba(116, 126, 78, 0.16)';
-          ctx.fillRect(px, py, step + 1, step + 1);
+          const pts = [];
+          if (c0 !== c1) pts.push([interp(px0, px1, v0, v1, lvl), py0]);
+          if (c1 !== c2) pts.push([px1, interp(py0, py1, v1, v2, lvl)]);
+          if (c2 !== c3) pts.push([interp(px1, px0, v2, v3, lvl), py1]);
+          if (c3 !== c0) pts.push([px0, interp(py1, py0, v3, v0, lvl)]);
+
+          if (pts.length >= 2) {
+            ctx.moveTo(pts[0][0], pts[0][1]);
+            ctx.lineTo(pts[1][0], pts[1][1]);
+            if (pts.length === 4) {
+              ctx.moveTo(pts[2][0], pts[2][1]);
+              ctx.lineTo(pts[3][0], pts[3][1]);
+            }
+          }
         }
       }
-    }
-
-    // 4. Xəzər sahil xətti — qədim mürəkkəb qıvrımları (sahil ştrixləri)
-    for (let ring = 0; ring < 4; ring++) {
-      ctx.beginPath();
-      for (let wz = -this.mapDepth / 2; wz <= this.mapDepth / 2; wz += 1.2) {
-        const coastX = this._getCoastlineX(wz) + ring * 2.1;
-        const p = toPx(coastX, wz);
-        if (wz === -this.mapDepth / 2) ctx.moveTo(p.px, p.py);
-        else ctx.lineTo(p.px, p.py);
-      }
-      ctx.strokeStyle =
-        ring === 0 ? 'rgba(62, 38, 18, 0.85)' : `rgba(46, 78, 92, ${0.42 - ring * 0.09})`;
-      ctx.lineWidth = ring === 0 ? 5 : 2;
       ctx.stroke();
     }
-
-    // 5. Qədim xəritə rumba xətləri (Portolan naviqasiya toru)
-    const compassCenter = toPx(55, 16);
-    ctx.save();
-    ctx.strokeStyle = 'rgba(82, 52, 24, 0.16)';
-    ctx.lineWidth = 1.5;
-    for (let i = 0; i < 16; i++) {
-      const ang = (i / 16) * Math.PI * 2;
-      ctx.beginPath();
-      ctx.moveTo(compassCenter.px, compassCenter.py);
-      ctx.lineTo(compassCenter.px + Math.cos(ang) * 2400, compassCenter.py + Math.sin(ang) * 2400);
-      ctx.stroke();
-    }
-    ctx.restore();
-
-    // 6. Kartoqrafik dağ ştrixləri (əllə çəkilmiş qədim dağ piktoqramları)
-    ctx.strokeStyle = 'rgba(78, 49, 24, 0.48)';
-    ctx.lineWidth = 2.2;
-    for (let i = 0; i < 90; i++) {
-      const wx = -58 + rand() * 84;
-      const wz = -44 + rand() * 86;
-      const h = this.getTerrainHeight(wx, wz);
-      if (h < 3.4) continue;
-      const p = toPx(wx, wz);
-      const mw = 14 + h * 2.2;
-      const mh = 11 + h * 1.9;
-      ctx.beginPath();
-      ctx.moveTo(p.px - mw, p.py + mh * 0.4);
-      ctx.quadraticCurveTo(p.px - mw * 0.2, p.py - mh * 0.9, p.px, p.py - mh);
-      ctx.quadraticCurveTo(p.px + mw * 0.25, p.py - mh * 0.8, p.px + mw, p.py + mh * 0.4);
-      ctx.stroke();
-      // Kölgə ştrixi
-      ctx.beginPath();
-      ctx.moveTo(p.px, p.py - mh);
-      ctx.lineTo(p.px + mw * 0.45, p.py + mh * 0.3);
-      ctx.stroke();
-    }
-
-    // 7. Kür çayı (mürəkkəblə çəkilmiş çay xətti)
-    const riverPts = [
-      [-48, -11],
-      [-26, -5],
-      [-6, 2],
-      [14, 11],
-      [27, 21],
-      [39, 29],
-    ].map(([x, z]) => toPx(x, z));
-
-    ctx.beginPath();
-    ctx.moveTo(riverPts[0].px, riverPts[0].py);
-    for (let i = 1; i < riverPts.length - 1; i++) {
-      const mx = (riverPts[i].px + riverPts[i + 1].px) / 2;
-      const my = (riverPts[i].py + riverPts[i + 1].py) / 2;
-      ctx.quadraticCurveTo(riverPts[i].px, riverPts[i].py, mx, my);
-    }
-    const lastR = riverPts[riverPts.length - 1];
-    ctx.lineTo(lastR.px, lastR.py);
-    ctx.strokeStyle = 'rgba(38, 86, 108, 0.72)';
-    ctx.lineWidth = 10;
-    ctx.lineCap = 'round';
-    ctx.stroke();
-    ctx.strokeStyle = 'rgba(220, 232, 230, 0.35)';
-    ctx.lineWidth = 3;
-    ctx.stroke();
-
-    // 8. Qədim qırmızı-qızılı qırıq-qırıq İpək Yolu xətləri
-    const b = this.cityPositions.City_Baku;
-    const s = this.cityPositions.City_Sheki;
-    const sh = this.cityPositions.City_Shusha;
-    const inkRoutes = [
-      [toPx(b.x, b.z), toPx(8, -10), toPx(s.x, s.z)],
-      [toPx(b.x, b.z), toPx(4, 14), toPx(sh.x, sh.z)],
-      [toPx(s.x, s.z), toPx(-24, -2), toPx(sh.x, sh.z)],
-    ];
-
-    ctx.save();
-    ctx.setLineDash([18, 12]);
-    ctx.strokeStyle = 'rgba(138, 42, 24, 0.78)';
-    ctx.lineWidth = 6;
-    for (const [p0, p1, p2] of inkRoutes) {
-      ctx.beginPath();
-      ctx.moveTo(p0.px, p0.py);
-      ctx.quadraticCurveTo(p1.px, p1.py, p2.px, p2.py);
-      ctx.stroke();
-    }
-    ctx.restore();
-
-    // 9. Kompas Gülü (Xəzər Dənizi üzərində zərif qızılı-mürəkkəb kompas)
-    ctx.save();
-    ctx.translate(compassCenter.px, compassCenter.py);
-    ctx.strokeStyle = 'rgba(235, 200, 124, 0.85)';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(0, 0, 86, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(0, 0, 72, 0, Math.PI * 2);
-    ctx.stroke();
-
-    for (let i = 0; i < 8; i++) {
-      const ang = (i * Math.PI) / 4;
-      const len = i % 2 === 0 ? 78 : 52;
-      ctx.save();
-      ctx.rotate(ang);
-      ctx.beginPath();
-      ctx.moveTo(0, -len);
-      ctx.lineTo(12, 0);
-      ctx.lineTo(0, -14);
-      ctx.closePath();
-      ctx.fillStyle = i === 0 ? '#d94d32' : '#e6c278';
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.moveTo(0, -len);
-      ctx.lineTo(-12, 0);
-      ctx.lineTo(0, -14);
-      ctx.closePath();
-      ctx.fillStyle = '#4e3319';
-      ctx.fill();
-      ctx.restore();
-    }
-
-    ctx.fillStyle = '#f5dfb0';
-    ctx.font = 'bold 28px Georgia, serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Ş', 0, -96);
-    ctx.fillText('C', 0, 114);
-    ctx.fillText('ŞQ', 112, 10);
-    ctx.fillText('Q', -106, 10);
-    ctx.restore();
-
-    // 10. Qədim xəttatlıq bölgə yazıları
-    ctx.save();
-    ctx.textAlign = 'center';
-    const labels = [
-      { text: 'BÖYÜK QAFQAZ DAĞLARI', x: -10, z: -36, size: 32, color: 'rgba(68, 40, 18, 0.72)' },
-      { text: 'KÜR-ARAZ OVALIĞI', x: 3, z: 3, size: 28, color: 'rgba(78, 48, 22, 0.56)' },
-      { text: 'QARABAĞ YAYLASI', x: -34, z: 26, size: 28, color: 'rgba(68, 40, 18, 0.68)' },
-      { text: 'ŞİRVAN DİYARI', x: 16, z: -8, size: 25, color: 'rgba(78, 48, 22, 0.58)' },
-      { text: 'XƏZƏR DƏNİZİ', x: 54, z: -18, size: 38, color: 'rgba(232, 212, 168, 0.72)' },
-      { text: 'BÖYÜK İPƏK YOLU', x: -6, z: 18, size: 22, color: 'rgba(128, 38, 22, 0.64)' },
-    ];
-    for (const lb of labels) {
-      const p = toPx(lb.x, lb.z);
-      ctx.font = `italic bold ${lb.size}px Georgia, serif`;
-      ctx.fillStyle = lb.color;
-      ctx.fillText(lb.text, p.px, p.py);
-    }
-    ctx.restore();
-
-    // 11. Perqament kənar ornament çərçivəsi (dərəcə cədvəli)
-    ctx.strokeStyle = 'rgba(58, 34, 14, 0.85)';
-    ctx.lineWidth = 10;
-    ctx.strokeRect(24, 24, W - 48, H - 48);
-    ctx.lineWidth = 3;
-    ctx.strokeRect(42, 42, W - 84, H - 84);
-
-    // Kənar vinyet (köhnə yanmış kağız effekti)
-    const vig = ctx.createRadialGradient(W / 2, H / 2, W * 0.34, W / 2, H / 2, W * 0.65);
-    vig.addColorStop(0, 'rgba(0,0,0,0)');
-    vig.addColorStop(1, 'rgba(42, 24, 10, 0.42)');
-    ctx.fillStyle = vig;
-    ctx.fillRect(0, 0, W, H);
 
     const tex = new THREE.CanvasTexture(canvas);
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.anisotropy = 8;
+    this._createdTextures.push(tex);
     return tex;
   }
 
-  _buildAntiqueParchmentTerrain() {
-    const segX = 128;
-    const segZ = 92;
+  _buildAbstractTerrain() {
+    const segX = 144;
+    const segZ = 100;
+    const baseGeo = new THREE.PlaneGeometry(this.mapWidth, this.mapDepth, segX, segZ);
+    baseGeo.rotateX(-Math.PI / 2);
 
-    const geo = new THREE.PlaneGeometry(this.mapWidth, this.mapDepth, segX, segZ);
-    geo.rotateX(-Math.PI / 2);
+    const basePos = baseGeo.attributes.position;
+    const baseCols = new Float32Array(basePos.count * 3);
 
-    const pos = geo.attributes.position;
-    for (let i = 0; i < pos.count; i++) {
-      const x = pos.getX(i);
-      const z = pos.getZ(i);
-      pos.setY(i, this.getTerrainHeight(x, z));
+    const cDeepSea = new THREE.Color('#0c2235');
+    const cCoast = new THREE.Color('#2c6b66');
+    const cLowland = new THREE.Color('#3b7a68');
+    const cFoothill = new THREE.Color('#9c8e56');
+    const cPlateau = new THREE.Color('#be734c');
+    const cHighland = new THREE.Color('#9e5742');
+    const cPeak = new THREE.Color('#f4efe6');
+    const c = new THREE.Color();
+
+    for (let i = 0; i < basePos.count; i++) {
+      const wx = basePos.getX(i) + this.mapOriginX;
+      const wz = basePos.getZ(i);
+      const y = this.getTerrainHeight(wx, wz);
+
+      basePos.setX(i, wx);
+      basePos.setY(i, y);
+
+      if (y <= 0.08) {
+        c.copy(cDeepSea);
+      } else if (y < 0.75) {
+        c.lerpColors(cCoast, cLowland, y / 0.75);
+      } else if (y < 2.2) {
+        c.lerpColors(cLowland, cFoothill, (y - 0.75) / 1.45);
+      } else if (y < 4.2) {
+        c.lerpColors(cFoothill, cPlateau, (y - 2.2) / 2.0);
+      } else if (y < 6.4) {
+        c.lerpColors(cPlateau, cHighland, (y - 4.2) / 2.2);
+      } else {
+        c.lerpColors(cHighland, cPeak, Math.min(1, (y - 6.4) / 2.9));
+      }
+
+      baseCols[i * 3] = c.r;
+      baseCols[i * 3 + 1] = c.g;
+      baseCols[i * 3 + 2] = c.b;
     }
+
+    baseGeo.setAttribute('color', new THREE.BufferAttribute(baseCols, 3));
+
+    // Kristallik abstrakt memarlıq fasetləri
+    const geo = baseGeo.toNonIndexed();
+    baseGeo.dispose();
     geo.computeVertexNormals();
 
-    const parchmentTex = this._createAntiqueMapTexture();
-    const mat = new THREE.MeshStandardMaterial({
-      map: parchmentTex,
-      roughness: 0.92,
-      metalness: 0.04,
+    const mapTex = this._createAbstractMapTexture();
+    const terrainMat = new THREE.MeshStandardMaterial({
+      map: mapTex,
+      vertexColors: true,
+      flatShading: true,
+      roughness: 0.62,
+      metalness: 0.14,
     });
 
-    this.terrainMesh = new THREE.Mesh(geo, mat);
+    this.terrainMesh = new THREE.Mesh(geo, terrainMat);
     this.terrainMesh.receiveShadow = true;
+    this.terrainMesh.castShadow = true;
+    this.terrainMesh.name = 'AzerbaijanTerrain';
     this.scene.add(this.terrainMesh);
 
-    // Qədim dəniz xəritəsi üslubunda animasiyalı Xəzər səthi
-    const seaGeo = new THREE.PlaneGeometry(66, this.mapDepth - 2, 32, 44);
+    // Xəzər Dənizi Safir-Şüşə Səthi
+    const seaGeo = new THREE.PlaneGeometry(this.mapWidth, this.mapDepth, 68, 48);
     seaGeo.rotateX(-Math.PI / 2);
-    this.seaBasePositions = Float32Array.from(seaGeo.attributes.position.array);
+    const seaPos = seaGeo.attributes.position;
+    for (let i = 0; i < seaPos.count; i++) {
+      seaPos.setX(i, seaPos.getX(i) + this.mapOriginX);
+    }
+    this.seaBasePositions = Float32Array.from(seaPos.array);
 
     const seaMat = new THREE.MeshStandardMaterial({
-      color: 0x264e5e,
-      roughness: 0.35,
-      metalness: 0.18,
+      color: 0x124d69,
+      emissive: 0x072434,
+      emissiveIntensity: 0.45,
+      flatShading: true,
+      roughness: 0.2,
+      metalness: 0.48,
       transparent: true,
-      opacity: 0.72,
+      opacity: 0.92,
     });
     this.seaMesh = new THREE.Mesh(seaGeo, seaMat);
-    this.seaMesh.position.set(57, 0.06, 0);
+    this.seaMesh.position.y = -0.16;
     this.seaMesh.receiveShadow = true;
     this.scene.add(this.seaMesh);
   }
 
-  _buildMapTableFrame() {
-    const woodMat = new THREE.MeshStandardMaterial({ color: 0x3b2515, roughness: 0.78, metalness: 0.12 });
-    const brassMat = new THREE.MeshStandardMaterial({ color: 0xc99c46, roughness: 0.38, metalness: 0.75 });
-
-    const w = this.mapWidth + 6;
-    const d = this.mapDepth + 6;
-    const h = 3.6;
-
-    // 4 tərəfli qədim taxta masa çərçivəsi
-    const bars = [
-      { sx: w, sy: h, sz: 3.4, x: 0, z: -d / 2 + 1.5 },
-      { sx: w, sy: h, sz: 3.4, x: 0, z: d / 2 - 1.5 },
-      { sx: 3.4, sy: h, sz: d, x: -w / 2 + 1.5, z: 0 },
-      { sx: 3.4, sy: h, sz: d, x: w / 2 - 1.5, z: 0 },
-    ];
-
-    for (const b of bars) {
-      const m = new THREE.Mesh(new THREE.BoxGeometry(b.sx, b.sy, b.sz), woodMat);
-      m.position.set(b.x, 0.3, b.z);
-      m.receiveShadow = true;
-      this.scene.add(m);
+  _buildCoastlineContour() {
+    const pts = [];
+    for (let z = -this.mapDepth * 0.48; z <= this.mapDepth * 0.48; z += 1.2) {
+      const cx = this._getCoastlineX(z);
+      pts.push(new THREE.Vector3(cx - 0.12, 0.28, z));
     }
-
-    // 4 küncdə bürünc bəzəklər
-    for (const cx of [-w / 2 + 1.5, w / 2 - 1.5]) {
-      for (const cz of [-d / 2 + 1.5, d / 2 - 1.5]) {
-        const corner = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.6, 4.1, 8), brassMat);
-        corner.position.set(cx, 0.4, cz);
-        this.scene.add(corner);
-      }
-    }
-  }
-
-  _buildAntiqueCaravanRoads() {
-    const b = this.cityPositions.City_Baku;
-    const s = this.cityPositions.City_Sheki;
-    const h = this.cityPositions.City_Shusha;
-
-    const routeDefs = [
-      [new THREE.Vector3(b.x, 0, b.z), new THREE.Vector3(8, 0, -10), new THREE.Vector3(s.x, 0, s.z)],
-      [new THREE.Vector3(b.x, 0, b.z), new THREE.Vector3(4, 0, 14), new THREE.Vector3(h.x, 0, h.z)],
-      [new THREE.Vector3(s.x, 0, s.z), new THREE.Vector3(-24, 0, -2), new THREE.Vector3(h.x, 0, h.z)],
-    ];
-
-    const postMat = new THREE.MeshStandardMaterial({ color: 0x5c3b1e, roughness: 0.85 });
-    const lanternMat = new THREE.MeshBasicMaterial({ color: 0xffd26a });
-
-    this.roadCurves = [];
-    for (const pts of routeDefs) {
-      const curve = new THREE.CatmullRomCurve3(pts);
-      this.roadCurves.push(curve);
-
-      // Yol boyunca qədim karvan nişangah məşəlləri
-      for (let i = 1; i <= 3; i++) {
-        const pt = curve.getPoint(i / 4);
-        const y = this.getTerrainHeight(pt.x, pt.z);
-        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.11, 1.35, 6), postMat);
-        post.position.set(pt.x + 1.3, y + 0.65, pt.z + 1.0);
-        post.castShadow = true;
-        this.scene.add(post);
-
-        const lantern = new THREE.Mesh(new THREE.OctahedronGeometry(0.24, 0), lanternMat);
-        lantern.position.set(pt.x + 1.3, y + 1.45, pt.z + 1.0);
-        this.scene.add(lantern);
-      }
-    }
+    const curve = new THREE.CatmullRomCurve3(pts);
+    const tubeGeo = new THREE.TubeGeometry(curve, 120, 0.18, 6, false);
+    const tubeMat = new THREE.MeshBasicMaterial({
+      color: 0x5ee9ef,
+      transparent: true,
+      opacity: 0.9,
+    });
+    this.scene.add(new THREE.Mesh(tubeGeo, tubeMat));
   }
 
   /**
-   * Xəzər dənizində üzən qədim ticarət gəmisi (animasiyalı)
+   * 3D İşıqlı Kür və Araz su kanalları
    */
-  _buildCaspianShip() {
-    const ship = new THREE.Group();
-    const hull = new THREE.Mesh(
-      new THREE.BoxGeometry(1.5, 0.7, 3.4),
-      new THREE.MeshStandardMaterial({ color: 0x5d391e, roughness: 0.85 })
-    );
-    hull.position.y = 0.35;
-    hull.castShadow = true;
-    ship.add(hull);
+  _buildAbstractRivers() {
+    const makeRiver = (coords, radius) => {
+      const dense = [];
+      for (let i = 0; i < coords.length - 1; i++) {
+        const [x0, z0] = coords[i];
+        const [x1, z1] = coords[i + 1];
+        for (let s = 0; s < 10; s++) {
+          const t = s / 10;
+          const x = x0 + (x1 - x0) * t;
+          const z = z0 + (z1 - z0) * t;
+          dense.push(new THREE.Vector3(x, this.getTerrainHeight(x, z) + 0.16, z));
+        }
+      }
+      const [lx, lz] = coords[coords.length - 1];
+      dense.push(new THREE.Vector3(lx, this.getTerrainHeight(lx, lz) + 0.16, lz));
 
-    const mast = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.08, 0.1, 3.0, 6),
-      new THREE.MeshStandardMaterial({ color: 0x422814 })
-    );
-    mast.position.y = 1.9;
-    ship.add(mast);
+      const curve = new THREE.CatmullRomCurve3(dense);
+      const mesh = new THREE.Mesh(
+        new THREE.TubeGeometry(curve, 64, radius, 6, false),
+        new THREE.MeshStandardMaterial({
+          color: 0x45dce5,
+          emissive: 0x1eaab8,
+          emissiveIntensity: 0.55,
+          roughness: 0.2,
+          metalness: 0.4,
+        })
+      );
+      this.scene.add(mesh);
+    };
 
-    const sail = new THREE.Mesh(
-      new THREE.PlaneGeometry(1.9, 1.8),
-      new THREE.MeshStandardMaterial({ color: 0xf4e4c1, side: THREE.DoubleSide, roughness: 0.8 })
+    makeRiver(
+      [
+        [-50, -25],
+        [-31, -15],
+        [-13, -6],
+        [4, 2],
+        [18, 12],
+        [35, 23],
+      ],
+      0.26
     );
-    sail.position.set(0, 2.0, 0.12);
-    sail.castShadow = true;
-    ship.add(sail);
-
-    ship.position.set(50, 0.15, -4);
-    this.scene.add(ship);
-    this.caspianShip = ship;
+    makeRiver(
+      [
+        [-45, 30],
+        [-23, 23],
+        [-3, 15],
+        [18, 12],
+      ],
+      0.21
+    );
   }
 
-  _buildAntiqueClouds() {
-    const cloudMat = new THREE.MeshStandardMaterial({
-      color: 0xf6ead0,
-      roughness: 0.95,
-      transparent: true,
-      opacity: 0.32,
+  /**
+   * Müze / Astrolab Xəritə Masası Postamenti:
+   * Obsidian alt gövdə, qızılı bürünc çərçivə, künc bürcləri və fırlanan astrolab halqaları
+   */
+  _buildAbstractTablePlinth() {
+    const group = new THREE.Group();
+    const ox = this.mapOriginX;
+
+    const plinthMat = new THREE.MeshStandardMaterial({
+      color: 0x0f1622,
+      roughness: 0.5,
+      metalness: 0.4,
+    });
+    const brassMat = new THREE.MeshStandardMaterial({
+      color: 0xe3b152,
+      roughness: 0.26,
+      metalness: 0.86,
     });
 
-    for (let i = 0; i < 8; i++) {
-      const cluster = new THREE.Group();
-      for (let p = 0; p < 3; p++) {
-        const puff = new THREE.Mesh(new THREE.DodecahedronGeometry(2.6, 1), cloudMat);
-        puff.position.set((p - 1) * 2.4, (p % 2) * 0.4, (p % 2) * 0.7);
-        puff.scale.set(1.35, 0.48, 0.95);
-        cluster.add(puff);
-      }
-      cluster.position.set(-55 + i * 16, 26 + (i % 3) * 2.5, -34 + ((i * 19) % 68));
-      cluster.userData.speed = 0.65 + (i % 3) * 0.28;
-      this.scene.add(cluster);
-      this.clouds.push(cluster);
+    const base = new THREE.Mesh(
+      new THREE.BoxGeometry(this.mapWidth + 5.5, 4.8, this.mapDepth + 5.5),
+      plinthMat
+    );
+    base.position.set(ox, -3.1, 0);
+    base.receiveShadow = true;
+    group.add(base);
+
+    const fw = this.mapWidth + 6.4;
+    const fd = this.mapDepth + 6.4;
+    const rails = [
+      { w: fw, d: 0.85, x: ox, z: -fd / 2 },
+      { w: fw, d: 0.85, x: ox, z: fd / 2 },
+      { w: 0.85, d: fd, x: ox - fw / 2, z: 0 },
+      { w: 0.85, d: fd, x: ox + fw / 2, z: 0 },
+    ];
+    for (const r of rails) {
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(r.w, 1.45, r.d), brassMat);
+      mesh.position.set(r.x, -0.35, r.z);
+      group.add(mesh);
     }
+
+    // Künc qızılı astrolab qülləcikləri
+    for (const sx of [-1, 1]) {
+      for (const sz of [-1, 1]) {
+        const corner = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.15, 2.2, 8), brassMat);
+        corner.position.set(ox + sx * (fw / 2), 0.1, sz * (fd / 2));
+        group.add(corner);
+      }
+    }
+
+    // Xarici fırlanan Astrolab halqaları (masa ətrafında tam görünür)
+    const outerR = Math.hypot(fw / 2, fd / 2) + 3.0;
+    const ring1 = new THREE.Mesh(
+      new THREE.RingGeometry(outerR - 0.45, outerR, 96),
+      new THREE.MeshBasicMaterial({
+        color: 0xe3b152,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.36,
+      })
+    );
+    ring1.rotation.x = -Math.PI / 2;
+    ring1.position.set(ox, -1.5, 0);
+    group.add(ring1);
+    this.astrolabeRings.push({ mesh: ring1, speed: 0.04 });
+
+    const ring2 = new THREE.Mesh(
+      new THREE.RingGeometry(outerR + 2.8, outerR + 3.15, 96),
+      new THREE.MeshBasicMaterial({
+        color: 0x52d6e0,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.24,
+      })
+    );
+    ring2.rotation.x = -Math.PI / 2;
+    ring2.position.set(ox, -1.7, 0);
+    group.add(ring2);
+    this.astrolabeRings.push({ mesh: ring2, speed: -0.028 });
+
+    this.scene.add(group);
   }
 
-  _createAntiqueLabelSprite(text, accentColor = '#e5b84b') {
-    const canvas = document.createElement('canvas');
-    canvas.width = 360;
-    canvas.height = 78;
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.fillStyle = 'rgba(30, 21, 13, 0.88)';
-      ctx.strokeStyle = accentColor;
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.roundRect(10, 10, 340, 58, 12);
-      ctx.fill();
-      ctx.stroke();
+  _buildSilkRoadSplines() {
+    const routes = [
+      [
+        [28, 4],
+        [15, -3],
+        [1, -11],
+        [-16, -20],
+      ],
+      [
+        [28, 4],
+        [10, 10],
+        [-7, 13],
+        [-24, 16],
+      ],
+      [
+        [-16, -20],
+        [-23, -10],
+        [-27, 2],
+        [-24, 16],
+      ],
+    ];
 
-      ctx.fillStyle = '#f8ebd0';
-      ctx.font = 'bold 22px Georgia, serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(text, 180, 40);
-    }
+    const ribbonMat = new THREE.MeshStandardMaterial({
+      color: 0xf6c65b,
+      emissive: 0xbe7d1f,
+      emissiveIntensity: 0.68,
+      roughness: 0.32,
+      metalness: 0.65,
+    });
+
+    routes.forEach((waypoints, rIdx) => {
+      const dense = [];
+      for (let i = 0; i < waypoints.length - 1; i++) {
+        const [x0, z0] = waypoints[i];
+        const [x1, z1] = waypoints[i + 1];
+        for (let s = 0; s < 14; s++) {
+          const t = s / 14;
+          const x = x0 + (x1 - x0) * t;
+          const z = z0 + (z1 - z0) * t;
+          dense.push(new THREE.Vector3(x, this.getTerrainHeight(x, z) + 0.26, z));
+        }
+      }
+      const [lx, lz] = waypoints[waypoints.length - 1];
+      dense.push(new THREE.Vector3(lx, this.getTerrainHeight(lx, lz) + 0.26, lz));
+
+      const curve = new THREE.CatmullRomCurve3(dense);
+      this.roadCurves.push(curve);
+
+      const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, 72, 0.23, 6, false), ribbonMat);
+      tube.receiveShadow = true;
+      this.scene.add(tube);
+
+      for (let k = 0; k < 2; k++) {
+        const pulse = new THREE.Mesh(
+          new THREE.SphereGeometry(0.36, 10, 10),
+          new THREE.MeshBasicMaterial({ color: 0xfff0b5 })
+        );
+        this.scene.add(pulse);
+        this.roadPulses.push({
+          mesh: pulse,
+          curve,
+          t: (k * 0.5 + rIdx * 0.17) % 1,
+          speed: 0.085 + rIdx * 0.015,
+        });
+      }
+    });
+  }
+
+  _buildAbstractCaspianVessel() {
+    const vessel = new THREE.Group();
+    const hullMat = new THREE.MeshStandardMaterial({
+      color: 0xe3b152,
+      roughness: 0.28,
+      metalness: 0.8,
+    });
+    const sailMat = new THREE.MeshStandardMaterial({
+      color: 0xf7f2e8,
+      emissive: 0x3b7684,
+      emissiveIntensity: 0.25,
+      roughness: 0.35,
+      side: THREE.DoubleSide,
+    });
+
+    const hull = new THREE.Mesh(new THREE.ConeGeometry(0.85, 3.4, 4), hullMat);
+    hull.rotation.x = Math.PI / 2;
+    hull.scale.set(0.85, 1, 0.48);
+    hull.position.y = 0.24;
+    vessel.add(hull);
+
+    const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 3.1, 6), hullMat);
+    mast.position.y = 1.6;
+    vessel.add(mast);
+
+    const sail = new THREE.Mesh(new THREE.ConeGeometry(1.1, 2.2, 3), sailMat);
+    sail.position.set(0, 1.85, 0.15);
+    sail.scale.set(0.14, 1, 0.9);
+    vessel.add(sail);
+
+    const wake = new THREE.Mesh(
+      new THREE.RingGeometry(1.15, 1.45, 24),
+      new THREE.MeshBasicMaterial({
+        color: 0x6ce8ef,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.45,
+      })
+    );
+    wake.rotation.x = -Math.PI / 2;
+    wake.position.y = 0.06;
+    vessel.add(wake);
+
+    vessel.position.set(46, 0.16, 14);
+    this.scene.add(vessel);
+    this.caspianVessel = vessel;
+  }
+
+  _createModernLabelSprite(text, accentHex) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 560;
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = 'rgba(10, 17, 27, 0.9)';
+    ctx.strokeStyle = accentHex;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.roundRect(14, 18, 532, 84, 42);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = accentHex;
+    ctx.beginPath();
+    ctx.arc(54, 60, 10, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#f6efe2';
+    ctx.font = '700 32px "Segoe UI", system-ui, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, 82, 62);
+
     const tex = new THREE.CanvasTexture(canvas);
-    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true }));
-    sprite.scale.set(10.5, 2.3, 1);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    this._createdTextures.push(tex);
+    const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
+    const sprite = new THREE.Sprite(mat);
+    sprite.scale.set(11.0, 2.5, 1);
+    sprite.renderOrder = 10;
     return sprite;
   }
 
-  _buildCityArchitectureFallback(cityId, flagColor) {
+  _buildCityArchitecture(cityId, accentHex) {
     const g = new THREE.Group();
-    const sandstone = new THREE.MeshStandardMaterial({ color: 0xd6b57c, roughness: 0.76, metalness: 0.08 });
-    const bronze = new THREE.MeshStandardMaterial({ color: 0x8f6636, roughness: 0.55, metalness: 0.45 });
-    const goldMat = new THREE.MeshStandardMaterial({ color: 0xdcb04c, roughness: 0.35, metalness: 0.65 });
-
-    // Bürünc podium altlığı (qədim masa miniatürü effekti)
-    const plinth = new THREE.Mesh(new THREE.CylinderGeometry(4.4, 4.9, 0.65, 16), bronze);
-    plinth.position.y = 0.32;
-    plinth.receiveShadow = true;
-    g.add(plinth);
+    const stoneMat = new THREE.MeshStandardMaterial({
+      color: 0xe6d8be,
+      roughness: 0.58,
+      metalness: 0.16,
+      flatShading: true,
+    });
+    const brassMat = new THREE.MeshStandardMaterial({
+      color: 0xe6b655,
+      roughness: 0.28,
+      metalness: 0.84,
+    });
+    const glowMat = new THREE.MeshStandardMaterial({
+      color: accentHex,
+      emissive: accentHex,
+      emissiveIntensity: 0.65,
+      roughness: 0.28,
+    });
 
     if (cityId === 'City_Baku') {
-      const tower = new THREE.Mesh(new THREE.CylinderGeometry(1.75, 2.0, 6.4, 18), sandstone);
-      tower.position.set(0, 3.5, 0);
+      // Abstrakt Qız Qalası + Alov Ucluğu + İçərişəhər divarları
+      const curtain = new THREE.Mesh(new THREE.CylinderGeometry(2.6, 2.9, 1.1, 8), stoneMat);
+      curtain.position.y = 0.55;
+      curtain.castShadow = true;
+      g.add(curtain);
+
+      const tower = new THREE.Mesh(new THREE.CylinderGeometry(1.12, 1.38, 4.6, 18), stoneMat);
+      tower.position.set(0, 2.3, 0);
       tower.castShadow = true;
       g.add(tower);
 
-      const buttress = new THREE.Mesh(new THREE.BoxGeometry(1.15, 5.4, 1.5), bronze);
-      buttress.position.set(1.55, 3.0, 0.3);
-      buttress.castShadow = true;
-      g.add(buttress);
+      const crown = new THREE.Mesh(new THREE.CylinderGeometry(1.28, 1.28, 0.35, 18), brassMat);
+      crown.position.y = 4.65;
+      g.add(crown);
 
-      const palace = new THREE.Mesh(new THREE.BoxGeometry(3.8, 2.3, 2.8), sandstone);
-      palace.position.set(-2.5, 1.5, 1.1);
-      palace.castShadow = true;
-      g.add(palace);
-
-      const dome = new THREE.Mesh(
-        new THREE.SphereGeometry(1.2, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2),
-        goldMat
-      );
-      dome.position.set(-2.5, 2.65, 1.1);
-      g.add(dome);
+      const flame = new THREE.Mesh(new THREE.OctahedronGeometry(0.6, 0), glowMat);
+      flame.scale.set(0.85, 2.0, 0.85);
+      flame.position.y = 5.75;
+      g.add(flame);
     } else if (cityId === 'City_Sheki') {
-      const hall = new THREE.Mesh(new THREE.BoxGeometry(5.8, 2.7, 3.4), sandstone);
-      hall.position.set(0, 1.7, 0);
+      // Şəki Xan Sarayı abstrakt pavilyon + şəbəkə zolağı
+      const hall = new THREE.Mesh(new THREE.BoxGeometry(4.5, 2.25, 2.5), stoneMat);
+      hall.position.y = 1.12;
       hall.castShadow = true;
       g.add(hall);
 
-      const shebeke = new THREE.Mesh(
-        new THREE.BoxGeometry(4.3, 1.45, 0.16),
-        new THREE.MeshStandardMaterial({ color: 0x2f9978, emissive: 0x164a3a, roughness: 0.25 })
-      );
-      shebeke.position.set(0, 1.75, 1.72);
-      g.add(shebeke);
-
-      const roof = new THREE.Mesh(
-        new THREE.ConeGeometry(4.3, 1.9, 4),
-        new THREE.MeshStandardMaterial({ color: 0x9b4626, roughness: 0.72 })
-      );
+      const roof = new THREE.Mesh(new THREE.ConeGeometry(3.3, 1.5, 4), brassMat);
       roof.rotation.y = Math.PI / 4;
-      roof.position.set(0, 3.95, 0);
+      roof.position.y = 2.95;
       roof.castShadow = true;
       g.add(roof);
-    } else {
-      const wall = new THREE.Mesh(new THREE.BoxGeometry(6.6, 2.5, 1.25), sandstone);
-      wall.position.set(0, 1.6, 1.3);
-      wall.castShadow = true;
-      g.add(wall);
 
-      for (const sx of [-2.6, 2.6]) {
-        const bastion = new THREE.Mesh(new THREE.CylinderGeometry(0.92, 1.1, 3.8, 12), bronze);
-        bastion.position.set(sx, 2.2, 1.3);
+      const glassBand = new THREE.Mesh(new THREE.BoxGeometry(3.7, 0.9, 2.56), glowMat);
+      glassBand.position.y = 1.25;
+      g.add(glassBand);
+    } else {
+      // Şuşa Qalası bürcləri + Xarı Bülbül abstrakt simvolu
+      const keep = new THREE.Mesh(new THREE.BoxGeometry(3.5, 2.2, 2.8), stoneMat);
+      keep.position.y = 1.1;
+      keep.castShadow = true;
+      g.add(keep);
+
+      for (const bx of [-2.15, 2.15]) {
+        const bastion = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.92, 3.25, 10), brassMat);
+        bastion.position.set(bx, 1.62, 0.85);
         bastion.castShadow = true;
         g.add(bastion);
       }
 
-      const mosque = new THREE.Mesh(new THREE.BoxGeometry(3.3, 2.4, 2.8), sandstone);
-      mosque.position.set(0, 1.55, -1.2);
-      mosque.castShadow = true;
-      g.add(mosque);
-
-      const dome = new THREE.Mesh(
-        new THREE.SphereGeometry(1.15, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2),
-        goldMat
-      );
-      dome.position.set(0, 2.75, -1.2);
-      g.add(dome);
+      const crest = new THREE.Mesh(new THREE.OctahedronGeometry(0.72, 0), glowMat);
+      crest.position.set(0, 3.45, 0);
+      g.add(crest);
     }
-
-    // Yellənən qədim şəhər bayrağı (animasiyalı)
-    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 3.2, 6), bronze);
-    pole.position.set(2.4, 5.2, -1.5);
-    g.add(pole);
-
-    const flag = new THREE.Mesh(
-      new THREE.PlaneGeometry(1.8, 0.9, 6, 1),
-      new THREE.MeshStandardMaterial({ color: flagColor, side: THREE.DoubleSide, roughness: 0.6 })
-    );
-    flag.position.set(3.3, 6.2, -1.5);
-    g.add(flag);
-    this.cityFlags.push({ mesh: flag, phase: Math.random() * Math.PI * 2 });
 
     return g;
   }
 
   async _buildCities() {
     const configs = [
-      { id: 'City_Baku', model: 'city_baku', ringColor: 0xe5b84b, flagColor: 0xb83728, hex: '#e5b84b' },
-      { id: 'City_Sheki', model: 'city_sheki', ringColor: 0x3eb38b, flagColor: 0x268a6a, hex: '#55cfa3' },
-      { id: 'City_Shusha', model: 'city_shusha', ringColor: 0xb985e8, flagColor: 0x7c4bb0, hex: '#c89bf0' },
+      { id: 'City_Baku', ringColor: 0xf4c158, hex: '#f4c158', labelOffsetY: 9.8 },
+      { id: 'City_Sheki', ringColor: 0x45d3a3, hex: '#45d3a3', labelOffsetY: 8.6 },
+      { id: 'City_Shusha', ringColor: 0xb985f5, hex: '#b985f5', labelOffsetY: 8.8 },
     ];
+
+    const plinthMat = new THREE.MeshStandardMaterial({
+      color: 0x15202f,
+      roughness: 0.42,
+      metalness: 0.55,
+    });
 
     for (const cfg of configs) {
       const pos = this.cityPositions[cfg.id];
@@ -788,29 +874,62 @@ export class WorldAzerbaijanScene {
       group.name = cfg.id;
       group.position.set(pos.x, y, pos.z);
 
-      const ring = new THREE.Mesh(
-        new THREE.RingGeometry(pos.radius - 0.55, pos.radius, 48),
+      // Yamaca oturan dərin obsidian-bürünc memarlıq ətəyi
+      const plinth = new THREE.Mesh(new THREE.CylinderGeometry(3.7, 4.4, 1.5, 28), plinthMat);
+      plinth.position.y = -0.35;
+      plinth.receiveShadow = true;
+      plinth.castShadow = true;
+      group.add(plinth);
+
+      // İkili konsentrik işıqlı şəhər halqaları
+      const innerRing = new THREE.Mesh(
+        new THREE.RingGeometry(pos.radius - 0.55, pos.radius - 0.15, 48),
         new THREE.MeshBasicMaterial({
           color: cfg.ringColor,
           side: THREE.DoubleSide,
           transparent: true,
-          opacity: 0.72,
+          opacity: 0.78,
         })
       );
-      ring.rotation.x = -Math.PI / 2;
-      ring.position.y = 0.25;
-      group.add(ring);
-      this.cityRings.push(ring);
+      innerRing.rotation.x = -Math.PI / 2;
+      innerRing.position.y = 0.25;
+      group.add(innerRing);
+      this.cityRings.push(innerRing);
 
-      const loaded = await this.modelLoader.loadOptionalGLB(cfg.model, 1.8);
-      if (loaded) {
-        group.add(loaded);
-      } else {
-        group.add(this._buildCityArchitectureFallback(cfg.id, cfg.flagColor));
-      }
+      const outerRing = new THREE.Mesh(
+        new THREE.RingGeometry(4.35, 4.75, 36, 1, 0, Math.PI * 1.35),
+        new THREE.MeshBasicMaterial({
+          color: cfg.ringColor,
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity: 0.85,
+        })
+      );
+      outerRing.rotation.x = -Math.PI / 2;
+      outerRing.position.y = 0.42;
+      group.add(outerRing);
+      this.cityOuterRings.push(outerRing);
 
-      const labelSprite = this._createAntiqueLabelSprite(pos.label, cfg.hex);
-      labelSprite.position.set(0, 8.8, 0);
+      // Yuxarıya uzanan incə işıq sütunu
+      const pillar = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.08, 0.36, 11.5, 12, 1, true),
+        new THREE.MeshBasicMaterial({
+          color: cfg.ringColor,
+          transparent: true,
+          opacity: 0.16,
+          side: THREE.DoubleSide,
+          depthWrite: false,
+        })
+      );
+      pillar.position.y = 6.0;
+      group.add(pillar);
+
+      const monument = this._buildCityArchitecture(cfg.id, cfg.hex);
+      monument.position.y = 0.4;
+      group.add(monument);
+
+      const labelSprite = this._createModernLabelSprite(pos.label, cfg.hex);
+      labelSprite.position.set(0, cfg.labelOffsetY, 0);
       group.add(labelSprite);
 
       this.scene.add(group);
@@ -819,11 +938,11 @@ export class WorldAzerbaijanScene {
 
   _buildDynamicNPCMarkers() {
     const defaultNPCs = [
-      { role: 'NPC_Historian', color: '#8f6bd4', curveIdx: 0, t: 0.28 },
-      { role: 'NPC_Ashig', color: '#38a875', curveIdx: 0, t: 0.65 },
-      { role: 'NPC_Craftsman', color: '#c9713b', curveIdx: 2, t: 0.45 },
-      { role: 'NPC_Traveler', color: '#4c969c', curveIdx: 1, t: 0.36 },
-      { role: 'PadishahNPC', color: '#e5b84b', curveIdx: 1, t: 0.72 },
+      { role: 'NPC_Historian', color: '#9c7bf2', curveIdx: 0, t: 0.28 },
+      { role: 'NPC_Ashig', color: '#42d49c', curveIdx: 0, t: 0.65 },
+      { role: 'NPC_Craftsman', color: '#e88b48', curveIdx: 2, t: 0.45 },
+      { role: 'NPC_Traveler', color: '#56d1db', curveIdx: 1, t: 0.36 },
+      { role: 'PadishahNPC', color: '#f4c158', curveIdx: 1, t: 0.72 },
     ];
 
     for (const item of defaultNPCs) {
@@ -838,22 +957,22 @@ export class WorldAzerbaijanScene {
       markerGroup.name = item.role;
       markerGroup.position.set(x, y, z);
 
-      markerGroup.add(this._createStylizedUnit(item.color, 0xf2dec0));
+      markerGroup.add(this._createStylizedUnit(item.color, 0xf4e8d2));
 
       const beacon = new THREE.Mesh(
-        new THREE.OctahedronGeometry(0.45, 0),
+        new THREE.OctahedronGeometry(0.46, 0),
         new THREE.MeshBasicMaterial({ color: item.color })
       );
-      beacon.position.y = 3.2;
+      beacon.position.y = 3.25;
       markerGroup.add(beacon);
 
       const aura = new THREE.Mesh(
-        new THREE.RingGeometry(1.1, 1.38, 24),
+        new THREE.RingGeometry(1.1, 1.4, 28),
         new THREE.MeshBasicMaterial({
           color: item.color,
           side: THREE.DoubleSide,
           transparent: true,
-          opacity: 0.65,
+          opacity: 0.72,
         })
       );
       aura.rotation.x = -Math.PI / 2;
@@ -869,97 +988,118 @@ export class WorldAzerbaijanScene {
     }
   }
 
-  /**
-   * GTA Waypoint (işıq sütunu + halqa) və dinamik GPS marşrut xətti
-   */
   _buildWaypointAndGPS() {
     this.waypointGroup = new THREE.Group();
     this.waypointGroup.visible = false;
 
     this.waypointRing = new THREE.Mesh(
-      new THREE.RingGeometry(1.0, 1.5, 32),
+      new THREE.RingGeometry(1.0, 1.45, 32),
       new THREE.MeshBasicMaterial({
-        color: 0xffd257,
+        color: 0xffd65e,
         side: THREE.DoubleSide,
         transparent: true,
-        opacity: 0.92,
+        opacity: 0.94,
       })
     );
     this.waypointRing.rotation.x = -Math.PI / 2;
     this.waypointGroup.add(this.waypointRing);
 
-    this.waypointBeam = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.28, 0.75, 11, 12, 1, true),
+    this.waypointOuterRing = new THREE.Mesh(
+      new THREE.RingGeometry(1.85, 2.15, 32),
       new THREE.MeshBasicMaterial({
-        color: 0xffd257,
+        color: 0x56dce2,
+        side: THREE.DoubleSide,
         transparent: true,
-        opacity: 0.24,
+        opacity: 0.75,
+      })
+    );
+    this.waypointOuterRing.rotation.x = -Math.PI / 2;
+    this.waypointGroup.add(this.waypointOuterRing);
+
+    this.waypointBeam = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.24, 0.72, 12, 12, 1, true),
+      new THREE.MeshBasicMaterial({
+        color: 0xffd65e,
+        transparent: true,
+        opacity: 0.28,
         side: THREE.DoubleSide,
         depthWrite: false,
       })
     );
-    this.waypointBeam.position.y = 5.5;
+    this.waypointBeam.position.y = 6.0;
     this.waypointGroup.add(this.waypointBeam);
 
     const pin = new THREE.Mesh(
-      new THREE.ConeGeometry(0.45, 1.15, 8),
-      new THREE.MeshBasicMaterial({ color: 0xffd257 })
+      new THREE.ConeGeometry(0.45, 1.2, 8),
+      new THREE.MeshBasicMaterial({ color: 0xffd65e })
     );
     pin.rotation.x = Math.PI;
-    pin.position.y = 1.6;
+    pin.position.y = 1.65;
     this.waypointGroup.add(pin);
 
     this.scene.add(this.waypointGroup);
 
-    // Dinamik GTA qızılı GPS marşrut xətti
-    const gpsGeo = new THREE.BufferGeometry();
-    const gpsMat = new THREE.LineBasicMaterial({
-      color: 0xffcf48,
+    const initCurve = new THREE.LineCurve3(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, 1));
+    const gpsMat = new THREE.MeshBasicMaterial({
+      color: 0xffd452,
       transparent: true,
       opacity: 0.92,
     });
-    this.gpsLine = new THREE.Line(gpsGeo, gpsMat);
-    this.gpsLine.visible = false;
-    this.scene.add(this.gpsLine);
+    this.gpsMesh = new THREE.Mesh(new THREE.TubeGeometry(initCurve, 4, 0.24, 6, false), gpsMat);
+    this.gpsMesh.visible = false;
+    this.scene.add(this.gpsMesh);
   }
 
   async _buildCharacters() {
     const merchantMesh =
       (await this.modelLoader.loadOptionalGLB('merchant_caravan', 1.0)) ||
       this._createAnimatedCaravan();
+
+    const caravanHalo = new THREE.Mesh(
+      new THREE.RingGeometry(2.1, 2.55, 32),
+      new THREE.MeshBasicMaterial({
+        color: 0xffd564,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.78,
+      })
+    );
+    caravanHalo.rotation.x = -Math.PI / 2;
+    caravanHalo.position.y = 0.14;
+    merchantMesh.add(caravanHalo);
+
     this.scene.add(merchantMesh);
     this.gameManager.merchant.setMesh(merchantMesh);
 
     const guardMesh =
       (await this.modelLoader.loadOptionalGLB('guard', 1.0)) ||
-      this._createStylizedUnit(0x286e9c, 0xe8d5b5);
+      this._createStylizedUnit(0x3a9bd4, 0xf2e2c8);
     this.scene.add(guardMesh);
     this.gameManager.guard.setMesh(guardMesh);
 
     const thiefMesh =
       (await this.modelLoader.loadOptionalGLB('thief', 1.0)) ||
-      this._createStylizedUnit(0xa82e2e, 0x241c18);
+      this._createStylizedUnit(0xc93b3b, 0x261d1a);
     this.scene.add(thiefMesh);
     this.gameManager.thief.setMesh(thiefMesh);
   }
 
-  /**
-   * Animasiyalı Karvan: araba + 4 fırlanan təkər + öndə at + yellənən qızılı bayraq
-   */
   _createAnimatedCaravan() {
     const g = new THREE.Group();
-    const woodMat = new THREE.MeshStandardMaterial({ color: 0x6b3e1e, roughness: 0.85 });
-    const canopyMat = new THREE.MeshStandardMaterial({ color: 0xe6be63, roughness: 0.65 });
-    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x3b2210, roughness: 0.9 });
-    const horseMat = new THREE.MeshStandardMaterial({ color: 0x8f5228, roughness: 0.72 });
+    const woodMat = new THREE.MeshStandardMaterial({ color: 0x7a4722, roughness: 0.78 });
+    const canopyMat = new THREE.MeshStandardMaterial({
+      color: 0xf0c766,
+      roughness: 0.55,
+      metalness: 0.12,
+    });
+    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x2d1d12, roughness: 0.85 });
+    const horseMat = new THREE.MeshStandardMaterial({ color: 0x9b5a2e, roughness: 0.68 });
 
-    // Araba gövdəsi
     const cart = new THREE.Mesh(new THREE.BoxGeometry(1.75, 0.85, 2.5), woodMat);
     cart.position.set(0, 0.9, -0.5);
     cart.castShadow = true;
     g.add(cart);
 
-    // İpək örtük
     const canopy = new THREE.Mesh(
       new THREE.CylinderGeometry(0.92, 0.92, 2.4, 12, 1, false, 0, Math.PI),
       canopyMat
@@ -970,7 +1110,6 @@ export class WorldAzerbaijanScene {
     canopy.castShadow = true;
     g.add(canopy);
 
-    // 4 fırlanan təkər
     this.caravanParts.wheels = [];
     for (const wx of [-0.95, 0.95]) {
       for (const wz of [-1.3, 0.3]) {
@@ -983,7 +1122,6 @@ export class WorldAzerbaijanScene {
       }
     }
 
-    // Öndə karvanı çəkən Qarabağ atı (irəli +Z istiqamətində)
     const horseBody = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.68, 1.45), horseMat);
     horseBody.position.set(0, 1.05, 1.85);
     horseBody.castShadow = true;
@@ -1005,14 +1143,13 @@ export class WorldAzerbaijanScene {
       }
     }
 
-    // Yellənən karvan bayrağı
     const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 2.0, 6), wheelMat);
     pole.position.set(0.75, 2.35, -1.5);
     g.add(pole);
 
     const banner = new THREE.Mesh(
       new THREE.PlaneGeometry(1.1, 0.55),
-      new THREE.MeshStandardMaterial({ color: 0xb83527, side: THREE.DoubleSide })
+      new THREE.MeshStandardMaterial({ color: 0xc93b2b, side: THREE.DoubleSide })
     );
     banner.position.set(0.75, 3.05, -2.0);
     banner.rotation.y = Math.PI / 2;
@@ -1025,16 +1162,16 @@ export class WorldAzerbaijanScene {
   _createStylizedUnit(bodyColor, headColor) {
     const g = new THREE.Group();
     const body = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.45, 0.65, 1.5, 10),
-      new THREE.MeshStandardMaterial({ color: bodyColor, roughness: 0.65 })
+      new THREE.CylinderGeometry(0.44, 0.64, 1.5, 12),
+      new THREE.MeshStandardMaterial({ color: bodyColor, roughness: 0.55, metalness: 0.15 })
     );
     body.position.y = 0.8;
     body.castShadow = true;
     g.add(body);
 
     const head = new THREE.Mesh(
-      new THREE.SphereGeometry(0.42, 10, 10),
-      new THREE.MeshStandardMaterial({ color: headColor, roughness: 0.6 })
+      new THREE.SphereGeometry(0.42, 12, 12),
+      new THREE.MeshStandardMaterial({ color: headColor, roughness: 0.55 })
     );
     head.position.y = 1.85;
     head.castShadow = true;
@@ -1044,12 +1181,12 @@ export class WorldAzerbaijanScene {
 
   _spawnDustPuff(x, y, z) {
     const puff = new THREE.Mesh(
-      new THREE.SphereGeometry(0.32, 6, 6),
-      new THREE.MeshBasicMaterial({ color: 0xd9be8a, transparent: true, opacity: 0.55 })
+      new THREE.SphereGeometry(0.28, 6, 6),
+      new THREE.MeshBasicMaterial({ color: 0xf4cf76, transparent: true, opacity: 0.48 })
     );
     puff.position.set(x + (Math.random() - 0.5) * 0.7, y + 0.3, z + (Math.random() - 0.5) * 0.7);
     this.scene.add(puff);
-    this.dustPuffs.push({ mesh: puff, life: 0.85 });
+    this.dustPuffs.push({ mesh: puff, life: 0.75 });
   }
 
   _handlePointerDown(e) {
@@ -1069,10 +1206,9 @@ export class WorldAzerbaijanScene {
     const hits = this.raycaster.intersectObject(this.terrainMesh);
     if (hits.length > 0) {
       const pt = hits[0].point;
-      if (pt.y < 0.08) return; // Xəzər dənizinə klikləməni məhdudlaşdır
+      if (pt.y < 0.08) return;
 
       this.setWaypointVisual(pt.x, pt.z);
-      // Qədim xəritənin içinə basanda GTA məntiqi ilə yaxınlaşsın və GPS marşrutu ilə getsin!
       const enterGTA = this.cameraMode === 'map';
       this.eventBus.emit('world:click_move', { x: pt.x, z: pt.z, enterGTA });
     }
@@ -1104,30 +1240,42 @@ export class WorldAzerbaijanScene {
   }
 
   _updateGPSLine() {
+    if (!this.gpsMesh) return;
     const target = this.gameManager.merchant.targetPos;
     if (!target) {
-      if (this.gpsLine) this.gpsLine.visible = false;
+      this.gpsMesh.visible = false;
       if (this.waypointGroup) this.waypointGroup.visible = false;
+      this._lastGpsKey = '';
       return;
     }
 
     const m = this.gameManager.merchant.position;
+    if (Math.hypot(target.x - m.x, target.z - m.z) < 0.4) {
+      this.gpsMesh.visible = false;
+      return;
+    }
+
+    const key = `${m.x.toFixed(1)},${m.z.toFixed(1)}->${target.x.toFixed(1)},${target.z.toFixed(1)}`;
+    if (key === this._lastGpsKey && this.gpsMesh.visible) return;
+    this._lastGpsKey = key;
+
     const pts = [];
-    const steps = 22;
+    const steps = 18;
     for (let i = 0; i <= steps; i++) {
       const t = i / steps;
       const x = m.x + (target.x - m.x) * t;
       const z = m.z + (target.z - m.z) * t;
-      const y = this.getTerrainHeight(x, z) + 0.45;
-      pts.push(new THREE.Vector3(x, y, z));
+      pts.push(new THREE.Vector3(x, this.getTerrainHeight(x, z) + 0.5, z));
     }
-    this.gpsLine.geometry.dispose();
-    this.gpsLine.geometry = new THREE.BufferGeometry().setFromPoints(pts);
-    this.gpsLine.visible = true;
+
+    const curve = new THREE.CatmullRomCurve3(pts);
+    this.gpsMesh.geometry.dispose();
+    this.gpsMesh.geometry = new THREE.TubeGeometry(curve, 32, 0.24, 6, false);
+    this.gpsMesh.visible = true;
   }
 
   update(dt) {
-    if (!this.renderer || !this.scene || !this.camera) return;
+    if (!this.isMounted || !this.renderer || !this.scene || !this.camera) return;
     this.elapsed += dt;
 
     // 1. Xəzər dalğa animasiyası
@@ -1138,36 +1286,37 @@ export class WorldAzerbaijanScene {
         const bz = this.seaBasePositions[i * 3 + 2];
         pos.setY(
           i,
-          Math.sin(bx * 0.16 + this.elapsed * 1.4) * 0.1 +
-            Math.cos(bz * 0.14 + this.elapsed * 1.1) * 0.08
+          Math.sin(bx * 0.16 + this.elapsed * 1.4) * 0.09 +
+            Math.cos(bz * 0.14 + this.elapsed * 1.1) * 0.07
         );
       }
       pos.needsUpdate = true;
     }
 
-    // 2. Xəzər gəmisi animasiyası
-    if (this.caspianShip) {
+    // 2. Astrolab halqaları & İpək Yolu işıq impulsları
+    for (const r of this.astrolabeRings) {
+      r.mesh.rotation.z += r.speed * dt;
+    }
+    for (const p of this.roadPulses) {
+      p.t = (p.t + dt * p.speed) % 1;
+      const pos = p.curve.getPoint(p.t);
+      p.mesh.position.copy(pos);
+      p.mesh.position.y += 0.24;
+    }
+
+    // 3. Abstrakt Xəzər gəmisi
+    if (this.caspianVessel) {
       const ang = this.elapsed * 0.22;
-      const sx = 50 + Math.cos(ang) * 7.5;
-      const sz = -4 + Math.sin(ang * 0.7) * 18;
-      const dx = -Math.sin(ang) * 7.5;
+      const sx = 45 + Math.cos(ang) * 4.5;
+      const sz = 8 + Math.sin(ang * 0.7) * 18;
+      const dx = -Math.sin(ang) * 4.5;
       const dz = Math.cos(ang * 0.7) * 18 * 0.7;
-      this.caspianShip.position.set(sx, 0.18 + Math.sin(this.elapsed * 2.2) * 0.12, sz);
-      this.caspianShip.rotation.y = Math.atan2(dx, dz);
-      this.caspianShip.rotation.z = Math.sin(this.elapsed * 2.5) * 0.06;
+      this.caspianVessel.position.set(sx, 0.12 + Math.sin(this.elapsed * 2.2) * 0.1, sz);
+      this.caspianVessel.rotation.y = Math.atan2(dx, dz);
+      this.caspianVessel.rotation.z = Math.sin(this.elapsed * 2.5) * 0.05;
     }
 
-    // 3. Bulud axını & bayraq yellənməsi
-    for (const cloud of this.clouds) {
-      cloud.position.x += cloud.userData.speed * dt;
-      if (cloud.position.x > 76) cloud.position.x = -76;
-    }
-
-    for (const f of this.cityFlags) {
-      f.mesh.rotation.y = Math.sin(this.elapsed * 3.4 + f.phase) * 0.28;
-    }
-
-    // 4. Karvan animasiyası (təkərlər, at ayaqları, bayraq, toz izi)
+    // 4. Karvan animasiyası
     const merchant = this.gameManager.merchant;
     if (merchant.isMoving) {
       for (const w of this.caravanParts.wheels) {
@@ -1189,13 +1338,13 @@ export class WorldAzerbaijanScene {
       this.caravanParts.banner.rotation.y = Math.PI / 2 + Math.sin(this.elapsed * 5.2) * 0.22;
     }
 
-    // Toz dənəcikləri
+    // Qızılı toz zərrəcikləri
     for (let i = this.dustPuffs.length - 1; i >= 0; i--) {
       const p = this.dustPuffs[i];
       p.life -= dt;
       p.mesh.position.y += dt * 0.9;
       p.mesh.scale.addScalar(dt * 1.1);
-      p.mesh.material.opacity = Math.max(0, p.life * 0.6);
+      p.mesh.material.opacity = Math.max(0, p.life * 0.55);
       if (p.life <= 0) {
         this.scene.remove(p.mesh);
         p.mesh.geometry.dispose();
@@ -1209,29 +1358,30 @@ export class WorldAzerbaijanScene {
     for (const ring of this.cityRings) {
       ring.material.opacity = pulse;
     }
+    for (const outer of this.cityOuterRings) {
+      outer.rotation.z += dt * 0.55;
+    }
     for (const item of this.npcMarkers) {
       item.beacon.rotation.y += dt * 1.8;
-      item.beacon.position.y = 3.2 + Math.sin(this.elapsed * 2.8 + item.phase) * 0.26;
+      item.beacon.position.y = 3.25 + Math.sin(this.elapsed * 2.8 + item.phase) * 0.26;
     }
 
-    // 6. Waypoint & GTA GPS xətti
+    // 6. Waypoint & GTA GPS lenti
     if (this.waypointGroup && this.waypointGroup.visible) {
       this.waypointRing.scale.setScalar(1 + Math.sin(this.elapsed * 4.5) * 0.14);
+      this.waypointOuterRing.scale.setScalar(1 - Math.sin(this.elapsed * 4.5) * 0.1);
       this.waypointBeam.rotation.y += dt * 1.5;
     }
     this._updateGPSLine();
 
-    // 7. GTA V üslubunda axıcı kamera keçidi (Qədim 3D Xəritə ↔ GTA Arxa 3D Sürüş)
+    // 7. GTA V axıcı kamera keçidi (Abstrakt Xəritə ↔ GTA Arxa 3D)
     const targetBlend = this.cameraMode === 'gta' ? 1 : 0;
     this.gtaBlend += (targetBlend - this.gtaBlend) * Math.min(1, dt * 3.4);
 
     const mPos = merchant.position;
+    const mapCamPos = new THREE.Vector3(mPos.x * 0.12 + 4, 90, mPos.z * 0.12 + 68);
+    const mapLookAt = new THREE.Vector3(mPos.x * 0.14 + 3, 1.0, mPos.z * 0.14);
 
-    // Qədim 3D Xəritə baxış nöqtəsi (bütün Azərbaycan xəritəsini göstərir, yüngül karvan izləməsi ilə)
-    const mapCamPos = new THREE.Vector3(mPos.x * 0.28 + 3, 74, mPos.z * 0.28 + 56);
-    const mapLookAt = new THREE.Vector3(mPos.x * 0.35 + 2, 1.0, mPos.z * 0.35);
-
-    // GTA 3D Arxa Sürüş kamerası (karvanın arxasında alçaqdan izləyir)
     const camAngle = merchant.yaw + this.gtaOrbitOffset;
     const gtaDist = 14.5;
     const gtaHeight = 7.4;
@@ -1246,7 +1396,6 @@ export class WorldAzerbaijanScene {
       mPos.z + Math.cos(camAngle) * 5.0
     );
 
-    // Smoothstep (GTA V swoop effekti)
     const t = this.gtaBlend * this.gtaBlend * (3 - 2 * this.gtaBlend);
     const desiredCam = new THREE.Vector3().lerpVectors(mapCamPos, gtaCamPos, t);
     const desiredLook = new THREE.Vector3().lerpVectors(mapLookAt, gtaLookAt, t);
@@ -1259,6 +1408,7 @@ export class WorldAzerbaijanScene {
   }
 
   unmount() {
+    this.isMounted = false;
     window.removeEventListener('resize', this._onResize);
     window.removeEventListener('pointermove', this._onPointerMove);
     window.removeEventListener('pointerup', this._onPointerUp);
@@ -1269,6 +1419,17 @@ export class WorldAzerbaijanScene {
       dom.removeEventListener('contextmenu', this._onContextMenu);
       this.renderer.dispose();
     }
+    if (this.scene) {
+      this.scene.traverse((obj) => {
+        if (obj.geometry) obj.geometry.dispose();
+        if (obj.material) {
+          if (Array.isArray(obj.material)) obj.material.forEach((m) => m.dispose());
+          else obj.material.dispose();
+        }
+      });
+    }
+    for (const tex of this._createdTextures) tex.dispose();
+    this._createdTextures = [];
     this.container.innerHTML = '';
     this.scene = null;
     this.camera = null;
