@@ -1,0 +1,43 @@
+{
+  "cities": [
+    {
+      "city_id": "City_Baku",
+      "display_name": "Bakı (İçərişəhər)",
+      "era_name": "Şirvanşahlar Dövrü (XII–XV əsr)",
+      "music_track": "audio_baku_shirvan",
+      "culture_note": "Xəzər sahili liman şəhəri, duz və neft karvanlarının qovşağı.",
+      "goods": [
+        { "item_id": "salt", "name": "Abşeron Duzu", "buy_price": 20, "sell_price": 18 },
+        { "item_id": "oil", "name": "Qara Neft (Tuluq)", "buy_price": 35, "sell_price": 30 },
+        { "item_id": "silk", "name": "Şəki İpəyi", "buy_price": 90, "sell_price": 80 },
+        { "item_id": "carpet", "name": "Qarabağ Xalçası", "buy_price": 140, "sell_price": 125 }
+      ]
+    },
+    {
+      "city_id": "City_Sheki",
+      "display_name": "Şəki (Yuxarı Karvansaray)",
+      "era_name": "Şəki Xanlığı Dövrü (XVIII əsr)",
+      "music_track": "audio_sheki_silk",
+      "culture_note": "Böyük İpək Yolunun əsas ipəkçilik və şirniyyat mərkəzi.",
+      "goods": [
+        { "item_id": "silk", "name": "Şəki İpəyi", "buy_price": 45, "sell_price": 40 },
+        { "item_id": "halva", "name": "Şəki Halvası", "buy_price": 25, "sell_price": 22 },
+        { "item_id": "salt", "name": "Abşeron Duzu", "buy_price": 50, "sell_price": 45 },
+        { "item_id": "oil", "name": "Qara Neft (Tuluq)", "buy_price": 75, "sell_price": 68 }
+      ]
+    },
+    {
+      "city_id": "City_Shusha",
+      "display_name": "Şuşa (Qala Şəhəri)",
+      "era_name": "Qarabağ Xanlığı Dövrü (XVIII–XIX əsr)",
+      "music_track": "audio_shusha_mugham",
+      "culture_note": "Xalçaçılıq, muğam və sürətli Qarabağ atlarının vətəni.",
+      "goods": [
+        { "item_id": "carpet", "name": "Qarabağ Xalçası", "buy_price": 75, "sell_price": 70 },
+        { "item_id": "horse_gear", "name": "Qarabağ Atı Ləvazimatı", "buy_price": 110, "sell_price": 95 },
+        { "item_id": "silk", "name": "Şəki İpəyi", "buy_price": 85, "sell_price": 78 },
+        { "item_id": "halva", "name": "Şəki Halvası", "buy_price": 60, "sell_price": 52 }
+      ]
+    }
+  ]
+}

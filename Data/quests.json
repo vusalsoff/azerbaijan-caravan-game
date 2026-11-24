@@ -1,0 +1,48 @@
+{
+  "random_quests": [
+    {
+      "quest_id": "quest_padishah_silk",
+      "npc_role": "PadishahNPC",
+      "npc_name": "Şirvan Elçisi",
+      "title": "Saray Üçün İpək Sifarişi",
+      "description": "Padşahın sarayı üçün təcili 2 top Şəki İpəyi lazımdır. Çatdırsan, qızıl və fərman qazanacaqsan!",
+      "required_item": "silk",
+      "required_amount": 2,
+      "target_city": "City_Baku",
+      "reward_gold": 220
+    },
+    {
+      "quest_id": "quest_khan_halva",
+      "npc_role": "PadishahNPC",
+      "npc_name": "Qarabağ Xanı",
+      "title": "Qonaqlar Üçün Şəki Halvası",
+      "description": "Şuşa qalasına gələn elçilər üçün 3 qutu Şəki Halvası gətir.",
+      "required_item": "halva",
+      "required_amount": 3,
+      "target_city": "City_Shusha",
+      "reward_gold": 150
+    },
+    {
+      "quest_id": "quest_craftsman_oil",
+      "npc_role": "NPC_Craftsman",
+      "npc_name": "Karvansaray Ustası",
+      "title": "Məşəllər Üçün Neft",
+      "description": "Gecə karvan yollarını işıqlandırmaq üçün 2 tuluq Abşeron Nefti lazımdır.",
+      "required_item": "oil",
+      "required_amount": 2,
+      "target_city": "City_Sheki",
+      "reward_gold": 180
+    },
+    {
+      "quest_id": "quest_caravan_salt",
+      "npc_role": "NPC_Traveler",
+      "npc_name": "Yolçu Tacir",
+      "title": "Yol Azuqəsi Üçün Duz",
+      "description": "Karvanımız yolda qalıb, bizə 2 kisə Abşeron Duzu versən, haqqını artıqlaması ilə ödəyərik.",
+      "required_item": "salt",
+      "required_amount": 2,
+      "target_city": "ANY",
+      "reward_gold": 110
+    }
+  ]
+}
