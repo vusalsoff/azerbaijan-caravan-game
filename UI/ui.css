@@ -598,31 +598,74 @@
   }
 }
 
+/* Tünd bürünc skroll-bar (standart ağ skroll-barı gizlədir) */
+.modal-card,
+.irs-docked-market {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(207, 163, 85, 0.45) rgba(14, 10, 7, 0.92);
+}
+
+.modal-card::-webkit-scrollbar,
+.irs-docked-market::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-card::-webkit-scrollbar-track,
+.irs-docked-market::-webkit-scrollbar-track {
+  background: rgba(14, 10, 7, 0.92);
+}
+
+.modal-card::-webkit-scrollbar-thumb,
+.irs-docked-market::-webkit-scrollbar-thumb {
+  background: rgba(207, 163, 85, 0.45);
+  border-radius: 2px;
+}
+
 .irs-item-chips {
-  display: flex;
-  gap: 5px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
 }
 
 .irs-item-chip {
-  display: inline-flex;
+  position: relative;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 5px;
-  padding: 4px 9px;
-  border-radius: 2px;
+  justify-content: center;
+  gap: 4px;
+  min-height: 56px;
+  padding: 6px 4px;
+  border-radius: 3px;
   font-family: var(--font-body);
-  font-size: 12px;
-  background: rgba(22, 16, 11, 0.92);
+  font-size: 11.5px;
+  background: rgba(22, 16, 11, 0.94);
   border: 1px solid rgba(196, 152, 76, 0.32);
   color: #dfd0b4;
   cursor: pointer;
+  transition: border-color 0.14s ease, background-color 0.14s ease;
+}
+
+.irs-item-chip:hover {
+  border-color: rgba(228, 190, 116, 0.7);
 }
 
 .irs-item-chip.active {
-  background: rgba(207, 163, 85, 0.22);
+  background: linear-gradient(180deg, rgba(68, 48, 24, 0.92), rgba(32, 22, 12, 0.96));
   border-color: var(--gold-bright);
   color: #fff6e0;
   font-weight: 600;
+}
+
+.irs-chip-qty {
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  font-size: 10px;
+  padding: 0 4px;
+  background: rgba(34, 66, 48, 0.92);
+  border: 1px solid rgba(132, 201, 148, 0.55);
+  color: #d6f5dc;
 }
 
 /* KARVAN HEYBƏSİ — 12 Gözlü Əmlak Mücrüsü (LoTM Artifact Vault üslubu) */

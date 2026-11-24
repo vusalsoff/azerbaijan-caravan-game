@@ -1,5 +1,20 @@
 import { renderItemSvg, renderSigil, renderSeljukStarDivider } from './AntiqueIcons.js';
 
+const SHORT_ITEM_LABELS = {
+  salt: 'Duz',
+  oil: 'Neft',
+  silk: 'İpək',
+  carpet: 'Xalça',
+  horse_gear: 'Yəhər',
+  halva: 'Halva',
+  apple: 'Alma',
+  pear: 'Armud',
+  pomegranate: 'Nar',
+  grape: 'Üzüm',
+  honey: 'Bal',
+  wheat: 'Buğda',
+};
+
 /**
  * UI/UIManager.js — "İRS — Tacirin Yolu"
  * Qədim Divan Əlyazması & Əmlak Mücrüsü (Lord of the Mysteries × Tarixi Azərbaycan estetikası):
@@ -151,9 +166,9 @@ export class UIManager {
               ${renderSigil('coin', 15)}
               <span><strong>${state.gold}</strong> / ${state.winGoldGoal}</span>
             </div>
-            <button id="btn-hud-inventory" class="hud-pill clickable" title="Karvan Heybəsini Aç (I)">
+            <button id="btn-hud-inventory" class="hud-pill clickable" title="İnventarı Aç (I)">
               ${renderSigil('satchel', 15)}
-              <span>Heybə: <strong>${state.totalItems}/${state.maxInventory}</strong></span>
+              <span>İnventar: <strong>${state.totalItems}/${state.maxInventory}</strong></span>
             </button>
             <div class="hud-pill" title="Səfər Günü">
               ${renderSigil('sun', 15)}
@@ -170,9 +185,9 @@ export class UIManager {
                 ? `<button id="btn-exit-map-top" class="btn-primary">${renderSigil('compass', 15)} <span>Qədim Xəritə (X)</span></button>`
                 : ''
             }
-            <button id="btn-inv-top" class="btn-secondary" title="Karvan Heybəsi (I)">
+            <button id="btn-inv-top" class="btn-secondary" title="İnventar (I)">
               ${renderSigil('satchel', 15)}
-              <span>Heybə (I)</span>
+              <span>İnventar (I)</span>
             </button>
             <button id="btn-map" class="btn-secondary" title="Tarixi Salnamə (M)">
               ${renderSigil('scroll', 15)}
@@ -322,11 +337,12 @@ export class UIManager {
     const slotsHtml = [];
     for (const item of detailed) {
       const isSel = item.itemId === this.selectedVaultItemId;
+      const shortName = SHORT_ITEM_LABELS[item.itemId] || item.meta.name;
       slotsHtml.push(`
-        <div class="lotm-slot ${isSel ? 'selected' : ''}" data-vault-item="${item.itemId}">
+        <div class="lotm-slot ${isSel ? 'selected' : ''}" data-vault-item="${item.itemId}" title="${item.meta.name}">
           <span class="lotm-slot-qty">${item.qty}×</span>
-          ${renderItemSvg(item.itemId, 28)}
-          <div class="lotm-slot-name">${item.meta.name}</div>
+          ${renderItemSvg(item.itemId, 30)}
+          <div class="lotm-slot-name">${shortName}</div>
           ${
             item.freshness
               ? `<div class="freshness-track" style="width:82%;height:4px;">
@@ -343,7 +359,7 @@ export class UIManager {
       slotsHtml.push(`
         <div class="lotm-slot empty">
           ${renderSigil('seal', 18)}
-          <span style="font-size:10.5px;">Boş Göz</span>
+          <span style="font-size:10.5px;">Boş</span>
         </div>
       `);
     }
@@ -355,8 +371,8 @@ export class UIManager {
         <div class="modal-card">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
             <div>
-              <div class="wax-seal-tag">${renderSigil('seal', 12)} Divan Əmlak Mücrüsü</div>
-              <h2 style="margin-top:6px;">Karvan Heybəsi və Əmtəə Təftişi</h2>
+              <div class="wax-seal-tag">${renderSigil('satchel', 12)} Karvan Çantası</div>
+              <h2 style="margin-top:6px;">Karvan İnventarı</h2>
               <div style="font-size:13px;color:var(--text-muted);">
                 Tutum: <strong style="color:var(--gold-bright)">${state.totalItems} / ${state.maxInventory}</strong> bağlama ·
                 Xəzinə: <strong style="color:var(--gold-bright)">${state.gold} qızıl</strong> ·
@@ -541,13 +557,16 @@ export class UIManager {
       const stallBodyHtml = `
         <div class="irs-item-chips">
           ${city.goods
-            .map(
-              (g) => `
-            <button class="irs-item-chip ${g.item_id === this.selectedMarketItemId ? 'active' : ''}" data-select="${g.item_id}">
-              ${renderItemSvg(g.item_id, 14)}
-              <span>${g.name.split(' ')[0]}</span>
-            </button>`
-            )
+            .map((g) => {
+              const ownedCount = state.inventory[g.item_id] || 0;
+              const shortLabel = SHORT_ITEM_LABELS[g.item_id] || g.name;
+              return `
+            <button class="irs-item-chip ${g.item_id === this.selectedMarketItemId ? 'active' : ''}" data-select="${g.item_id}" title="${g.name}">
+              ${ownedCount > 0 ? `<span class="irs-chip-qty">×${ownedCount}</span>` : ''}
+              ${renderItemSvg(g.item_id, 22)}
+              <span>${shortLabel}</span>
+            </button>`;
+            })
             .join('')}
         </div>
 
@@ -694,19 +713,25 @@ export class UIManager {
       this.modalEl.innerHTML = `
         <div id="MarketPanel" class="irs-docked-market">
           <div class="irs-trade-card">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:6px;border-bottom:1px solid rgba(196,152,76,0.28);">
-              <span style="font-family:var(--font-display);font-size:17px;font-weight:700;letter-spacing:0.06em;color:var(--gold-bright);">
-                ${city.short_name || city.display_name} Divan Bazarı
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;padding-bottom:6px;border-bottom:1px solid rgba(196,152,76,0.28);">
+              <span style="font-family:var(--font-display);font-size:17px;font-weight:700;letter-spacing:0.05em;color:var(--gold-bright);">
+                ${city.short_name || city.display_name} Bazarı
               </span>
-              <button id="market-close" class="btn-secondary" style="padding:4px 9px;font-size:12px;">✕ (Esc)</button>
+              <div style="display:flex;gap:5px;">
+                <button id="market-open-vault" class="btn-secondary" style="padding:4px 8px;font-size:11.5px;" title="Ayrıca İkonlu İnventarı Aç (I)">
+                  ${renderSigil('satchel', 13)}
+                  <span>İnventar</span>
+                </button>
+                <button id="market-close" class="btn-secondary" style="padding:4px 8px;font-size:12px;">✕</button>
+              </div>
             </div>
 
             <div class="lotm-tabs">
               <button class="lotm-tab ${this.dockedMarketTab === 'stall' ? 'active' : ''}" data-tab="stall">
-                Piştaxta (${city.goods.length})
+                Bazar Malları (${city.goods.length})
               </button>
               <button class="lotm-tab ${this.dockedMarketTab === 'bag' ? 'active' : ''}" data-tab="bag">
-                Heybəm · Satış (${state.totalItems}/${state.maxInventory})
+                Çantam · Satış (${state.totalItems}/${state.maxInventory})
               </button>
             </div>
 
@@ -714,6 +739,10 @@ export class UIManager {
           </div>
         </div>
       `;
+
+      this.modalEl.querySelector('#market-open-vault')?.addEventListener('click', () => {
+        this.eventBus.emit('ui:toggle_inventory');
+      });
 
       this.modalEl.querySelector('#market-close')?.addEventListener('click', () => {
         this.eventBus.emit('market:close');
