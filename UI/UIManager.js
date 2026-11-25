@@ -228,6 +228,7 @@ export class UIManager {
               <button id="btn-vo-toggle" class="cinema-mini-btn" title="Səsləndirmə (Voiceover) Aç/Bağla">${this.voMuted ? '🎙️✕' : '🎙️'}</button>
               <button id="btn-mute" class="cinema-mini-btn" title="Səs">${this.muted ? '🔇' : '🔊'}</button>
               <button id="btn-settings" class="cinema-mini-btn" title="Ayarlar">⚙</button>
+              <a id="btn-prompts-mini" href="https://vusalsoff.github.io/azerbaijan-caravan-game/" target="_blank" rel="noopener noreferrer" class="cinema-mini-btn" style="text-decoration:none;display:inline-flex;align-items:center;" title="44 Məkan Prompt Kataloqu">🖼️</a>
             </div>
           </div>
 

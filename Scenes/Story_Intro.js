@@ -225,13 +225,18 @@ export class StoryIntroScene {
               XVI Əsr Azərbaycan Karvan Ticarəti
             </div>
 
-            <div style="display:flex;flex-direction:column;gap:12px;width:min(280px, 80vw);">
+            <div style="display:flex;flex-direction:column;gap:12px;width:min(360px, 88vw);">
               <button id="title-play-btn" class="btn-primary" style="font-size:17px;padding:12px 24px;justify-content:center;letter-spacing:0.06em;">
                 ▶ Oyna
               </button>
-              <button id="title-settings-btn" class="btn-secondary" style="font-size:15px;padding:10px 22px;justify-content:center;">
-                ⚙ Ayarlar (Səs və Qrafika)
-              </button>
+              <div style="display:flex;gap:10px;width:100%;">
+                <button id="title-settings-btn" class="btn-secondary" style="flex:1;font-size:14px;padding:10px 14px;justify-content:center;">
+                  ⚙ Ayarlar
+                </button>
+                <a id="title-prompts-btn" href="https://vusalsoff.github.io/azerbaijan-caravan-game/" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="flex:1;font-size:14px;padding:10px 14px;justify-content:center;text-decoration:none;" title="44 Məkanlı 2.5D/3D Şəkil Prompt Kataloqu">
+                  🖼️ 44 Prompt
+                </a>
+              </div>
               <button id="title-story-btn" class="btn-ghost" style="font-size:13px;padding:8px 16px;justify-content:center;color:#cbb893;">
                 📜 Tarixi Salnamə (Giriş Hekayəsi)
               </button>
