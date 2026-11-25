@@ -30,6 +30,30 @@ const TRACK_CONFIGS = {
     tempoMs: 680,
     timbre: 'kamancha',
   },
+  // Quba / Segah-Şüştər Şahdağ dağ motivi
+  audio_quba_mountain: {
+    droneFreq: 164.81, // E3
+    scale: [329.63, 349.23, 392.0, 415.3, 493.88, 523.25, 587.33, 659.25],
+    pattern: [0, 2, 4, 3, 2, 1, 2, 0, 4, 5, 6, 4, 3, 2, 1, 0],
+    tempoMs: 590,
+    timbre: 'tar',
+  },
+  // Gəncə / Rast-Mahur Nizami İntibahı motivi
+  audio_ganja_nizami: {
+    droneFreq: 138.59, // C#3
+    scale: [277.18, 311.13, 349.23, 369.99, 415.3, 466.16, 523.25, 554.37],
+    pattern: [0, 2, 3, 4, 5, 4, 2, 3, 4, 6, 5, 4, 2, 1, 0, 2],
+    tempoMs: 540,
+    timbre: 'oud',
+  },
+  // Naxçıvan / Hümayun-Bayatı Atabəylər motivi
+  audio_nakhchivan_atabeg: {
+    droneFreq: 110.0, // A2
+    scale: [220.0, 233.08, 277.18, 293.66, 329.63, 349.23, 415.3, 440.0],
+    pattern: [0, 1, 2, 3, 4, 3, 2, 1, 4, 5, 4, 3, 2, 1, 0, 1],
+    tempoMs: 650,
+    timbre: 'kamancha',
+  },
 };
 
 const AUDIO_SETTINGS_KEY = 'karva_audio_settings_v1';
@@ -51,6 +75,8 @@ export class AudioManager {
     this.loopTimer = null;
     this.stepIdx = 0;
     this.externalAudio = null;
+    this.voiceoverAudio = null;
+    this._voSeq = 0;
     this._loadSettings();
   }
 
@@ -104,7 +130,11 @@ export class AudioManager {
       this.sfxGain.gain.setValueAtTime(this.muted || this.sfxMuted ? 0 : this.sfxVolume, now);
     }
     if (this.externalAudio) {
-      this.externalAudio.volume = this.muted || this.musicMuted ? 0 : this.musicVolume * 0.5;
+      const duck = this.voiceoverAudio ? 0.35 : 1;
+      this.externalAudio.volume = this.muted || this.musicMuted ? 0 : this.musicVolume * 0.5 * duck;
+    }
+    if (this.voiceoverAudio) {
+      this.voiceoverAudio.volume = this.muted || this.sfxMuted ? 0 : this.sfxVolume;
     }
   }
 
@@ -171,6 +201,56 @@ export class AudioManager {
       if (started || this.currentTrack !== trackId) return;
       this._startProceduralMusic(trackId);
     });
+  }
+
+  /**
+   * Səsləndirmə (Voiceover) oxudur: public/audio/vo/<voId>.mp3 (və ya .ogg).
+   * Fayl mövcud deyilsə səssizcə və konsol xətası atmadan ötürür.
+   */
+  async playVoiceover(voId) {
+    if (!voId || this.muted || this.sfxMuted) return false;
+    this.stopVoiceover();
+    const seq = ++this._voSeq;
+
+    for (const ext of ['mp3', 'ogg']) {
+      const url = `./audio/vo/${voId}.${ext}`;
+      try {
+        const res = await fetch(url, { method: 'HEAD' });
+        const ct = (res.headers.get('content-type') || '').toLowerCase();
+        if (seq !== this._voSeq) return false;
+        if (res.ok && ct.startsWith('audio/')) {
+          const el = new Audio(url);
+          el.volume = this.muted || this.sfxMuted ? 0 : this.sfxVolume;
+          el.addEventListener('ended', () => {
+            if (this.voiceoverAudio === el) {
+              this.voiceoverAudio = null;
+              this._syncGains();
+            }
+          });
+          this.voiceoverAudio = el;
+          this._syncGains();
+          await el.play().catch(() => {});
+          return true;
+        }
+      } catch {
+        // Səs faylı hələ yoxdursa səssizcə ötür
+      }
+    }
+    return false;
+  }
+
+  stopVoiceover() {
+    this._voSeq += 1;
+    if (this.voiceoverAudio) {
+      try {
+        this.voiceoverAudio.pause();
+        this.voiceoverAudio.currentTime = 0;
+      } catch {
+        // ignore
+      }
+      this.voiceoverAudio = null;
+      this._syncGains();
+    }
   }
 
   async _tryExternalAudio(trackId) {
@@ -269,6 +349,19 @@ export class AudioManager {
       case 'guard':
         this._playPluck(392.0, 0.20, 0.15, 'triangle');
         setTimeout(() => this._playPluck(587.33, 0.22, 0.22, 'triangle'), 75);
+        break;
+      case 'seal':
+      case 'scroll':
+        this._playNoiseBurst(0.08, 0.09, 900);
+        setTimeout(() => this._playPluck(329.63, 0.15, 0.22, 'sine'), 40);
+        break;
+      case 'whisper':
+        this._playNoiseBurst(0.18, 0.04, 650);
+        setTimeout(() => this._playPluck(293.66, 0.12, 0.3, 'sine'), 70);
+        break;
+      case 'bell':
+        this._playPluck(880.0, 0.18, 0.45, 'sine');
+        setTimeout(() => this._playPluck(1318.5, 0.12, 0.35, 'sine'), 45);
         break;
       case 'victory':
       case 'victory_small':

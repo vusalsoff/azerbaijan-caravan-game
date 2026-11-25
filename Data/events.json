@@ -2,6 +2,7 @@
   "historical_events": [
     {
       "event_id": "evt_gobustan_bce",
+      "vo_id": "vo_evt_gobustan_bce",
       "era": "Eramızdan əvvəl (XII–VIII minillik)",
       "region": "Qobustan (Abşeron yaxınlığı)",
       "near_city": "City_Baku",
@@ -23,6 +24,7 @@
     },
     {
       "event_id": "evt_gabala_6th_century",
+      "vo_id": "vo_evt_gabala_6th_century",
       "era": "IV–VI əsrlər (Qafqaz Albaniyası)",
       "region": "Qəbələ / Şəki Yolu",
       "near_city": "City_Sheki",
@@ -44,6 +46,7 @@
     },
     {
       "event_id": "evt_ganja_baku_12th_century",
+      "vo_id": "vo_evt_ganja_baku_12th_century",
       "era": "XII əsr (Azərbaycan İntibahı)",
       "region": "Şirvan — Gəncə İpək Xətti",
       "near_city": "City_Baku",
@@ -65,6 +68,7 @@
     },
     {
       "event_id": "evt_shamakhi_16th_carpet",
+      "vo_id": "vo_evt_shamakhi_16th_carpet",
       "era": "XVI əsr (Şamaxı İpək & Xalça Bazarı)",
       "region": "Şamaxı Karvansarayı",
       "near_city": "City_Baku",
@@ -86,6 +90,7 @@
     },
     {
       "event_id": "evt_quba_sheki_orchards",
+      "vo_id": "vo_evt_quba_sheki_orchards",
       "era": "XVII–XVIII əsr (Kənd Təsərrüfatı İrsi)",
       "region": "Quba — Şəki Meyvə Bağları",
       "near_city": "City_Sheki",
@@ -107,6 +112,7 @@
     },
     {
       "event_id": "evt_sheki_shebeke_18th",
+      "vo_id": "vo_evt_sheki_shebeke_18th",
       "era": "XVIII əsr (Şəki Xanlığı)",
       "region": "Şəki Karvansarayı",
       "near_city": "City_Sheki",
@@ -128,6 +134,7 @@
     },
     {
       "event_id": "evt_shusha_karabakh_horse",
+      "vo_id": "vo_evt_shusha_karabakh_horse",
       "era": "XVIII–XIX əsr (Qarabağ Xanlığı)",
       "region": "Şuşa — Cıdır Düzü",
       "near_city": "City_Shusha",
@@ -149,6 +156,7 @@
     },
     {
       "event_id": "evt_goychay_pomegranate_harvest",
+      "vo_id": "vo_evt_goychay_pomegranate_harvest",
       "era": "XIX əsr (Kənd Təsərrüfatı & Nar Festivalı)",
       "region": "Göyçay — Kür Vadisi",
       "near_city": "City_Shusha",
@@ -165,6 +173,138 @@
         {
           "label": "Ticarət yolları barədə məlumat al (+50 Qızıl, +1 Zəka)",
           "effect": { "gold": 50, "intelligence": 1 }
+        }
+      ]
+    },
+    {
+      "event_id": "evt_quba_khinalug_scroll",
+      "vo_id": "vo_evt_quba_khinalug_scroll",
+      "era": "XVI əsr (Şahdağ Gizli Keçidi)",
+      "region": "Quba · Təngəaltı və Xınalıq Yolu",
+      "near_city": "City_Quba",
+      "npc_role": "NPC_Historian",
+      "npc_name": "Xınalıqlı Mirzə",
+      "title": "Dumanlı Dərədə Möhürlü Əlyazma",
+      "story_text": "Quba dağlarının dumanı içində qədim daş körpüdə möhürlü bir əlyazma tapdınız. Üzərində Şirvan tacirlər gildiyasının gizli işarəsi və Xınalıq dilində dua həkk olunub.",
+      "history_fact": "Qubanın Xınalıq kəndi dəniz səviyyəsindən 2350 metr yüksəklikdə yerləşən, 5000 illik tarixi və özünəməxsus dili olan dünyanın ən qədim yaşayış məskənlərindən biridir.",
+      "choices": [
+        {
+          "label": "Əlyazmanın şifrəsini aç (+75 Qızıl, +2 Zəka)",
+          "effect": { "gold": 75, "intelligence": 2 }
+        },
+        {
+          "label": "Möhürü gildiya böyüklərinə təhvil ver (+60 Qızıl, +1 Xarizma, +20s Qoruma)",
+          "effect": { "gold": 60, "charisma": 1, "guard_boost_sec": 20 }
+        }
+      ]
+    },
+    {
+      "event_id": "evt_quba_chichi_carpet",
+      "vo_id": "vo_evt_quba_chichi_carpet",
+      "era": "XVII–XVIII əsr (Quba Xalçaçılıq Məktəbi)",
+      "region": "Quba · Qımıl və Çiçi Karxanası",
+      "near_city": "City_Quba",
+      "npc_role": "NPC_Craftsman",
+      "npc_name": "Qımıl Xalçaçısı",
+      "title": "Xırdagül Çiçi Naxışının Sirri",
+      "story_text": "Quba ustaları dağ çiçəklərindən aldıqları təbii boyalarla 'Xırdagül Çiçi' xalçası toxuyurlar. Usta deyir ki, xalçanın hər ilməsində səfərdəki taciri bədnəzərdən qoruyan dua var.",
+      "history_fact": "Quba xalça məktəbi Azərbaycanın ən sıx ilməli (hər kvadrat metrdə 250 minədək ilmə) və zəngin həndəsi naxışlı xalçaları ilə məşhurdur.",
+      "choices": [
+        {
+          "label": "Təbii boya sirrini öyrən (+65 Qızıl, +1 Zəka)",
+          "effect": { "gold": 65, "intelligence": 1 }
+        },
+        {
+          "label": "Ustadlardan yol xeyir-duası al (+45 Qızıl, +2 Xarizma)",
+          "effect": { "gold": 45, "charisma": 2 }
+        }
+      ]
+    },
+    {
+      "event_id": "evt_ganja_nizami_lantern",
+      "vo_id": "vo_evt_ganja_nizami_lantern",
+      "era": "XVI–XVII əsr (Gəncə İntibah İrsi)",
+      "region": "Gəncə · Nizami Türbəsi Yolu",
+      "near_city": "City_Ganja",
+      "npc_role": "NPC_Ashig",
+      "npc_name": "Gəncəli Hafiz",
+      "title": "Nizami Türbəsində Gecə Fənəri",
+      "story_text": "Axşamçağı Gəncə çinarlarının kölgəsində səyyar hafiz əlində mis fənərlə Nizaminin 'İskəndərnamə'sindən gizli hikmətlər oxuyur və karvan tacirlərinə yol ədəbiyyatı bağışlayır.",
+      "history_fact": "Gəncə XII əsrdə böyük mütəfəkkir şair Nizami Gəncəvinin yaşayıb yaratdığı, XVI–XVII əsrlərdə isə Şah Abbas Karvansarayı və Cümə Məscidi ilə abadlaşmış mühüm ticarət şəhəridir.",
+      "choices": [
+        {
+          "label": "Hikmət məclisini dinlə (+70 Qızıl, +2 Zəka)",
+          "effect": { "gold": 70, "intelligence": 2 }
+        },
+        {
+          "label": "Fənər üçün Abşeron nefti bağışla (+55 Qızıl, +2 Xarizma)",
+          "effect": { "gold": 55, "charisma": 2 }
+        }
+      ]
+    },
+    {
+      "event_id": "evt_ganja_shah_abbas_vault",
+      "vo_id": "vo_evt_ganja_shah_abbas_vault",
+      "era": "XVII əsr (Səfəvi Ticarət Dəftərxanası)",
+      "region": "Gəncə · Şah Abbas Karvansarayı",
+      "near_city": "City_Ganja",
+      "npc_role": "PadishahNPC",
+      "npc_name": "Dəftərdar Əli",
+      "title": "Karvansarayın Gizli Dəftərxanası",
+      "story_text": "Gəncə Karvansarayının qırmızı kərpic tağları altında Dəftərdar Əli sənə XVI–XVII əsrlərə aid şifrəli bir ticarət dəftərini göstərir — burada İpək Yolunun gizli rüsumsuz keçidləri qeyd olunub.",
+      "history_fact": "XVII əsrin əvvəllərində Şah Abbasın göstərişi ilə memar Şeyx Bəhaəddin tərəfindən inşa edilən Gəncə Karvansarayı ikimərtəbəli 54 otağı ilə karvanların əsas dayanacağı idi.",
+      "choices": [
+        {
+          "label": "Gizli keçid xəritəsini köçür (+45 Qızıl, +25s Sürət)",
+          "effect": { "gold": 45, "speed_boost_sec": 25 }
+        },
+        {
+          "label": "Dəftərdarla gizli ortaqlıq qur (+95 Qızıl, +1 Xarizma)",
+          "effect": { "gold": 95, "charisma": 1 }
+        }
+      ]
+    },
+    {
+      "event_id": "evt_nakhchivan_momine_khatun",
+      "vo_id": "vo_evt_nakhchivan_momine_khatun",
+      "era": "XII–XVI əsr (Atabəylər Memarlıq Sirri)",
+      "region": "Naxçıvan · Möminə Xatun Meydanı",
+      "near_city": "City_Nakhchivan",
+      "npc_role": "NPC_Historian",
+      "npc_name": "Əcəmi Məktəbinin Şagirdi",
+      "title": "Möminə Xatun Türbəsinin Qızıl Nisbəti",
+      "story_text": "Firuzəyi kaşıları günəşdə parlayan Möminə Xatun türbəsinin önündə qoca memar sənə Memar Əcəminin daşlara gizlətdiyi həndəsi sirləri açır.",
+      "history_fact": "1186-cı ildə Memar Əcəmi Naxçıvani tərəfindən ucaldılan Möminə Xatun türbəsi onbucaqlı quruluşu və kufi yazılı firuzəyi kaşıları ilə Şərq memarlığının şah əsəridir.",
+      "choices": [
+        {
+          "label": "Həndəsi sirri salnaməyə yaz (+80 Qızıl, +2 Zəka)",
+          "effect": { "gold": 80, "intelligence": 2 }
+        },
+        {
+          "label": "Türbənin bərpası üçün ianə ver (+50 Qızıl, +2 Xarizma)",
+          "effect": { "gold": 50, "charisma": 2 }
+        }
+      ]
+    },
+    {
+      "event_id": "evt_nakhchivan_duzdag_seal",
+      "vo_id": "vo_evt_nakhchivan_duzdag_seal",
+      "era": "Qədim Dövrlər — XVI əsr (Duzdağ İpək Xətti)",
+      "region": "Naxçıvan · Duzdağ Mağaraları",
+      "near_city": "City_Nakhchivan",
+      "npc_role": "NPC_Traveler",
+      "npc_name": "Kəndxuda Yusif",
+      "title": "Duzdağın Kristal Möhürü",
+      "story_text": "Duzdağ mağaralarının sərin dəhlizlərində mədənçilər beş min illik daş baltalar və təmiz kristal duz layları arasında parlayan qədim karvan möhürü tapıblar.",
+      "history_fact": "Naxçıvandakı Duzdağ mədəni e.ə. V–IV minilliklərdən bəri fəaliyyət göstərən dünyanın ən qədim duz mədənlərindən biridir və İpək Yolu karvanlarını duzla təmin edirdi.",
+      "choices": [
+        {
+          "label": "Kristal möhürü Divan üçün götür (+90 Qızıl, +1 Zəka)",
+          "effect": { "gold": 90, "intelligence": 1 }
+        },
+        {
+          "label": "Mağara havasında karvanı dincəlt (+40 Qızıl, +22s Qoruma)",
+          "effect": { "gold": 40, "guard_boost_sec": 22 }
         }
       ]
     }

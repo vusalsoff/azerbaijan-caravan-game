@@ -1,0 +1,150 @@
+{
+  "voiceover_manifest": {
+    "intro": ["intro_narrator"],
+    "cities": [
+      "city_baku_welcome",
+      "city_quba_welcome",
+      "city_sheki_welcome",
+      "city_ganja_welcome",
+      "city_shusha_welcome",
+      "city_nakhchivan_welcome"
+    ],
+    "quests": [
+      "vo_quest_chain_1_baku_quba",
+      "vo_quest_chain_2_quba_sheki",
+      "vo_quest_chain_3_sheki_ganja",
+      "vo_quest_chain_4_ganja_shusha",
+      "vo_quest_chain_5_shusha_nakhchivan",
+      "vo_quest_chain_6_nakhchivan_baku",
+      "vo_quest_padishah_silk",
+      "vo_quest_farmer_pomegranate",
+      "vo_quest_quba_honey",
+      "vo_quest_sheki_pear_rush",
+      "vo_quest_shusha_horse_gear",
+      "vo_quest_baku_grape_shusha",
+      "vo_quest_nakhchivan_wheat"
+    ],
+    "events": [
+      "vo_evt_gobustan_bce",
+      "vo_evt_gabala_6th_century",
+      "vo_evt_ganja_baku_12th_century",
+      "vo_evt_shamakhi_16th_carpet",
+      "vo_evt_quba_sheki_orchards",
+      "vo_evt_sheki_shebeke_18th",
+      "vo_evt_shusha_karabakh_horse",
+      "vo_evt_goychay_pomegranate_harvest",
+      "vo_evt_quba_khinalug_scroll",
+      "vo_evt_quba_chichi_carpet",
+      "vo_evt_ganja_nizami_lantern",
+      "vo_evt_ganja_shah_abbas_vault",
+      "vo_evt_nakhchivan_momine_khatun",
+      "vo_evt_nakhchivan_duzdag_seal"
+    ]
+  },
+  "city_welcomes": {
+    "City_Baku": {
+      "vo_id": "city_baku_welcome",
+      "title": "Bakı · Şirvanşahlar Limanı",
+      "narrator_line": "Xəzərin duzlu mehi Qız Qalasının daşlarına dəyir. Karvansaray qapıları arxasında Şirvan Divanının gizli möhürləri və ticarət sirləri səni gözləyir."
+    },
+    "City_Quba": {
+      "vo_id": "city_quba_welcome",
+      "title": "Quba · Şahdağ Ətəkləri",
+      "narrator_line": "Qudyalçayın sərin nəfəsi və alma bağlarının ətri dağ keçidini bürüyüb. Burada Çiçi xalçaçılarının və Xınalıq əlyazmalarının izi gizlənib."
+    },
+    "City_Sheki": {
+      "vo_id": "city_sheki_welcome",
+      "title": "Şəki · İpək Karvansarayı",
+      "narrator_line": "Kiş dərəsinin yaşıl sükutunda Yuxarı Karvansarayın tağları ucalır. Tut ağaclarının kölgəsində Şəki ipəyi və halvası qızıl qiymətinə satılır."
+    },
+    "City_Ganja": {
+      "vo_id": "city_ganja_welcome",
+      "title": "Gəncə · Şah Abbas Meydanı",
+      "narrator_line": "Qocaman çinarların altında Şah Abbas Karvansarayının qırmızı kərpic tağları parlayır. Dəftərdarların gizli dəftərlərində İpək Yolunun bütün yolları kəsişir."
+    },
+    "City_Shusha": {
+      "vo_id": "city_shusha_welcome",
+      "title": "Şuşa · Qarabağ Qalası",
+      "narrator_line": "Sıldırım qayaların zirvəsində Cıdır Düzünün küləyi muğam sədalarını daşıyır. Burada Qarabağ xalçaları və köhlən atlar öz sahibini tanıyır."
+    },
+    "City_Nakhchivan": {
+      "vo_id": "city_nakhchivan_welcome",
+      "title": "Naxçıvan · Atabəylər Yurdu",
+      "narrator_line": "Möminə Xatun türbəsinin firuzəyi kaşıları qızmar günəşdə yanır. Duzdağın kristal mağaralarından gələn karvanlar Qərb İpək Yolunun qapısını açır."
+    }
+  },
+  "npcs": {
+    "haci_selim": {
+      "npc_name": "Hacı Səlim",
+      "city_id": "City_Baku",
+      "npc_role": "NPC_Traveler",
+      "vo_id": "vo_npc_haci_selim",
+      "greeting": "Xoş gəldin, cavan tacir! Xəzər limanına gələn gəmilər bu gün neft və ipək gözləyir — qulağını bazarın pıçıltısına ver.",
+      "story_line": "Deyirlər altı şəhərin möhürünü toplayan tacirə Şirvanşahlar Divanının gizli xəzinə dəftəri açılır."
+    },
+    "bas_vezir": {
+      "npc_name": "Baş Vəzir",
+      "city_id": "City_Baku",
+      "npc_role": "PadishahNPC",
+      "vo_id": "vo_npc_bas_vezir",
+      "greeting": "Saray əhli sənin karvanının sorağını alıb. Möhürlü Divan məktubunu yalnız etibarlı əllərə tapşırarıq.",
+      "story_line": "Quba, Şəki, Gəncə, Şuşa və Naxçıvan xətti üzrə bütün əmanətləri yerinə çatdır — onda Böyük Tacir fərmanı sənindir."
+    },
+    "bagban_murad": {
+      "npc_name": "Quba Bağbanı Murad",
+      "city_id": "City_Quba",
+      "npc_role": "NPC_Farmer",
+      "vo_id": "vo_npc_bagban_murad",
+      "greeting": "Şahdağın şehli alması bu səhər dərib səbətə yığılıb! Saman döşənmiş səbət uzaq yola tab gətirər, amma tələsmək gərəkdir.",
+      "story_line": "Dağ keçidindən Şəkiyə gedən yolda Dumanlı Dərənin qədim daş körpüsünə diqqət et — orada salnamə izləri var."
+    },
+    "ipekci_qasim": {
+      "npc_name": "İpəkçi Qasım",
+      "city_id": "City_Sheki",
+      "npc_role": "PadishahNPC",
+      "vo_id": "vo_npc_ipekci_qasim",
+      "greeting": "Tut yarpağının səsi kəsiləndə ipək kələfi danışmağa başlar. Xalis Şəki ipəyi istəyirsənsə, qiyməti də, sirri də bilməlisən.",
+      "story_line": "Bu ipək topunu Gəncədəki Şah Abbas Karvansarayına apar; orada Dəftərdar Əli səni gözləyir."
+    },
+    "halvaci_nesib": {
+      "npc_name": "Halvaçı Nəsib",
+      "city_id": "City_Sheki",
+      "npc_role": "NPC_Craftsman",
+      "vo_id": "vo_npc_halvaci_nesib",
+      "greeting": "Zəfəran şərbətinin qoxusu bütün karvansarayı bürüyüb! Təzə Şəki halvası dörd gün içində xan süfrəsinə çatmalıdır.",
+      "story_line": "Ustadlar deyər ki, halvanın şərbətindəki sirri bilən şəyird heç vaxt bazarda zərər etməz."
+    },
+    "defterdar_eli": {
+      "npc_name": "Dəftərdar Əli",
+      "city_id": "City_Ganja",
+      "npc_role": "NPC_Craftsman",
+      "vo_id": "vo_npc_defterdar_eli",
+      "greeting": "Şah Abbas Karvansarayının qapısından içəri girən hər karvan əvvəl mənim dəftərimə yazılar. Sənin adının qarşısında xüsusi nişan var.",
+      "story_line": "Şuşa qalasına çatanda xalça ustası Bəhmənə salamımı yetir — müqavilənin dördüncü möhürü ondadır."
+    },
+    "usta_kerim": {
+      "npc_name": "Usta Kərim",
+      "city_id": "City_Ganja",
+      "npc_role": "NPC_Craftsman",
+      "vo_id": "vo_npc_usta_kerim",
+      "greeting": "Gəncənin mis qabları və yaqut narı Şərqdən Qərbə ad çıxarıb. Yaxşı malı seçmək gözdən yox, bəsirətdən gəlir.",
+      "story_line": "Gecələr Nizami türbəsinin yaxınlığında fənər yandıran hafizdən xəbər tut — onun sözləri ağılı itilər."
+    },
+    "usta_behmen": {
+      "npc_name": "Usta Bəhmən",
+      "city_id": "City_Shusha",
+      "npc_role": "PadishahNPC",
+      "vo_id": "vo_npc_usta_behmen",
+      "greeting": "Şuşa qalasının havası da, xalçası da əyilməzdir! Çələbi naxışlı bu xalçanın hər ilməsində Qarabağın ruhu toxunub.",
+      "story_line": "Atabəylər yurdu Naxçıvana gedən karvana bu nadir xalçanı əmanət edirəm — Möminə Xatun meydanında səni gözləyirlər."
+    },
+    "kendxuda_yusif": {
+      "npc_name": "Kəndxuda Yusif",
+      "city_id": "City_Nakhchivan",
+      "npc_role": "PadishahNPC",
+      "vo_id": "vo_npc_kendxuda_yusif",
+      "greeting": "Duzdağın beş min illik bərəkəti karvanına qüvvət versin! Buradan Bakıya gedən duz yükü bütün dövrün əmanətidir.",
+      "story_line": "Bakıya qayıdanda Şirvanşahlar Divanına mənim möhürümü göstər — yolun zəfərlə tamamlanacaq."
+    }
+  }
+}
