@@ -4,14 +4,17 @@ import { ModelLoader } from '../Prefabs/ModelLoader.js';
 
 /**
  * Scenes/Cinematic_Bazaar_25D.js
- * HƏQİQİ 3D PROYEKSİYALI DƏRİNLİK QABIĞI (3D Projected Depth-Shell Mesh) + FƏRDİ MƏKAN HƏRƏKƏT PROFİLLƏRİ:
- * - Artıq 2D düz ekran şəkli deyil: hər məkan 140×84 seqmentli HƏQİQİ 3D DƏRİNLİK TORUNA (Depth-Displaced 3D Shell)
- *   proyeksiyalanır! Döşəmə pikselləri real Y=0 (və ya Qala Bürcündə yüksələn yamac!) müstəvisinə kilidlənir,
- *   yan tağlar/sütunlar önə çıxır, Qız Qalası/dəniz/dağlar arxada dərinlikdə qalır.
- * - Real Three.js PerspectiveCamera 3D məkanda tacirin arxasınca irəliləyir, yanlara dönür və yamaclara qalxır —
- *   tacirin ayaqları daş döşəmədə sürüşmədən bütün memarlıq əsl 3D perspektivdə hərəkət edir!
- * - Bakının hər 6 məkanı fərqli kamera davranışı, fərqli yeriş sürəti/ritmi, fərqli əyri/yamac trayektoriyası,
- *   fərdi sərhəd trapesiyası və qadağan zolaqlarına (`blockedZones`) malikdir (`B` düyməsi ilə canlı görünür!).
+ * HƏQİQİ 3D MEMARLIQ QUTUSU PROYEKSİYASI (Analytical 3D Camera-Projection Mapping)
+ * + HƏQİQİ ARXADAN TƏQİB EDƏN 3D KAMERA (True 3D Follow-Cam)
+ * + PİKSEL-DƏQİQ HƏRƏKƏT ZOLAĞI & İKİTƏRƏFLİ ƏLAQƏLİ QAPI KEÇİDLƏRİ:
+ *
+ * - Hər şəkil öz real memarlıq həndəsəsinə (düz Y=0 daş döşəmə, şaquli sol/sağ tağ divarları,
+ *   arxa darvaza divarı, tavan və ya açıq səma/Qız Qalası/Xəzər dənizi müstəvisi) analitik şüa-müstəvi
+ *   kəsişməsi ilə 3D proyeksiyalanır — divarlar 100% dümdüz qalır, döşəmə daşları tacirin ayaqlarına kilidlənir!
+ * - Kamera tacirin arxasınca real 3D məkanda (~5.5m məsafədən) irəliləyir: Qız Qalası qapısına və ya
+ *   Buxara bazarının sonuna doğru yeridikcə yan tağlar və fənərlər əsl 3D oyun kimi yanından axıb keçir!
+ * - Bakıda əlaqəsiz şəkillər yığışdırılıb — bütün 4 məkan (İçərişəhər ↔ Buxara Bazarı ↔ Şirvanşahlar ↔ Xəzər Limanı)
+ *   şəkildə görünən real qapılarla ikitərəfli (girdiyin qapının ağzından çıxmaqla!) birləşdirilib.
  */
 
 const ENABLE_PLACEHOLDER_NPCS = false;
@@ -100,36 +103,48 @@ const CITY_CULTURE_STYLES = {
 };
 
 /**
- * Hər məkan şablonunun öz fərdi 3D kamera proyeksiya dərinliyi, fərdi xarakter hərəkət sürəti/ritmi,
- * yamac hündürlüyü (`slopeRise`), əyri oxu (`curveX`), hərəkət sərhədi və qadağan zolaqları!
+ * Hər otaq şablonunun piksel-ölçülü 3D Memarlıq Qutusu (`archBox`) + Təqib Kamerası (`followCam`) + Dəqiq Döşəmə Zolağı:
+ * - `vpUv`: Şəkildəki üfüq / qaçış nöqtəsi (u: 0..1 soldan sağa, uvY: 0..1 aşağıdan yuxarıya)
+ * - `archBox`: Real 3D divar müstəviləri (xLeft, xRight, zBack, wallTopY, gateHalfW, gateTopY, hasCeiling, ceilY, openRightSea, skyZ)
+ * - `followCam`: Tacirin arxasınca gedən real 3D kamera parametrləri
  */
 const ROOM_TEMPLATES = {
-  // 1. BAKI — İÇƏRİŞƏHƏR HƏYƏTİ: Geniş meydan izləmə + günəş/kölgə keçidi
+  // 1. BAKI — İÇƏRİŞƏHƏR KARVANSARAY HƏYƏTİ (bazaar_baku_25d.jpg piksel ölçüləri ilə 1:1!)
   baku_courtyard: {
     baseImage: './images/bazaar_baku_25d',
-    camPos: [0, 1.84, 13.4],
-    lookAt: [0, 3.32, -12.0],
+    refCamPos: [0, 1.75, 7.0],
+    vpUv: [0.5, 0.475],
+    refFov: 58,
     liveFov: 38,
-    refFov: 48,
-    depthShell: { nearDist: 6.8, farDist: 44.0, maxGroundDist: 28.0 },
-    movement: {
-      profileName: 'Geniş Meydan İzləmə',
-      speed: 4.55,
-      animScale: 1.12,
-      followX: 0.44,
-      followZ: 0.36,
-      followY: 0.14,
-      lookX: 0.24,
-      lookUpOnApproach: 0.45,
-      camRollAmp: 0.0,
-      slopeRise: 0.0,
-      curveX: 0.0,
+    archBox: {
+      xLeft: -5.85,
+      xRight: 4.75,
+      zBack: -15.62,
+      wallTopY: 5.2,
+      gateHalfW: 2.45,
+      gateTopY: 6.8,
+      hasCeiling: 0.0,
+      ceilY: 9.5,
+      openRightSea: 0.0,
+      skyZ: -20.5, // Qız Qalası arxa divarın üzərində tikişsiz (qırılmasız) 3D dərinlikdə dayanır!
     },
-    zRange: [-7.6, 6.2],
-    xBounds: [-3.35, 2.7, 0.85, 0.55],
+    followCam: {
+      profileName: 'İçərişəhər 3D Təqib Kamerası',
+      speed: 5.0,
+      animScale: 1.15,
+      chaseDistZ: 5.8,
+      minCamZ: -6.2,
+      maxCamZ: 6.4,
+      camHeight: 1.88,
+      followXRatio: 0.56,
+      lookAheadZ: -5.0,
+      lookHeight: 1.52,
+    },
+    // Dəqiq daş döşəmə trapesiyası (sol səki kənarından sağ səbətlərin önünə, arxa Qız Qalası darvazasına qədər!)
+    zRange: [-14.55, 2.95],
+    xBounds: [-4.45, 3.3, -0.45, -1.15],
     blockedZones: [
-      { x: 2.75, z: 3.4, rx: 1.15, rz: 2.2, label: 'Meyvə & Nar Səbətləri' },
-      { x: -3.6, z: 2.8, rx: 0.78, rz: 2.8, label: 'Sol Tağ Sütunları' },
+      { x: 4.1, z: -1.8, rx: 0.95, rz: 6.0, label: 'Sağ Meyvə & Nar Səbətləri' },
     ],
     sunColor: 0xffe4b0,
     sunPos: [14, 17, 7],
@@ -138,43 +153,51 @@ const ROOM_TEMPLATES = {
     ambientGround: 0x4a3420,
     ambientIntensity: 1.15,
     fogColor: 0x6b5134,
-    fogDensity: 0.009,
+    fogDensity: 0.007,
     exposureMul: 1.06,
     useDynamicSunZone: true,
     isInterior: false,
     lanterns: [
-      { pos: [-4.4, 2.6, 1.4], uv: [0.12, 0.56], color: 0xffb34e, intensity: 2.8 },
-      { pos: [4.2, 2.5, 1.8], uv: [0.89, 0.56], color: 0xffb656, intensity: 2.7 },
+      { pos: [-5.6, 2.7, 0.4], uv: [0.12, 0.56], color: 0xffb34e, intensity: 2.8 },
+      { pos: [5.4, 2.6, 0.8], uv: [0.89, 0.56], color: 0xffb656, intensity: 2.7 },
     ],
   },
 
-  // 2. BAKI — BUXARA ÖRTÜLÜ XALÇA BAZARI: Dar tağlı dəhlizdə dərin 3D Tunel Dolly irəliləyişi!
+  // 2. BAKI — BUXARA ÖRTÜLÜ XALÇA BAZARI (bazaar_baku_carpet_25d.jpg piksel ölçüləri ilə 1:1!)
   covered_arcade: {
     baseImage: './images/bazaar_baku_carpet_25d',
-    camPos: [0, 1.56, 12.2],
-    lookAt: [0, 4.68, -12.0],
-    liveFov: 37,
-    refFov: 48,
-    depthShell: { nearDist: 5.8, farDist: 38.0, maxGroundDist: 26.0 },
-    movement: {
-      profileName: 'Tağlı Dəhliz Tunel-Dolly',
-      speed: 3.45,
-      animScale: 0.94,
-      followX: 0.24,
-      followZ: 0.58, // Dərin 3D tunel boyunca irəli sürüşən kamera!
-      followY: 0.1,
-      lookX: 0.15,
-      lookUpOnApproach: -0.2,
-      camRollAmp: 0.0,
-      slopeRise: 0.0,
-      curveX: 0.0,
+    refCamPos: [0, 1.68, 6.8],
+    vpUv: [0.5, 0.417],
+    refFov: 58,
+    liveFov: 38,
+    archBox: {
+      xLeft: -3.26,
+      xRight: 3.26,
+      zBack: -9.98,
+      wallTopY: 6.4,
+      gateHalfW: 1.15,
+      gateTopY: 6.4,
+      hasCeiling: 1.0,
+      ceilY: 6.1,
+      openRightSea: 0.0,
+      skyZ: -22.0,
     },
-    zRange: [-6.6, 5.4],
-    xBounds: [-1.72, 1.72, 0.62, 0.62],
-    blockedZones: [
-      { x: -2.15, z: 3.0, rx: 0.95, rz: 2.35, label: 'Sol Xalça Piştaxtası' },
-      { x: 2.15, z: 3.0, rx: 0.95, rz: 2.35, label: 'Sağ Mis & Ədviyyat Masası' },
-    ],
+    followCam: {
+      profileName: 'Tağlı Bazar Tunel Təqibi',
+      speed: 4.3,
+      animScale: 1.06,
+      chaseDistZ: 5.1,
+      minCamZ: -2.8,
+      maxCamZ: 5.9,
+      camHeight: 1.72,
+      followXRatio: 0.5,
+      lookAheadZ: -4.3,
+      lookHeight: 1.42,
+    },
+    // Dəqiq mərkəzi daş yol (sol xalça pilləsi X=-2.15 ilə sağ ədviyyat pilləsi X=+2.15 tam arası!)
+    zRange: [-9.25, 2.45],
+    xBounds: [-1.95, 1.95, 0.08, 0.08],
+    blockedZones: [],
     sunColor: 0xffd692,
     sunPos: [5.5, 14.0, 2.0],
     sunBaseIntensity: 2.35,
@@ -182,43 +205,53 @@ const ROOM_TEMPLATES = {
     ambientGround: 0x382414,
     ambientIntensity: 1.1,
     fogColor: 0x453220,
-    fogDensity: 0.014,
+    fogDensity: 0.011,
     exposureMul: 1.04,
     useDynamicSunZone: false,
     isInterior: true,
     lanterns: [
-      { pos: [-3.2, 2.8, 1.8], uv: [0.22, 0.72], color: 0xffaa44, intensity: 3.4 },
-      { pos: [3.2, 2.8, -0.8], uv: [0.78, 0.72], color: 0xffb24c, intensity: 3.3 },
+      { pos: [-2.9, 2.8, 1.2], uv: [0.22, 0.72], color: 0xffaa44, intensity: 3.4 },
+      { pos: [2.9, 2.8, -2.2], uv: [0.78, 0.72], color: 0xffb24c, intensity: 3.3 },
     ],
   },
 
-  // 3. BAKI — ŞİRVANŞAHLAR DİVANXANASI: Ağırbaşlı saray yürüşü + taxta baxan əzəmətli kamera yüksəlişi!
+  // 3. BAKI — ŞİRVANŞAHLAR DİVANXANASI (bazaar_baku_palace_25d.jpg piksel ölçüləri ilə 1:1!)
   divan_palace: {
     baseImage: './images/bazaar_baku_palace_25d',
-    camPos: [0, 1.72, 13.0],
-    lookAt: [0, 3.8, -12.0],
+    refCamPos: [0, 1.72, 6.8],
+    vpUv: [0.5, 0.457],
+    refFov: 58,
     liveFov: 38,
-    refFov: 48,
-    depthShell: { nearDist: 6.4, farDist: 40.0, maxGroundDist: 24.0 },
-    movement: {
-      profileName: 'Təntənəli Saray Yürüşü',
-      speed: 2.9, // Qırmızı xalça üstündə ağırbaşlı, sakit mərasim addımı!
-      animScale: 0.82,
-      followX: 0.28,
-      followZ: 0.34,
-      followY: 0.16,
-      lookX: 0.18,
-      lookUpOnApproach: 0.95, // Taxta yaxınlaşdıqca kamera yuxarı — günbəzə və taxta doğru açılır!
-      camRollAmp: 0.0,
-      slopeRise: 0.0,
-      curveX: 0.0,
+    archBox: {
+      xLeft: -4.25,
+      xRight: 4.25,
+      zBack: -5.6,
+      wallTopY: 8.4,
+      gateHalfW: 2.1,
+      gateTopY: 8.4,
+      hasCeiling: 1.0,
+      ceilY: 8.1,
+      openRightSea: 0.0,
+      skyZ: -18.0,
     },
-    zRange: [-3.8, 5.8],
-    xBounds: [-2.65, 2.65, 0.45, 0.45],
+    followCam: {
+      profileName: 'Divan Zalı Təntənəli Təqib',
+      speed: 3.8,
+      animScale: 0.96,
+      chaseDistZ: 5.2,
+      minCamZ: 0.6,
+      maxCamZ: 6.0,
+      camHeight: 1.8,
+      followXRatio: 0.52,
+      lookAheadZ: -4.0,
+      lookHeight: 1.58,
+    },
+    // Qırmızı Şirvan xalçası və mərmər döşəmə — düz birinci taxt pilləkəninin önündə (Z=-4.15) dayanır!
+    zRange: [-4.15, 2.65],
+    xBounds: [-3.15, 3.15, 0.15, 0.15],
     blockedZones: [
-      { x: 0.0, z: -4.9, rx: 2.25, rz: 1.35, label: 'Şirvanşah Taxt Kürsüsü' },
-      { x: -3.05, z: 1.2, rx: 0.78, rz: 2.1, label: 'Sol Saray Şamdanları' },
-      { x: 3.05, z: 1.2, rx: 0.78, rz: 2.1, label: 'Sağ Saray Şamdanları' },
+      { x: -3.55, z: 1.45, rx: 0.65, rz: 1.4, label: 'Sol Şamdan & Sütun' },
+      { x: 3.55, z: 1.45, rx: 0.65, rz: 1.4, label: 'Sağ Şamdan & Sütun' },
     ],
     sunColor: 0xffdc9a,
     sunPos: [3.0, 16.0, 1.0],
@@ -227,42 +260,53 @@ const ROOM_TEMPLATES = {
     ambientGround: 0x332418,
     ambientIntensity: 1.06,
     fogColor: 0x3d2e20,
-    fogDensity: 0.013,
+    fogDensity: 0.011,
     exposureMul: 1.06,
     useDynamicSunZone: false,
     isInterior: true,
     lanterns: [
-      { pos: [-4.2, 2.2, 2.0], uv: [0.15, 0.48], color: 0xffae4a, intensity: 3.2 },
-      { pos: [4.2, 2.2, 2.0], uv: [0.85, 0.48], color: 0xffae4a, intensity: 3.2 },
+      { pos: [-3.8, 2.2, 1.4], uv: [0.15, 0.48], color: 0xffae4a, intensity: 3.2 },
+      { pos: [3.8, 2.2, 1.4], uv: [0.85, 0.48], color: 0xffae4a, intensity: 3.2 },
     ],
   },
 
-  // 4. BAKI — XƏZƏR LİMANI: Asimmetrik sola çəkilmiş sahil körpüsü + dəniz kənarı qadağan zolağı + yüngül dəniz dalğası!
+  // 4. BAKI — XƏZƏR LİMANI & QIZ QALASI SAHİL YOLU (room_baku_harbor_25d.jpg piksel ölçüləri ilə 1:1!)
   caspian_harbor: {
     baseImage: './images/room_baku_harbor_25d',
-    camPos: [0, 1.62, 12.6],
-    lookAt: [0, 4.3, -12.0],
+    refCamPos: [0, 1.7, 6.8],
+    vpUv: [0.485, 0.548],
+    refFov: 58,
     liveFov: 38,
-    refFov: 48,
-    depthShell: { nearDist: 6.0, farDist: 46.0, maxGroundDist: 28.0 },
-    movement: {
-      profileName: 'Asimmetrik Liman Körpüsü',
-      speed: 3.95,
-      animScale: 1.04,
-      followX: 0.34,
-      followZ: 0.52,
-      followY: 0.12,
-      lookX: 0.22,
-      lookUpOnApproach: 0.2,
-      camRollAmp: 0.0085, // Dəniz sahilində zərif külək/gəmi nəfəsi effekti!
-      slopeRise: 0.0,
-      curveX: -0.35, // Körpü perspektivdə uzaq dəniz qapısına doğru yüngül sola meyillənir!
+    archBox: {
+      xLeft: -3.35, // Sol daş anbar divarı
+      xRight: 2.02, // Daş sahil körpüsünün sağ kənarı (ondan sağda açıq Xəzər dənizi & Qız Qalası!)
+      zBack: -21.5, // Uzaqdakı Dəniz Qapısı və Fənər Qülləsi
+      wallTopY: 5.2,
+      gateHalfW: 1.8,
+      gateTopY: 6.2,
+      hasCeiling: 0.0,
+      ceilY: 9.5,
+      openRightSea: 1.0, // Sağ tərəf bağlanmır — Xəzər dənizi üfüqə və Qız Qalasına qədər açılır!
+      skyZ: -44.0,
     },
-    zRange: [-7.2, 5.6],
-    xBounds: [-1.85, 0.72, 0.45, 0.25],
+    followCam: {
+      profileName: 'Sahil Körpüsü 3D Təqibi',
+      speed: 5.0,
+      animScale: 1.14,
+      chaseDistZ: 5.6,
+      minCamZ: -11.5,
+      maxCamZ: 6.1,
+      camHeight: 1.82,
+      followXRatio: 0.55,
+      lookAheadZ: -5.0,
+      lookHeight: 1.5,
+    },
+    // Yalnız daş liman körpüsünün içi: solda sandıqlar/çəlləklər, sağda Xəzər dənizi suyu (X=+1.95) tam bloklanıb!
+    zRange: [-19.6, 3.15],
+    xBounds: [-1.35, 1.68, 0.35, 0.18],
     blockedZones: [
-      { x: -2.25, z: 3.6, rx: 1.05, rz: 2.35, label: 'Liman Sandıqları & Neft Tuluqları' },
-      { x: 1.7, z: 0.0, rx: 1.05, rz: 8.5, label: 'Xəzər Dənizi Suyu (Keçilməz)' },
+      { x: -1.95, z: 2.1, rx: 0.78, rz: 1.8, label: 'Sol Liman Sandıqları & Tuluqlar' },
+      { x: -1.82, z: -1.9, rx: 0.55, rz: 1.35, label: 'Taxta Çəlləklər' },
     ],
     sunColor: 0xffcc84,
     sunPos: [10, 12, -8],
@@ -271,119 +315,30 @@ const ROOM_TEMPLATES = {
     ambientGround: 0x2a343b,
     ambientIntensity: 1.05,
     fogColor: 0x3f434a,
-    fogDensity: 0.014,
+    fogDensity: 0.008,
     exposureMul: 1.06,
     useDynamicSunZone: false,
     isInterior: false,
     lanterns: [
-      { pos: [-3.2, 1.9, 3.2], uv: [0.1, 0.44], color: 0xffa842, intensity: 3.5 },
-      { pos: [-2.4, 2.0, -1.2], uv: [0.28, 0.48], color: 0xffb24c, intensity: 3.1 },
+      { pos: [-2.8, 1.9, 2.4], uv: [0.1, 0.44], color: 0xffa842, intensity: 3.5 },
+      { pos: [-2.7, 2.0, -2.5], uv: [0.28, 0.48], color: 0xffb24c, intensity: 3.1 },
     ],
   },
 
-  // 5. BAKI — QIZ QALASI BÜRCLƏRİ: REAL 3D YAMACA QALXAN ƏYRİ QALA YOLU (Y hündürlüyü artır!)
-  fortress_rampart: {
-    baseImage: './images/room_fortress_rampart_25d',
-    camPos: [0, 1.62, 12.6],
-    lookAt: [0, 4.35, -12.0],
-    liveFov: 38,
-    refFov: 48,
-    depthShell: { nearDist: 5.8, farDist: 48.0, maxGroundDist: 26.0 },
-    movement: {
-      profileName: 'Yüksələn Əyri Qala Yolu',
-      speed: 3.6,
-      animScale: 0.98,
-      followX: 0.34,
-      followZ: 0.5,
-      followY: 0.72, // Tacir qala yamacına qalxdıqca kamera da onunla real 3D yüksəlir!
-      lookX: 0.25,
-      lookUpOnApproach: 0.55,
-      camRollAmp: 0.0,
-      slopeRise: 1.05, // Arxa bürcə doğru 1.05m real 3D yüksəliş!
-      curveX: 0.45, // Qala divarı uzaqda sağa doğru qıvrılır!
-    },
-    zRange: [-8.2, 5.6],
-    xBounds: [-2.15, 0.68, 0.65, 0.35],
-    blockedZones: [
-      { x: 1.72, z: 0.0, rx: 0.95, rz: 9.2, label: 'Uçurum Məhəccəri (Keçilməz)' },
-      { x: -2.85, z: 1.0, rx: 0.72, rz: 8.5, label: 'Məşəlli Qala Divarı' },
-    ],
-    sunColor: 0xffc888,
-    sunPos: [12, 13, -6],
-    sunBaseIntensity: 2.25,
-    ambientSky: 0xb6a8c4,
-    ambientGround: 0x332d2b,
-    ambientIntensity: 1.04,
-    fogColor: 0x4a404c,
-    fogDensity: 0.015,
-    exposureMul: 1.05,
-    useDynamicSunZone: false,
-    isInterior: false,
-    lanterns: [
-      { pos: [-3.0, 2.4, 2.6], uv: [0.15, 0.56], color: 0xff9838, intensity: 3.6 },
-      { pos: [-2.2, 2.4, -1.6], uv: [0.31, 0.55], color: 0xffa242, intensity: 3.2 },
-    ],
-  },
-
-  // 6. BAKI — ATƏŞGAH & NEFT-DUZ YOLU: Geniş 3D Orbital Dönüşlü Abidə Meydanı (sürətli açıq yol!)
-  mausoleum_square: {
-    baseImage: './images/bazaar_nakhchivan_25d',
-    camPos: [0, 1.74, 13.0],
-    lookAt: [0, 3.85, -12.0],
-    liveFov: 38,
-    refFov: 48,
-    depthShell: { nearDist: 6.4, farDist: 44.0, maxGroundDist: 26.0 },
-    movement: {
-      profileName: 'Geniş Orbital Abidə Baxışı',
-      speed: 4.85, // Açıq karvan meydanında çevik sürət!
-      animScale: 1.2,
-      followX: 0.55, // Sola-sağa gəzdikcə abidə arxadakı dağlara qarşı güclü 3D fırlanır!
-      followZ: 0.42,
-      followY: 0.14,
-      lookX: 0.3,
-      lookUpOnApproach: 0.35,
-      camRollAmp: 0.0,
-      slopeRise: 0.0,
-      curveX: 0.0,
-    },
-    zRange: [-6.0, 6.0],
-    xBounds: [-2.9, 2.9, 0.72, 0.72],
-    blockedZones: [
-      { x: 0.0, z: -7.0, rx: 1.85, rz: 1.45, label: 'Mərkəzi Abidə Bünövrəsi' },
-      { x: -3.05, z: 4.0, rx: 1.12, rz: 1.85, label: 'Sol Duz & Neft Kisələri' },
-      { x: 3.05, z: 4.1, rx: 1.08, rz: 1.65, label: 'Sağ Zəfəran Qabları' },
-    ],
-    sunColor: 0xffb874,
-    sunPos: [-10, 13, -4],
-    sunBaseIntensity: 2.35,
-    ambientSky: 0xf0ba90,
-    ambientGround: 0x422618,
-    ambientIntensity: 1.06,
-    fogColor: 0x543624,
-    fogDensity: 0.013,
-    exposureMul: 1.04,
-    useDynamicSunZone: false,
-    isInterior: false,
-    lanterns: [
-      { pos: [-4.0, 2.5, 1.5], uv: [0.18, 0.52], color: 0xffac44, intensity: 3.2 },
-      { pos: [4.0, 2.5, 1.5], uv: [0.83, 0.52], color: 0xffac44, intensity: 3.2 },
-    ],
-  },
-
-  // DİGƏR ŞƏHƏR MEYDANLARI (Eyni real 3D Depth-Shell mühərriki + fərdi hərəkət zolaqları ilə!)
+  // Digər şəhər və missiya şablonları (eyni 3D Memarlıq Qutusu + Təqib Kamerası ilə!)
   shamakhi_courtyard: {
     baseImage: './images/bazaar_shamakhi_25d',
-    camPos: [0, 1.72, 13.0],
-    lookAt: [0, 3.85, -12.0],
+    refCamPos: [0, 1.72, 6.8],
+    vpUv: [0.5, 0.47],
+    refFov: 58,
     liveFov: 38,
-    refFov: 48,
-    depthShell: { nearDist: 6.5, farDist: 44.0, maxGroundDist: 27.0 },
-    movement: { profileName: 'Şirvan Meydan İzləmə', speed: 4.4, animScale: 1.1, followX: 0.44, followZ: 0.38, followY: 0.14, lookX: 0.24, lookUpOnApproach: 0.35, camRollAmp: 0, slopeRise: 0, curveX: 0 },
-    zRange: [-7.6, 6.2],
-    xBounds: [-3.2, 3.2, 0.8, 0.8],
+    archBox: { xLeft: -4.8, xRight: 4.8, zBack: -13.5, wallTopY: 4.6, gateHalfW: 2.2, gateTopY: 6.2, hasCeiling: 0, ceilY: 9, openRightSea: 0, skyZ: -38 },
+    followCam: { profileName: 'Şirvan Meydan Təqibi', speed: 4.7, animScale: 1.12, chaseDistZ: 5.6, minCamZ: -4.8, maxCamZ: 6.2, camHeight: 1.85, followXRatio: 0.55, lookAheadZ: -4.6, lookHeight: 1.5 },
+    zRange: [-12.2, 2.95],
+    xBounds: [-3.55, 3.55, 0.45, 0.45],
     blockedZones: [
-      { x: -3.25, z: 2.4, rx: 1.0, rz: 2.4, label: 'Sol Ədviyyat Kisələri' },
-      { x: 3.35, z: 2.6, rx: 0.95, rz: 2.2, label: 'Sağ Sandıqlar' },
+      { x: -3.5, z: 1.2, rx: 0.95, rz: 2.2, label: 'Sol Ədviyyat Kisələri' },
+      { x: 3.55, z: 1.3, rx: 0.9, rz: 2.1, label: 'Sağ Sandıqlar' },
     ],
     sunColor: 0xd0e4f8,
     sunPos: [8, 16, 4],
@@ -392,28 +347,28 @@ const ROOM_TEMPLATES = {
     ambientGround: 0x332b24,
     ambientIntensity: 1.05,
     fogColor: 0x384659,
-    fogDensity: 0.013,
+    fogDensity: 0.011,
     exposureMul: 1.04,
     useDynamicSunZone: false,
     isInterior: false,
     lanterns: [
-      { pos: [-4.2, 2.5, 1.6], uv: [0.13, 0.52], color: 0xffb24c, intensity: 3.2 },
-      { pos: [4.2, 2.5, 1.6], uv: [0.88, 0.52], color: 0x52d4d8, intensity: 3.1 },
+      { pos: [-4.4, 2.5, 1.0], uv: [0.13, 0.52], color: 0xffb24c, intensity: 3.2 },
+      { pos: [4.4, 2.5, 1.0], uv: [0.88, 0.52], color: 0x52d4d8, intensity: 3.1 },
     ],
   },
   sheki_courtyard: {
     baseImage: './images/bazaar_sheki_25d',
-    camPos: [0, 1.84, 13.4],
-    lookAt: [0, 3.25, -12.0],
+    refCamPos: [0, 1.76, 6.8],
+    vpUv: [0.5, 0.48],
+    refFov: 58,
     liveFov: 38,
-    refFov: 48,
-    depthShell: { nearDist: 6.6, farDist: 44.0, maxGroundDist: 28.0 },
-    movement: { profileName: 'Bulaqlı Həyət İzləmə', speed: 4.3, animScale: 1.08, followX: 0.42, followZ: 0.38, followY: 0.14, lookX: 0.22, lookUpOnApproach: 0.3, camRollAmp: 0, slopeRise: 0, curveX: 0 },
-    zRange: [-7.8, 6.4],
-    xBounds: [-3.1, 2.9, 0.85, 0.75],
+    archBox: { xLeft: -4.8, xRight: 4.8, zBack: -13.8, wallTopY: 4.5, gateHalfW: 2.1, gateTopY: 5.6, hasCeiling: 0, ceilY: 9, openRightSea: 0, skyZ: -40 },
+    followCam: { profileName: 'Şəki Həyət Təqibi', speed: 4.7, animScale: 1.12, chaseDistZ: 5.7, minCamZ: -5.0, maxCamZ: 6.3, camHeight: 1.88, followXRatio: 0.55, lookAheadZ: -4.6, lookHeight: 1.5 },
+    zRange: [-12.4, 2.95],
+    xBounds: [-3.45, 3.35, 0.45, 0.45],
     blockedZones: [
-      { x: 2.1, z: 1.45, rx: 1.45, rz: 1.35, label: 'Səkkizguşəli Daş Bulaq' },
-      { x: -3.05, z: 5.1, rx: 1.25, rz: 1.45, label: 'Halva Piştaxtası' },
+      { x: 2.15, z: -0.2, rx: 1.4, rz: 1.4, label: 'Səkkizguşəli Daş Bulaq' },
+      { x: -3.25, z: 2.1, rx: 1.05, rz: 1.4, label: 'Halva Piştaxtası' },
     ],
     sunColor: 0xffe8b0,
     sunPos: [10, 17, 5],
@@ -422,28 +377,28 @@ const ROOM_TEMPLATES = {
     ambientGround: 0x3d3020,
     ambientIntensity: 1.12,
     fogColor: 0x4f4e3c,
-    fogDensity: 0.01,
+    fogDensity: 0.009,
     exposureMul: 1.02,
     useDynamicSunZone: false,
     isInterior: false,
     lanterns: [
-      { pos: [-4.3, 2.5, 1.5], uv: [0.14, 0.55], color: 0xffb04a, intensity: 2.8 },
-      { pos: [4.3, 2.5, 1.5], uv: [0.88, 0.55], color: 0xffb04a, intensity: 2.8 },
+      { pos: [-4.4, 2.5, 1.0], uv: [0.14, 0.55], color: 0xffb04a, intensity: 2.8 },
+      { pos: [4.4, 2.5, 1.0], uv: [0.88, 0.55], color: 0xffb04a, intensity: 2.8 },
     ],
   },
   ganja_courtyard: {
     baseImage: './images/bazaar_ganja_25d',
-    camPos: [0, 1.74, 13.0],
-    lookAt: [0, 3.85, -12.0],
+    refCamPos: [0, 1.72, 6.8],
+    vpUv: [0.5, 0.46],
+    refFov: 58,
     liveFov: 38,
-    refFov: 48,
-    depthShell: { nearDist: 6.5, farDist: 44.0, maxGroundDist: 27.0 },
-    movement: { profileName: 'Çinarlı Xiyaban Dolly', speed: 4.45, animScale: 1.1, followX: 0.4, followZ: 0.45, followY: 0.14, lookX: 0.22, lookUpOnApproach: 0.35, camRollAmp: 0, slopeRise: 0, curveX: 0 },
-    zRange: [-7.8, 6.2],
-    xBounds: [-2.8, 2.8, 0.8, 0.8],
+    archBox: { xLeft: -4.6, xRight: 4.6, zBack: -13.6, wallTopY: 4.5, gateHalfW: 2.1, gateTopY: 5.6, hasCeiling: 0, ceilY: 9, openRightSea: 0, skyZ: -38 },
+    followCam: { profileName: 'Şah Abbas Meydan Təqibi', speed: 4.7, animScale: 1.12, chaseDistZ: 5.6, minCamZ: -4.8, maxCamZ: 6.2, camHeight: 1.85, followXRatio: 0.55, lookAheadZ: -4.6, lookHeight: 1.5 },
+    zRange: [-12.2, 2.95],
+    xBounds: [-3.15, 3.15, 0.45, 0.45],
     blockedZones: [
-      { x: -2.65, z: -0.6, rx: 0.85, rz: 0.95, label: 'Sol Çinar Ağacı' },
-      { x: 2.65, z: -0.6, rx: 0.85, rz: 0.95, label: 'Sağ Çinar Ağacı' },
+      { x: -2.75, z: -2.2, rx: 0.88, rz: 1.05, label: 'Sol Çinar Ağacı' },
+      { x: 2.75, z: -2.2, rx: 0.88, rz: 1.05, label: 'Sağ Çinar Ağacı' },
     ],
     sunColor: 0xffd596,
     sunPos: [-11, 15, 6],
@@ -452,28 +407,28 @@ const ROOM_TEMPLATES = {
     ambientGround: 0x442a1a,
     ambientIntensity: 1.08,
     fogColor: 0x543825,
-    fogDensity: 0.012,
+    fogDensity: 0.01,
     exposureMul: 1.02,
     useDynamicSunZone: false,
     isInterior: false,
     lanterns: [
-      { pos: [-4.2, 2.6, 1.6], uv: [0.09, 0.58], color: 0xffa844, intensity: 3.0 },
-      { pos: [4.2, 2.6, 1.6], uv: [0.92, 0.58], color: 0xffa844, intensity: 3.0 },
+      { pos: [-4.2, 2.6, 1.0], uv: [0.09, 0.58], color: 0xffa844, intensity: 3.0 },
+      { pos: [4.2, 2.6, 1.0], uv: [0.92, 0.58], color: 0xffa844, intensity: 3.0 },
     ],
   },
   shusha_courtyard: {
     baseImage: './images/bazaar_shusha_25d',
-    camPos: [0, 1.6, 12.4],
-    lookAt: [0, 4.45, -12.0],
+    refCamPos: [0, 1.68, 6.8],
+    vpUv: [0.52, 0.43],
+    refFov: 58,
     liveFov: 38,
-    refFov: 48,
-    depthShell: { nearDist: 6.2, farDist: 46.0, maxGroundDist: 26.0 },
-    movement: { profileName: 'Qala Meydanı Yürüşü', speed: 4.15, animScale: 1.05, followX: 0.4, followZ: 0.44, followY: 0.14, lookX: 0.22, lookUpOnApproach: 0.4, camRollAmp: 0, slopeRise: 0, curveX: 0 },
-    zRange: [-7.4, 6.0],
-    xBounds: [-2.85, 2.7, 0.85, 0.85],
+    archBox: { xLeft: -4.5, xRight: 4.5, zBack: -13.0, wallTopY: 4.6, gateHalfW: 1.9, gateTopY: 5.4, hasCeiling: 0, ceilY: 9, openRightSea: 0, skyZ: -42 },
+    followCam: { profileName: 'Şuşa Qala Meydan Təqibi', speed: 4.6, animScale: 1.1, chaseDistZ: 5.5, minCamZ: -4.4, maxCamZ: 6.1, camHeight: 1.82, followXRatio: 0.55, lookAheadZ: -4.6, lookHeight: 1.48 },
+    zRange: [-11.6, 2.85],
+    xBounds: [-3.05, 2.95, 0.55, 0.55],
     blockedZones: [
-      { x: 2.95, z: 3.2, rx: 1.05, rz: 2.1, label: 'Sağ Misgərlik Piştaxtası' },
-      { x: -3.2, z: 3.4, rx: 0.9, rz: 2.4, label: 'Sol Xalça Məhəccəri' },
+      { x: 3.05, z: 1.5, rx: 0.95, rz: 2.0, label: 'Sağ Misgərlik Piştaxtası' },
+      { x: -3.25, z: 1.6, rx: 0.85, rz: 2.1, label: 'Sol Xalça Məhəccəri' },
     ],
     sunColor: 0xfad8ae,
     sunPos: [8, 15, 4],
@@ -482,28 +437,28 @@ const ROOM_TEMPLATES = {
     ambientGround: 0x362b26,
     ambientIntensity: 1.08,
     fogColor: 0x4c4654,
-    fogDensity: 0.015,
+    fogDensity: 0.012,
     exposureMul: 1.04,
     useDynamicSunZone: false,
     isInterior: false,
     lanterns: [
-      { pos: [-4.2, 2.5, 1.6], uv: [0.11, 0.56], color: 0xffad4a, intensity: 3.2 },
-      { pos: [4.2, 2.5, 1.6], uv: [0.91, 0.56], color: 0xffad4a, intensity: 3.2 },
+      { pos: [-4.2, 2.5, 1.0], uv: [0.11, 0.56], color: 0xffad4a, intensity: 3.2 },
+      { pos: [4.2, 2.5, 1.0], uv: [0.91, 0.56], color: 0xffad4a, intensity: 3.2 },
     ],
   },
   lankaran_courtyard: {
     baseImage: './images/bazaar_lankaran_25d',
-    camPos: [0, 1.68, 12.8],
-    lookAt: [0, 4.05, -12.0],
+    refCamPos: [0, 1.68, 6.8],
+    vpUv: [0.51, 0.44],
+    refFov: 58,
     liveFov: 38,
-    refFov: 48,
-    depthShell: { nearDist: 6.3, farDist: 44.0, maxGroundDist: 26.0 },
-    movement: { profileName: 'Bağlı Qala Yürüşü', speed: 4.2, animScale: 1.06, followX: 0.4, followZ: 0.42, followY: 0.14, lookX: 0.22, lookUpOnApproach: 0.35, camRollAmp: 0, slopeRise: 0, curveX: 0 },
-    zRange: [-7.4, 6.0],
-    xBounds: [-2.7, 2.7, 0.8, 0.8],
+    archBox: { xLeft: -4.4, xRight: 4.4, zBack: -12.8, wallTopY: 4.4, gateHalfW: 1.9, gateTopY: 5.2, hasCeiling: 0, ceilY: 9, openRightSea: 0, skyZ: -38 },
+    followCam: { profileName: 'Dairəvi Qala Təqibi', speed: 4.6, animScale: 1.1, chaseDistZ: 5.5, minCamZ: -4.2, maxCamZ: 6.1, camHeight: 1.82, followXRatio: 0.55, lookAheadZ: -4.6, lookHeight: 1.48 },
+    zRange: [-11.4, 2.85],
+    xBounds: [-2.95, 2.95, 0.55, 0.55],
     blockedZones: [
-      { x: -2.85, z: 3.8, rx: 1.15, rz: 2.0, label: 'Sol Nar Səbətləri' },
-      { x: 2.95, z: 3.8, rx: 1.1, rz: 1.9, label: 'Sağ Samovarlar' },
+      { x: -3.05, z: 1.8, rx: 1.05, rz: 1.9, label: 'Sol Nar Səbətləri' },
+      { x: 3.05, z: 1.8, rx: 1.0, rz: 1.9, label: 'Sağ Samovarlar' },
     ],
     sunColor: 0xffd088,
     sunPos: [6, 15, 2],
@@ -512,28 +467,55 @@ const ROOM_TEMPLATES = {
     ambientGround: 0x3d291a,
     ambientIntensity: 1.08,
     fogColor: 0x4c3926,
-    fogDensity: 0.013,
+    fogDensity: 0.011,
     exposureMul: 1.03,
     useDynamicSunZone: false,
     isInterior: false,
     lanterns: [
-      { pos: [-4.0, 2.6, 1.5], uv: [0.24, 0.58], color: 0xffac44, intensity: 3.1 },
-      { pos: [4.0, 2.6, 1.5], uv: [0.78, 0.58], color: 0xffac44, intensity: 3.1 },
+      { pos: [-4.0, 2.6, 1.0], uv: [0.24, 0.58], color: 0xffac44, intensity: 3.1 },
+      { pos: [4.0, 2.6, 1.0], uv: [0.78, 0.58], color: 0xffac44, intensity: 3.1 },
+    ],
+  },
+  fortress_rampart: {
+    baseImage: './images/room_fortress_rampart_25d',
+    refCamPos: [0, 1.68, 6.8],
+    vpUv: [0.52, 0.52],
+    refFov: 58,
+    liveFov: 38,
+    archBox: { xLeft: -2.85, xRight: 1.65, zBack: -16.5, wallTopY: 5.6, gateHalfW: 1.6, gateTopY: 6.6, hasCeiling: 0, ceilY: 9, openRightSea: 1.0, skyZ: -44 },
+    followCam: { profileName: 'Qala Bürcü Təqibi', speed: 4.5, animScale: 1.08, chaseDistZ: 5.5, minCamZ: -6.8, maxCamZ: 6.1, camHeight: 1.84, followXRatio: 0.52, lookAheadZ: -4.8, lookHeight: 1.55 },
+    zRange: [-14.5, 3.0],
+    xBounds: [-1.95, 1.15, 0.35, 0.25],
+    blockedZones: [],
+    sunColor: 0xffc888,
+    sunPos: [12, 13, -6],
+    sunBaseIntensity: 2.25,
+    ambientSky: 0xb6a8c4,
+    ambientGround: 0x332d2b,
+    ambientIntensity: 1.04,
+    fogColor: 0x4a404c,
+    fogDensity: 0.011,
+    exposureMul: 1.05,
+    useDynamicSunZone: false,
+    isInterior: false,
+    lanterns: [
+      { pos: [-2.5, 2.4, 1.8], uv: [0.15, 0.56], color: 0xff9838, intensity: 3.6 },
+      { pos: [-2.3, 2.4, -3.2], uv: [0.31, 0.55], color: 0xffa242, intensity: 3.2 },
     ],
   },
   mountain_pass_bazaar: {
     baseImage: './images/bazaar_quba_25d',
-    camPos: [0, 1.66, 12.6],
-    lookAt: [0, 4.15, -12.0],
+    refCamPos: [0, 1.7, 6.8],
+    vpUv: [0.5, 0.45],
+    refFov: 58,
     liveFov: 38,
-    refFov: 48,
-    depthShell: { nearDist: 6.4, farDist: 48.0, maxGroundDist: 27.0 },
-    movement: { profileName: 'Dağ Aşırımı Bazarı', speed: 4.35, animScale: 1.08, followX: 0.42, followZ: 0.4, followY: 0.14, lookX: 0.24, lookUpOnApproach: 0.4, camRollAmp: 0, slopeRise: 0, curveX: 0 },
-    zRange: [-7.4, 6.0],
-    xBounds: [-2.85, 2.85, 0.75, 0.75],
+    archBox: { xLeft: -4.5, xRight: 4.5, zBack: -13.2, wallTopY: 4.6, gateHalfW: 2.0, gateTopY: 5.5, hasCeiling: 0, ceilY: 9, openRightSea: 0, skyZ: -44 },
+    followCam: { profileName: 'Dağ Aşırımı Təqibi', speed: 4.6, animScale: 1.1, chaseDistZ: 5.5, minCamZ: -4.5, maxCamZ: 6.1, camHeight: 1.84, followXRatio: 0.55, lookAheadZ: -4.6, lookHeight: 1.5 },
+    zRange: [-11.8, 2.9],
+    xBounds: [-3.05, 3.05, 0.5, 0.5],
     blockedZones: [
-      { x: -3.15, z: 3.5, rx: 1.05, rz: 2.3, label: 'Sol Alma Səbətləri' },
-      { x: 3.15, z: 3.5, rx: 1.05, rz: 2.3, label: 'Sağ Yun və Alma Səbətləri' },
+      { x: -3.25, z: 1.7, rx: 1.0, rz: 2.0, label: 'Sol Alma Səbətləri' },
+      { x: 3.25, z: 1.7, rx: 1.0, rz: 2.0, label: 'Sağ Yun Səbətləri' },
     ],
     sunColor: 0xffe6b6,
     sunPos: [-12, 16, 6],
@@ -542,31 +524,176 @@ const ROOM_TEMPLATES = {
     ambientGround: 0x3c3024,
     ambientIntensity: 1.1,
     fogColor: 0x54524d,
-    fogDensity: 0.011,
+    fogDensity: 0.01,
     exposureMul: 1.0,
     useDynamicSunZone: false,
     isInterior: false,
     lanterns: [
-      { pos: [-4.2, 2.6, 1.6], uv: [0.09, 0.58], color: 0xffae4a, intensity: 3.0 },
-      { pos: [4.2, 2.6, 1.6], uv: [0.92, 0.58], color: 0xffae4a, intensity: 3.0 },
+      { pos: [-4.2, 2.6, 1.0], uv: [0.09, 0.58], color: 0xffae4a, intensity: 3.0 },
+      { pos: [4.2, 2.6, 1.0], uv: [0.92, 0.58], color: 0xffae4a, intensity: 3.0 },
+    ],
+  },
+  mausoleum_square: {
+    baseImage: './images/bazaar_nakhchivan_25d',
+    refCamPos: [0, 1.72, 6.8],
+    vpUv: [0.5, 0.45],
+    refFov: 58,
+    liveFov: 38,
+    archBox: { xLeft: -4.6, xRight: 4.6, zBack: -12.6, wallTopY: 4.5, gateHalfW: 2.4, gateTopY: 8.5, hasCeiling: 0, ceilY: 9, openRightSea: 0, skyZ: -40 },
+    followCam: { profileName: 'Türbə Meydanı Təqibi', speed: 4.6, animScale: 1.12, chaseDistZ: 5.5, minCamZ: -4.0, maxCamZ: 6.1, camHeight: 1.84, followXRatio: 0.55, lookAheadZ: -4.6, lookHeight: 1.5 },
+    zRange: [-10.4, 2.9],
+    xBounds: [-3.05, 3.05, 0.5, 0.5],
+    blockedZones: [
+      { x: -3.2, z: 1.8, rx: 1.05, rz: 1.8, label: 'Sol Duz Kisələri' },
+      { x: 3.2, z: 1.8, rx: 1.0, rz: 1.8, label: 'Sağ Ədviyyat Qabları' },
+    ],
+    sunColor: 0xffb874,
+    sunPos: [-10, 13, -4],
+    sunBaseIntensity: 2.35,
+    ambientSky: 0xf0ba90,
+    ambientGround: 0x422618,
+    ambientIntensity: 1.06,
+    fogColor: 0x543624,
+    fogDensity: 0.011,
+    exposureMul: 1.04,
+    useDynamicSunZone: false,
+    isInterior: false,
+    lanterns: [
+      { pos: [-4.1, 2.5, 1.0], uv: [0.18, 0.52], color: 0xffac44, intensity: 3.2 },
+      { pos: [4.1, 2.5, 1.0], uv: [0.83, 0.52], color: 0xffac44, intensity: 3.2 },
     ],
   },
 };
 
+/**
+ * BAKIDA 100% ƏLAQƏLİ, REAL QAPI-QAPI KEÇİD ŞƏBƏKƏSİ (əlaqəsiz şəkillər çıxarıldı!):
+ * - İçərişəhər Həyəti:
+ *     1) Sol xalçalı tağ  ──► Buxara Örtülü Xalça Bazarı (qayıdanda düz sol tağın ağzından çıxırsan!)
+ *     2) Sağ-arxa tağ     ──► Şirvanşahlar Divanxanası (qayıdanda düz sağ-arxa tağın ağzından çıxırsan!)
+ *     3) Mərkəzi Qız Qalası Darvazası ──► Qız Qalası Sahil Yolu & Xəzər Limanı (qayıdanda düz mərkəzi qapıdan həyətə girirsən; Limanın o başındakı Dəniz Qapısından isə Qədim Xəritəyə çıxırsan!)
+ */
 const LOCATION_ROOMS = {
   City_Baku: {
     isMission: false,
     palaceTitle: 'Şirvanşahlar Divanxanası Qəbulu',
-    gateLabel: 'Qoşa Qala Qapısı · Qədim Xəritəyə Çıx',
+    gateLabel: 'Dəniz Qapısı · Qədim Xəritəyə Çıx',
     rooms: [
-      { id: 'courtyard', shortTitle: 'İçərişəhər', title: 'Multani Karvansarayı Həyəti', template: 'baku_courtyard', tint: [1.05, 1.02, 0.96], role: 'courtyard' },
-      { id: 'bukhara_market', shortTitle: 'Buxara', title: 'Buxara Örtülü Xalça Bazarı', template: 'covered_arcade', tint: [1.06, 1.02, 0.94], role: 'market' },
-      { id: 'palace_hall', shortTitle: 'Şirvanşahlar', title: 'Şirvanşahlar Divanxanası', template: 'divan_palace', tint: [1.05, 1.01, 0.94], role: 'palace' },
-      { id: 'caspian_port', shortTitle: 'Xəzər Limanı', title: 'Bakı Dəniz Limanı & Fənər', template: 'caspian_harbor', tint: [1.04, 1.02, 0.97], role: 'explore' },
-      { id: 'maiden_tower', shortTitle: 'Qız Qalası', title: 'Qız Qalası Müdafiə Bürcləri', template: 'fortress_rampart', tint: [1.06, 1.01, 0.94], role: 'explore' },
-      { id: 'ateshgah_road', shortTitle: 'Atəşgah Yolu', title: 'Abşeron Neft & Duz Yolu', template: 'mausoleum_square', tint: [1.05, 0.98, 0.92], role: 'explore' },
+      {
+        id: 'courtyard',
+        shortTitle: 'İçərişəhər',
+        title: 'İçərişəhər · Karvansaray Həyəti',
+        template: 'baku_courtyard',
+        tint: [1.05, 1.02, 0.96],
+        role: 'courtyard_hub',
+        customPortals: [
+          {
+            id: 'door_to_bukhara',
+            label: 'Sol Xalçalı Tağ → Buxara Örtülü Bazarı',
+            targetAngle: 'bukhara_market',
+            pos: [-4.2, 0, -3.8],
+            triggerRadius: 1.3,
+            targetSpawn: [0.0, 0, 1.55],
+            targetYaw: Math.PI,
+            ringColor: 0xe6be68,
+          },
+          {
+            id: 'door_to_palace',
+            label: 'Saray Tağı → Şirvanşahlar Divanxanası',
+            targetAngle: 'palace_hall',
+            pos: [3.95, 0, -13.8],
+            triggerRadius: 1.35,
+            targetSpawn: [0.0, 0, 1.55],
+            targetYaw: Math.PI,
+            ringColor: 0xd46a54,
+          },
+          {
+            id: 'door_to_maiden_harbor',
+            label: 'Qız Qalası Darvazası → Qala Önü & Xəzər Limanı',
+            targetAngle: 'caspian_port',
+            pos: [0.0, 0, -14.1],
+            triggerRadius: 1.4,
+            targetSpawn: [0.15, 0, 1.45],
+            targetYaw: Math.PI,
+            ringColor: 0x6cb8cf,
+          },
+        ],
+      },
+      {
+        id: 'bukhara_market',
+        shortTitle: 'Buxara Bazarı',
+        title: 'Buxara Örtülü Xalça Bazarı',
+        template: 'covered_arcade',
+        tint: [1.06, 1.02, 0.94],
+        role: 'market',
+        customPortals: [
+          {
+            id: 'bukhara_far_door',
+            label: 'İşıqlı Qapı → İçərişəhər Həyətinə Çıx',
+            targetAngle: 'courtyard',
+            pos: [0.0, 0, -8.85],
+            triggerRadius: 1.25,
+            // Həyətdə düz sol xalçalı tağın önündə, həyətin mərkəzinə baxaraq doğur!
+            targetSpawn: [-2.85, 0, -3.8],
+            targetYaw: Math.PI * 0.5,
+            ringColor: 0xf4cf76,
+          },
+          {
+            id: 'bukhara_near_exit',
+            label: 'Giriş Tağı → İçərişəhər Həyətinə Qayıt',
+            targetAngle: 'courtyard',
+            pos: [0.0, 0, 2.38],
+            triggerRadius: 0.72,
+            targetSpawn: [-2.85, 0, -3.8],
+            targetYaw: Math.PI * 0.5,
+            ringColor: 0xe6be68,
+          },
+        ],
+      },
+      {
+        id: 'palace_hall',
+        shortTitle: 'Şirvanşahlar',
+        title: 'Şirvanşahlar Divanxanası',
+        template: 'divan_palace',
+        tint: [1.05, 1.01, 0.94],
+        role: 'palace',
+        customPortals: [
+          {
+            id: 'palace_exit_door',
+            label: 'Divan Qapısı → İçərişəhər Həyətinə Qayıt',
+            targetAngle: 'courtyard',
+            pos: [0.0, 0, 2.52],
+            triggerRadius: 0.95,
+            // Həyətdə düz sağ-arxa saray tağının önündə, önə baxaraq doğur!
+            targetSpawn: [3.25, 0, -12.1],
+            targetYaw: 0.0,
+            ringColor: 0xf4cf76,
+          },
+        ],
+      },
+      {
+        id: 'caspian_port',
+        shortTitle: 'Qala Yolu & Liman',
+        title: 'Qız Qalası Sahil Yolu & Xəzər Limanı',
+        template: 'caspian_harbor',
+        tint: [1.04, 1.02, 0.97],
+        role: 'harbor_exit',
+        customPortals: [
+          {
+            id: 'harbor_back_to_courtyard',
+            label: 'Qız Qalası Darvazası → Karvansaray Həyətinə Gir',
+            targetAngle: 'courtyard',
+            pos: [0.18, 0, 2.95],
+            triggerRadius: 1.25,
+            // Həyətdə düz mərkəzi Qız Qalası qapısının ağzında, həyətə doğru baxaraq doğur!
+            targetSpawn: [0.0, 0, -12.4],
+            targetYaw: 0.0,
+            ringColor: 0xe6be68,
+          },
+        ],
+      },
     ],
   },
+
   City_Shamakhi: {
     isMission: false,
     palaceTitle: 'Şamaxı Şirvanşah Divanı Qəbulu',
@@ -674,30 +801,26 @@ function buildLocationAngleMap(locationId) {
   const angleMap = {};
   const roomList = [];
 
-  spec.rooms.forEach((rm, idx) => {
+  spec.rooms.forEach((rm) => {
     const tpl = ROOM_TEMPLATES[rm.template] || ROOM_TEMPLATES.baku_courtyard;
     const [xMin0, xMax0, xMinBack, xMaxBack] = tpl.xBounds;
     const [zMin, zMax] = tpl.zRange;
     const zSpan = Math.max(1, zMax - zMin);
-    const mv = tpl.movement;
-
     const getDepthT = (z) => Math.max(0, Math.min(1, (zMax - z) / zSpan));
-    const getFloorY = (z) => getDepthT(z) * (mv.slopeRise || 0);
-    const getCurveOffsetX = (z) => {
-      const t = getDepthT(z);
-      return t * t * (mv.curveX || 0);
-    };
 
-    const nextRoom = spec.rooms[(idx + 1) % spec.rooms.length];
     let portals = [];
-    if (rm.id === 'courtyard') {
+    if (rm.customPortals) {
+      portals = rm.customPortals;
+    } else if (rm.id === 'courtyard') {
       if (spec.rooms.length >= 2) {
         portals.push({
           id: 'portal_to_r1',
           label: `${spec.rooms[1].title} · Keçid`,
           targetAngle: spec.rooms[1].id,
-          pos: [xMin0 + 0.35, 0, -1.8],
-          triggerRadius: 1.25,
+          pos: [xMin0 + 0.45, 0, -1.8],
+          triggerRadius: 1.15,
+          targetSpawn: [0.0, 0, 3.0],
+          targetYaw: Math.PI,
           ringColor: 0xe6be68,
         });
       }
@@ -706,31 +829,23 @@ function buildLocationAngleMap(locationId) {
           id: 'portal_to_r2',
           label: `${spec.rooms[2].title} · Keçid`,
           targetAngle: spec.rooms[2].id,
-          pos: [xMin0 + 0.9, 0, -5.2],
-          triggerRadius: 1.3,
+          pos: [xMax0 - 0.65, 0, -9.8],
+          triggerRadius: 1.2,
+          targetSpawn: [0.0, 0, 3.1],
+          targetYaw: Math.PI,
           ringColor: 0xd46a54,
         });
       }
-      if (spec.rooms.length >= 4) {
-        portals.push({
-          id: 'portal_to_r3',
-          label: `${spec.rooms[3].title} · Keçid`,
-          targetAngle: spec.rooms[3].id,
-          pos: [xMax0 - 0.35, 0, -2.0],
-          triggerRadius: 1.25,
-          ringColor: 0x6cb8cf,
-        });
-      }
     } else {
-      const backCurve = getCurveOffsetX(zMin + 0.55);
-      // Yan-otaqlarda yalnız uzaq çıxış qapısından həyətə qayıdış portalı saxla ki, düz yeriyəndə təsadüfən otaq dəyişməsin!
       portals = [
         {
           id: 'portal_return_courtyard',
           label: `${spec.rooms[0].title} · Qayıt`,
           targetAngle: 'courtyard',
-          pos: [backCurve, 0, zMin + 0.55],
-          triggerRadius: 1.25,
+          pos: [0.0, 0, zMin + 0.6],
+          triggerRadius: 1.2,
+          targetSpawn: [0.0, 0, -2.0],
+          targetYaw: 0.0,
           ringColor: 0xf4cf76,
         },
       ];
@@ -742,23 +857,20 @@ function buildLocationAngleMap(locationId) {
       title: rm.title,
       role: rm.role,
       baseImage: tpl.baseImage,
-      camPos: tpl.camPos,
-      lookAt: tpl.lookAt,
-      liveFov: tpl.liveFov || 38,
-      refFov: tpl.refFov || 48,
-      depthShell: tpl.depthShell || { nearDist: 6.4, farDist: 44.0, maxGroundDist: 26.0 },
-      movement: mv,
-      spawnPos: [getCurveOffsetX(Math.min(4.0, zMax - 1.4)), 0, Math.min(4.0, zMax - 1.4)],
+      refCamPos: tpl.refCamPos,
+      vpUv: tpl.vpUv,
+      refFov: tpl.refFov || 52,
+      liveFov: tpl.liveFov || 40,
+      archBox: tpl.archBox,
+      followCam: tpl.followCam,
+      spawnPos: [0.0, 0, Math.min(2.6, zMax - 1.1)],
       spawnYaw: Math.PI,
       zRange: tpl.zRange,
       blockedZones: tpl.blockedZones || [],
       getDepthT,
-      getFloorY,
-      getCurveOffsetX,
       xBoundsFn: (z) => {
         const tBack = getDepthT(z);
-        const shift = getCurveOffsetX(z);
-        return [xMin0 + tBack * xMinBack + shift, xMax0 - tBack * xMaxBack + shift];
+        return [xMin0 + tBack * xMinBack, xMax0 - tBack * xMaxBack];
       },
       sunColor: tpl.sunColor,
       sunPos: tpl.sunPos,
@@ -775,7 +887,7 @@ function buildLocationAngleMap(locationId) {
       useDynamicSunZone: Boolean(tpl.useDynamicSunZone),
       isInterior: Boolean(tpl.isInterior),
       tint: new THREE.Color(...rm.tint),
-      playerScaleHeight: rm.template === 'covered_arcade' ? 1.76 : rm.template === 'divan_palace' ? 1.88 : 1.84,
+      playerScaleHeight: rm.template === 'covered_arcade' ? 1.78 : rm.template === 'divan_palace' ? 1.86 : 1.84,
       portals,
     };
 
@@ -786,11 +898,13 @@ function buildLocationAngleMap(locationId) {
 }
 
 /**
- * HƏQİQİ 3D PROYEKSİYALI DƏRİNLİK QABIĞI VERTEX ŞEYDERİ:
- * Hər piksel/təpə nöqtəsini referans kamera şüası boyunca `_depth.png` və Y=0 (və yamac) döşəmə müstəvisinə
- * real 3D dünya koordinatlarına proyeksiya edir — nəticədə 3D kamera tərpəndikcə bütün otaq REAL 3D perspektivdə hərəkət edir!
+ * HƏQİQİ 3D MEMARLIQ QUTUSU VERTEX ŞEYDERİ (`ARCH_BOX_3D_VERT`):
+ * Hər piksel şüasını otağın həqiqi 3D müstəviləri (Düz Y=0 döşəmə, şaquli Sol/Sağ divarlar,
+ * arxa darvaza divarı, tağlı tavan və arxadakı Qız Qalası/Xəzər səması) ilə kəsişdirir!
+ * - Döşəmə 100% düz Y=0 müstəvisindədir -> tacir gəzəndə və kamera təqib edəndə ayaq sürüşməsi SIFIRDIR!
+ * - Divarlar və sütunlar 100% şaquli və dümdüzdür -> kamera yaxınlaşdıqca əyilmə/dalğalanma OLMUR!
  */
-const SHELL_3D_VERT = /* glsl */ `
+const ARCH_BOX_3D_VERT = /* glsl */ `
   uniform sampler2D uDepthMap;
   uniform vec3 uRefPos;
   uniform vec3 uRefForward;
@@ -798,10 +912,17 @@ const SHELL_3D_VERT = /* glsl */ `
   uniform vec3 uRefUp;
   uniform float uRefTanHalfFov;
   uniform float uShellAspect;
-  uniform float uNearDist;
-  uniform float uFarDist;
-  uniform float uMaxGroundDist;
-  uniform float uSlopeRise;
+
+  uniform float uWallLeft;
+  uniform float uWallRight;
+  uniform float uWallBack;
+  uniform float uWallTopY;
+  uniform float uGateHalfW;
+  uniform float uGateTopY;
+  uniform float uHasCeiling;
+  uniform float uCeilY;
+  uniform float uOpenRightSea;
+  uniform float uSkyZ;
 
   varying vec2 vUv;
   varying float vWorldDepth;
@@ -810,40 +931,70 @@ const SHELL_3D_VERT = /* glsl */ `
     vUv = uv;
     vec2 ndc = uv * 2.0 - 1.0;
 
-    // Referans kameranın həmin pikselə düşən 3D şüası
     vec3 rayDir = normalize(
       uRefForward
       + uRefRight * (ndc.x * uRefTanHalfFov * uShellAspect)
       + uRefUp    * (ndc.y * uRefTanHalfFov)
     );
 
-    float d = texture2D(uDepthMap, uv).r;
-    float shellDist = mix(uFarDist, uNearDist, pow(clamp(d, 0.0, 1.0), 1.15));
+    // 1. Döşəmə müstəvisi (Y = 0)
+    float tFloor = (rayDir.y < -0.003) ? (-uRefPos.y / rayDir.y) : 1e5;
+    if (tFloor < 0.2) tFloor = 1e5;
 
-    // Döşəmə piksellərini real Y=0 (və ya Qala yamacı) müstəvisinə kilidlə ki, tacirin ayaqları sürüşməsin!
-    float rawGroundDist = (rayDir.y < -0.015) ? (-uRefPos.y / rayDir.y) : uFarDist;
-    float groundDist = clamp(rawGroundDist, 4.2, uMaxGroundDist);
+    // 2. Sol şaquli tağ divarı (X = uWallLeft)
+    float tLeft = (rayDir.x < -0.003) ? ((uWallLeft - uRefPos.x) / rayDir.x) : 1e5;
+    if (tLeft < 0.2) tLeft = 1e5;
+    vec3 pLeft = uRefPos + rayDir * tLeft;
+    // Açıq həyətdə sol divarın üstündən səma görünürsə, şüa səmaya keçsin
+    if (uHasCeiling < 0.5 && pLeft.y > uWallTopY + 3.1) tLeft = 1e5;
 
-    float belowHorizon = smoothstep(-0.01, -0.085, rayDir.y);
-    float centerCorridor = 1.0 - smoothstep(0.45, 0.90, abs(ndc.x));
-    float floorLock = belowHorizon * centerCorridor;
-
-    float finalDist = mix(shellDist, min(groundDist, shellDist + 2.5), floorLock);
-    vec3 worldPos = uRefPos + rayDir * finalDist;
-
-    // Yüksələn Qala yamacında (uSlopeRise > 0) döşəmə təpələrini uyğun qaldır
-    if (uSlopeRise > 0.01 && floorLock > 0.05) {
-      float zFactor = clamp((6.0 - worldPos.z) / 13.0, 0.0, 1.0);
-      worldPos.y += zFactor * uSlopeRise * floorLock;
+    // 3. Sağ şaquli tağ divarı (X = uWallRight) — Xəzər Limanında sağ tərəf açıq dənizdir!
+    float tRight = 1e5;
+    if (uOpenRightSea < 0.5) {
+      tRight = (rayDir.x > 0.003) ? ((uWallRight - uRefPos.x) / rayDir.x) : 1e5;
+      if (tRight < 0.2) tRight = 1e5;
+      vec3 pRight = uRefPos + rayDir * tRight;
+      if (uHasCeiling < 0.5 && pRight.y > uWallTopY + 3.1) tRight = 1e5;
     }
 
-    vWorldDepth = finalDist;
+    // 4. Qapalı məkanlarda tavan müstəvisi (Y = uCeilY)
+    float tCeil = 1e5;
+    if (uHasCeiling > 0.5 && rayDir.y > 0.003) {
+      tCeil = (uCeilY - uRefPos.y) / rayDir.y;
+      if (tCeil < 0.2) tCeil = 1e5;
+    }
+
+    // 5. Arxa darvaza divarı (Z = uWallBack) və onun arxasındakı uzaq Qız Qalası / Səma müstəvisi (Z = uSkyZ)
+    float tBack = (rayDir.z < -0.003) ? ((uWallBack - uRefPos.z) / rayDir.z) : 1e5;
+    if (tBack < 0.2) tBack = 1e5;
+    vec3 pBack = uRefPos + rayDir * tBack;
+
+    float localWallTop = (abs(pBack.x) <= uGateHalfW) ? uGateTopY : uWallTopY;
+    // Açıq dəniz tərəfində və ya arxa divarın üstündə çox yumşaq (tikişsiz/qırılmasız) 3D dərinlik keçidi!
+    float skyBlend = (uHasCeiling < 0.5) ? smoothstep(0.0, 5.2, pBack.y - localWallTop) : 0.0;
+    if (uHasCeiling < 0.5 && uOpenRightSea > 0.5 && pBack.x > uWallRight) {
+      skyBlend = max(skyBlend, smoothstep(0.0, 2.4, pBack.x - uWallRight));
+    }
+    if (skyBlend > 0.001) {
+      float zTarget = mix(uWallBack, min(uSkyZ, uWallBack - 4.5), skyBlend * 0.35);
+      tBack = (rayDir.z < -0.003) ? ((zTarget - uRefPos.z) / rayDir.z) : 60.0;
+    }
+
+    float tHit = min(min(tFloor, tCeil), min(min(tLeft, tRight), tBack));
+    tHit = clamp(tHit, 2.2, 65.0);
+
+    // Döşəmə xaricində (divar sütunlarında) çox zərif 4% daş relyefi əlavə et (düz xətləri əymədən!)
+    float isWall = step(0.04, abs(tHit - tFloor));
+    float microD = texture2D(uDepthMap, uv).r;
+    tHit *= (1.0 - isWall * (microD - 0.5) * 0.045);
+
+    vec3 worldPos = uRefPos + rayDir * tHit;
+    vWorldDepth = tHit;
     gl_Position = projectionMatrix * viewMatrix * vec4(worldPos, 1.0);
   }
 `;
 
-// Real 3D Depth-Shell Fragment Şeyderi: Normal-Map fənər işığı + Səhər ↔ Gecə + sRGB çıxış
-const SHELL_3D_FRAG = /* glsl */ `
+const ARCH_BOX_3D_FRAG = /* glsl */ `
   precision highp float;
 
   uniform sampler2D uColorMap;
@@ -871,7 +1022,6 @@ const SHELL_3D_FRAG = /* glsl */ `
     vec3 N = normalize(vec3(normalTex.x * 1.24, normalTex.y * 1.24, max(0.26, normalTex.z)));
     float glow = texture2D(uGlowMap, pUv).r;
 
-    // Səhər (parlaq gün işığı) ↔ Gecə (dərin mistik qaranlıq + güclü fənərlər)
     vec3 nightGrade = pow(max(color, vec3(0.0001)), vec3(2.15, 2.10, 1.90)) * vec3(0.28, 0.32, 0.44);
     vec3 gradedBase = mix(color, nightGrade, uNightMix);
 
@@ -904,8 +1054,8 @@ const SHELL_3D_FRAG = /* glsl */ `
     vec3 finalCol = (gradedBase + lanternBloom + dynamicLight * (gradedBase + vec3(0.14 * uNightMix))) * expNow;
     finalCol = finalCol / (vec3(1.0) + finalCol * 0.26);
 
-    float vig = smoothstep(1.05, 0.28, length((pUv - 0.5) * vec2(1.04, 1.02)));
-    finalCol *= mix(mix(0.88, 0.64, uNightMix), 1.04, vig);
+    float vig = smoothstep(1.06, 0.28, length((pUv - 0.5) * vec2(1.02, 1.0)));
+    finalCol *= mix(mix(0.89, 0.64, uNightMix), 1.04, vig);
     finalCol *= clamp(uFade, 0.0, 1.0);
 
     gl_FragColor = vec4(finalCol, 1.0);
@@ -942,7 +1092,7 @@ export class CinematicBazaar25DScene {
     this.angleTexCache = new Map();
     this.fadeAlpha = 1.0;
     this.isTransitioning = false;
-    this.portalCooldown = 1.6;
+    this.portalCooldown = 1.4;
 
     this.targetNightMix = 0.0;
     this.currentNightMix = 0.0;
@@ -958,7 +1108,7 @@ export class CinematicBazaar25DScene {
     this.player = {
       group: null,
       baseNormScale: 1.0,
-      pos: new THREE.Vector3(0.0, 0, 4.0),
+      pos: new THREE.Vector3(0.0, 0, 2.5),
       yaw: Math.PI,
       walkPhase: 0,
       isMoving: false,
@@ -969,15 +1119,11 @@ export class CinematicBazaar25DScene {
       activeActionName: null,
     };
 
-    this.foregroundGroup = null;
-    this.hangingLanterns = [];
     this.culturalAccentGroup = null;
     this.culturalAnimItems = [];
 
-    this.baseCamPos = new THREE.Vector3(...this.angleCfg.camPos);
-    this.baseLookAt = new THREE.Vector3(...this.angleCfg.lookAt);
-    this.liveCamPos = this.baseCamPos.clone();
-    this.liveLookAt = this.baseLookAt.clone();
+    this.liveCamPos = new THREE.Vector3(...this.angleCfg.refCamPos);
+    this.liveLookAt = new THREE.Vector3(0, 1.5, -3.0);
     this.mouseNorm = { x: 0, y: 0 };
 
     this.dialogueFocus = null;
@@ -1074,8 +1220,8 @@ export class CinematicBazaar25DScene {
       this._rebuildWalkBoundsDebug();
       this.eventBus.emit('ui:toast', {
         message: this.showWalkBoundsDebug
-          ? `3D Sərhəd & Hərəkət Profili AÇIQ: ${this.angleCfg.movement.profileName}`
-          : '3D Sərhəd Göstəricisi bağlandı.',
+          ? `3D Hərəkət Zolağı AÇIQ: ${this.angleCfg.followCam.profileName} (Yaşıl: Döşəmə · Qızılı: Qapılar · Qırmızı: Maneə)`
+          : '3D Hərəkət Zolağı göstəricisi bağlandı.',
         type: 'info',
       });
     }
@@ -1126,15 +1272,14 @@ export class CinematicBazaar25DScene {
     cz = Math.max(zMin, Math.min(zMax, cz));
     const [xMin2, xMax2] = this.angleCfg.xBoundsFn(cz);
     cx = Math.max(xMin2, Math.min(xMax2, cx));
-    const cy = this.angleCfg.getFloorY(cz);
-    return { x: cx, y: cy, z: cz };
+    return { x: cx, y: 0, z: cz };
   }
 
   _setWalkTarget(x, z) {
     const clamped = this._clampWalkable(x, z);
-    this.player.targetPos = new THREE.Vector3(clamped.x, clamped.y, clamped.z);
+    this.player.targetPos = new THREE.Vector3(clamped.x, 0, clamped.z);
     if (this.clickRipple) {
-      this.clickRipple.position.set(clamped.x, clamped.y + 0.035, clamped.z);
+      this.clickRipple.position.set(clamped.x, 0.035, clamped.z);
       this.clickRipple.visible = true;
       this.clickRippleLife = 1.0;
     }
@@ -1157,33 +1302,38 @@ export class CinematicBazaar25DScene {
     this.debugBoundsGroup = new THREE.Group();
     const [zMin, zMax] = this.angleCfg.zRange;
 
-    // Əyri və yamaclı hərəkət sərhədini 16 addımda dəqiq çək (yaşıl)
     const leftEdge = [];
     const rightEdge = [];
     for (let i = 0; i <= 16; i++) {
       const z = zMax - (i / 16) * (zMax - zMin);
-      const y = this.angleCfg.getFloorY(z) + 0.045;
       const [xMin, xMax] = this.angleCfg.xBoundsFn(z);
-      leftEdge.push(new THREE.Vector3(xMin, y, z));
-      rightEdge.push(new THREE.Vector3(xMax, y, z));
+      leftEdge.push(new THREE.Vector3(xMin, 0.04, z));
+      rightEdge.push(new THREE.Vector3(xMax, 0.04, z));
     }
     const loopPts = [...leftEdge, ...rightEdge.reverse(), leftEdge[0]];
     const lineGeo = new THREE.BufferGeometry().setFromPoints(loopPts);
-    const lineMat = new THREE.LineBasicMaterial({ color: 0x52e078 });
-    this.debugBoundsGroup.add(new THREE.Line(lineGeo, lineMat));
+    this.debugBoundsGroup.add(new THREE.Line(lineGeo, new THREE.LineBasicMaterial({ color: 0x52e078 })));
 
-    // Qırmızı hərəkət etməmə zolaqları
+    // Qapı keçid dairələrini qızılı rənglə vurğula
+    for (const p of this.angleCfg.portals || []) {
+      const pts = [];
+      for (let i = 0; i <= 28; i++) {
+        const a = (i / 28) * Math.PI * 2;
+        pts.push(new THREE.Vector3(p.pos[0] + Math.cos(a) * p.triggerRadius, 0.055, p.pos[2] + Math.sin(a) * p.triggerRadius));
+      }
+      const pGeo = new THREE.BufferGeometry().setFromPoints(pts);
+      this.debugBoundsGroup.add(new THREE.Line(pGeo, new THREE.LineBasicMaterial({ color: 0xffd25a })));
+    }
+
+    // Qadağan zolaqları qırmızı ilə vurğula
     for (const obs of this.angleCfg.blockedZones || []) {
       const pts = [];
       for (let i = 0; i <= 32; i++) {
         const a = (i / 32) * Math.PI * 2;
-        const oz = obs.z + Math.sin(a) * obs.rz;
-        const oy = this.angleCfg.getFloorY(oz) + 0.055;
-        pts.push(new THREE.Vector3(obs.x + Math.cos(a) * obs.rx, oy, oz));
+        pts.push(new THREE.Vector3(obs.x + Math.cos(a) * obs.rx, 0.05, obs.z + Math.sin(a) * obs.rz));
       }
       const oGeo = new THREE.BufferGeometry().setFromPoints(pts);
-      const oMat = new THREE.LineBasicMaterial({ color: 0xf24e4e });
-      this.debugBoundsGroup.add(new THREE.Line(oGeo, oMat));
+      this.debugBoundsGroup.add(new THREE.Line(oGeo, new THREE.LineBasicMaterial({ color: 0xf24e4e })));
     }
 
     this.scene.add(this.debugBoundsGroup);
@@ -1225,37 +1375,91 @@ export class CinematicBazaar25DScene {
     return bundle;
   }
 
+  _syncLiveCameraFov() {
+    if (!this.camera) return;
+    const w = this.container.clientWidth || window.innerWidth;
+    const h = this.container.clientHeight || window.innerHeight;
+    const viewAspect = w / Math.max(1, h);
+    const baseLiveFov = this.angleCfg.liveFov || 38;
+    const aspectScale = viewAspect > this.imageAspect ? this.imageAspect / viewAspect : 1.0;
+    this.camera.fov = Math.max(25, baseLiveFov * aspectScale);
+    this.camera.aspect = viewAspect;
+    this.camera.updateProjectionMatrix();
+  }
+
   /**
-   * 3D Dərinlik Qabığı üçün referans kamera basis vektorlarını hesabla və overscan marjasını təmin et
+   * Şəklin dəqiq Qaçış Nöqtəsindən (`vpUv`) referans kameranın istiqamətini hesabla və 3D Memarlıq Qutusunu qur!
+   * Referans kamera pəncərə ölçüsündən asılı DEYİL — beləliklə hər pikselin (X, Y, Z) koordinatı 100% sabit qalır!
    */
-  _syncShellReferenceCamera() {
+  _syncArchitecturalBoxUniforms() {
     if (!this.shellUniforms) return;
-    const refPos = new THREE.Vector3(...this.angleCfg.camPos);
-    const refLook = new THREE.Vector3(...this.angleCfg.lookAt);
-    const forward = new THREE.Vector3().subVectors(refLook, refPos).normalize();
+    const refPos = new THREE.Vector3(...this.angleCfg.refCamPos);
+    const [vpU, vpUvY] = this.angleCfg.vpUv || [0.5, 0.5];
+    const refTan = Math.tan(THREE.MathUtils.degToRad((this.angleCfg.refFov || 58) * 0.5));
+
+    // Qaçış nöqtəsi `(vpU, vpUvY)` üfüqi şüaya (`rayDir.y = 0`) uyğun gəlməlidir:
+    const ndcVpX = vpU * 2.0 - 1.0;
+    const ndcVpY = vpUvY * 2.0 - 1.0;
+    const pitchRad = Math.atan(-ndcVpY * refTan);
+    const yawOffsetRad = Math.atan(ndcVpX * refTan * this.imageAspect);
+
+    const forward = new THREE.Vector3(
+      -Math.sin(yawOffsetRad) * Math.cos(pitchRad),
+      Math.sin(pitchRad),
+      -Math.cos(yawOffsetRad) * Math.cos(pitchRad)
+    ).normalize();
     const worldUp = new THREE.Vector3(0, 1, 0);
     const right = new THREE.Vector3().crossVectors(forward, worldUp).normalize();
     const up = new THREE.Vector3().crossVectors(right, forward).normalize();
 
-    const w = this.container.clientWidth || window.innerWidth;
-    const h = this.container.clientHeight || window.innerHeight;
-    const viewAspect = w / Math.max(1, h);
-
-    // Hər ölçüdə ekranda 3D kamera hərəkət edərkən kənarda qara boşluq görünməməsi üçün ≥25% overscan marjası
-    const baseRefTan = Math.tan(THREE.MathUtils.degToRad(this.angleCfg.refFov * 0.5));
-    const aspectCover = Math.max(1.0, (viewAspect / this.imageAspect) * 1.16);
-    const refTan = baseRefTan * aspectCover;
-
+    const box = this.angleCfg.archBox;
     this.shellUniforms.uRefPos.value.copy(refPos);
     this.shellUniforms.uRefForward.value.copy(forward);
     this.shellUniforms.uRefRight.value.copy(right);
     this.shellUniforms.uRefUp.value.copy(up);
     this.shellUniforms.uRefTanHalfFov.value = refTan;
     this.shellUniforms.uShellAspect.value = this.imageAspect;
-    this.shellUniforms.uNearDist.value = this.angleCfg.depthShell.nearDist;
-    this.shellUniforms.uFarDist.value = this.angleCfg.depthShell.farDist;
-    this.shellUniforms.uMaxGroundDist.value = this.angleCfg.depthShell.maxGroundDist;
-    this.shellUniforms.uSlopeRise.value = this.angleCfg.movement.slopeRise || 0.0;
+
+    this.shellUniforms.uWallLeft.value = box.xLeft;
+    this.shellUniforms.uWallRight.value = box.xRight;
+    this.shellUniforms.uWallBack.value = box.zBack;
+    this.shellUniforms.uWallTopY.value = box.wallTopY;
+    this.shellUniforms.uGateHalfW.value = box.gateHalfW;
+    this.shellUniforms.uGateTopY.value = box.gateTopY;
+    this.shellUniforms.uHasCeiling.value = box.hasCeiling;
+    this.shellUniforms.uCeilY.value = box.ceilY;
+    this.shellUniforms.uOpenRightSea.value = box.openRightSea || 0.0;
+    this.shellUniforms.uSkyZ.value = box.skyZ;
+  }
+
+  _computeFollowCameraTargets() {
+    const fc = this.angleCfg.followCam;
+    const px = this.player.pos.x;
+    const pz = this.player.pos.z;
+
+    const camX = px * (fc.followXRatio ?? 0.56) + this.mouseNorm.x * 0.45;
+    const camZ = THREE.MathUtils.clamp(
+      pz + (fc.chaseDistZ ?? 5.6) + (this.dialogueFocus ? -1.2 : 0),
+      fc.minCamZ ?? -4.5,
+      fc.maxCamZ ?? 6.5
+    );
+    const camY = (fc.camHeight ?? 1.85) - this.mouseNorm.y * 0.18 + Math.sin(this.elapsed * 0.7) * 0.018;
+
+    const lookX = px * 0.68 + this.mouseNorm.x * 0.65;
+    const lookY = (fc.lookHeight ?? 1.5) - this.mouseNorm.y * 0.28;
+    const lookZ = pz + (fc.lookAheadZ ?? -4.6);
+
+    return { camX, camY, camZ, lookX, lookY, lookZ };
+  }
+
+  _snapFollowCameraImmediate() {
+    const t = this._computeFollowCameraTargets();
+    this.liveCamPos.set(t.camX, t.camY, t.camZ);
+    this.liveLookAt.set(t.lookX, t.lookY, t.lookZ);
+    if (this.camera) {
+      this.camera.position.copy(this.liveCamPos);
+      this.camera.lookAt(this.liveLookAt);
+    }
   }
 
   async mount() {
@@ -1270,8 +1474,7 @@ export class CinematicBazaar25DScene {
     const h = this.container.clientHeight || window.innerHeight;
 
     this.camera = new THREE.PerspectiveCamera(this.angleCfg.liveFov, w / h, 0.2, 160);
-    this.camera.position.copy(this.baseCamPos);
-    this.camera.lookAt(this.baseLookAt);
+    this._syncLiveCameraFov();
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     this.renderer.setSize(w, h);
@@ -1282,21 +1485,20 @@ export class CinematicBazaar25DScene {
     this.renderer.toneMappingExposure = 1.18;
     this.container.appendChild(this.renderer.domElement);
 
-    // 3D Hərəkət & Sərhəd telemetriya paneli (yalnız B basılanda görünür)
     if (this.debugHudEl) this.debugHudEl.remove();
     this.debugHudEl = document.createElement('div');
     this.debugHudEl.style.cssText =
-      'display:none;position:fixed;left:14px;bottom:84px;z-index:26;padding:6px 10px;background:rgba(14,10,7,0.88);border:1px solid rgba(82,224,120,0.65);border-radius:3px;color:#d6f5de;font-family:monospace;font-size:11px;line-height:1.45;pointer-events:none;';
+      'display:none;position:fixed;left:14px;top:48px;z-index:26;padding:6px 10px;background:rgba(14,10,7,0.88);border:1px solid rgba(82,224,120,0.65);border-radius:3px;color:#d6f5de;font-family:monospace;font-size:11px;line-height:1.45;pointer-events:none;';
     document.body.appendChild(this.debugHudEl);
 
-    await this._buildProjected3DShell();
+    await this._buildArchitectural3DBoxShell();
     this._buildLights();
     this._buildShadowFloorAndAtmosphere();
-    this._buildForegroundFrame();
     this._rebuildCulturalAccents();
     await this._buildPlayableMerchant();
-    this._rebuildHotspots(this.activeAngleId);
+    this._rebuildHotspots();
     this._applyTimeLighting();
+    this._snapFollowCameraImmediate();
 
     for (const rm of this.roomList) {
       if (rm.id !== this.activeAngleId) this._loadAngleTextures(rm.id);
@@ -1336,50 +1538,6 @@ export class CinematicBazaar25DScene {
     }
   }
 
-  _buildForegroundFrame() {
-    this.foregroundGroup = new THREE.Group();
-    this.hangingLanterns = [];
-
-    const ironMat = new THREE.MeshStandardMaterial({ color: 0x1a1510, roughness: 0.55, metalness: 0.78 });
-    const brassMat = new THREE.MeshStandardMaterial({ color: 0xa67e3c, roughness: 0.34, metalness: 0.85 });
-    const flameMat = new THREE.MeshBasicMaterial({
-      color: this.cultureStyle.lanternHex,
-      transparent: true,
-      opacity: 0.92,
-    });
-
-    for (const side of [-1, 1]) {
-      const pivot = new THREE.Group();
-      pivot.position.set(side * 4.35, 5.2, 8.2);
-
-      const chain = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 1.35, 6), ironMat);
-      chain.position.y = -0.68;
-      pivot.add(chain);
-
-      const cap = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.22, 6), brassMat);
-      cap.position.y = -1.42;
-      pivot.add(cap);
-
-      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.12, 0.34, 6), ironMat);
-      body.position.y = -1.68;
-      pivot.add(body);
-
-      const glowCore = new THREE.Mesh(new THREE.OctahedronGeometry(0.095, 0), flameMat.clone());
-      glowCore.position.y = -1.68;
-      pivot.add(glowCore);
-
-      const bottomTip = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.16, 6), brassMat);
-      bottomTip.rotation.x = Math.PI;
-      bottomTip.position.y = -1.92;
-      pivot.add(bottomTip);
-
-      this.foregroundGroup.add(pivot);
-      this.hangingLanterns.push({ pivot, glowCore, phase: side > 0 ? 1.7 : 0.0 });
-    }
-
-    this.scene.add(this.foregroundGroup);
-  }
-
   _rebuildCulturalAccents() {
     if (this.culturalAccentGroup) {
       this.culturalAccentGroup.traverse((o) => {
@@ -1408,7 +1566,6 @@ export class CinematicBazaar25DScene {
     };
 
     const mode = this.cultureStyle.accentMode;
-
     if (mode === 'sheki_shebeke' && this.angleCfg.isInterior) {
       const stainColors = [
         'rgba(220, 48, 64, 0.55)',
@@ -1429,7 +1586,7 @@ export class CinematicBazaar25DScene {
           })
         );
         mesh.rotation.x = -Math.PI / 2;
-        mesh.position.set(-1.3 + i * 0.9, 0.032, 2.2 - i * 1.15);
+        mesh.position.set(-1.1 + i * 0.75, 0.032, 1.4 - i * 2.2);
         this.culturalAccentGroup.add(mesh);
         this.culturalAnimItems.push({ mesh, kind: 'pulse', baseOpacity: 0.45, phase: i * 1.1 });
       });
@@ -1440,64 +1597,32 @@ export class CinematicBazaar25DScene {
           new THREE.PlaneGeometry(7.5, 2.8),
           new THREE.MeshBasicMaterial({ map: mistTex, transparent: true, opacity: 0.22, depthWrite: false })
         );
-        m.position.set(-3.5 + i * 2.4, 0.8 + (i % 2) * 0.5, -2.5 - i * 1.4);
+        m.position.set(-3.5 + i * 2.4, 0.8 + (i % 2) * 0.5, -2.5 - i * 2.2);
         this.culturalAccentGroup.add(m);
         this.culturalAnimItems.push({ mesh: m, kind: 'drift', speed: 0.22 + i * 0.05, baseX: m.position.x });
       }
-    } else if (mode === 'shamakhi_turquoise') {
-      const turqTex = makeSoftGradientTex('rgba(64, 212, 218, 0.42)');
-      for (const [tx, tz] of [
-        [-2.2, -1.2],
-        [2.2, -1.2],
-      ]) {
-        const glow = new THREE.Mesh(
-          new THREE.PlaneGeometry(2.6, 2.6),
-          new THREE.MeshBasicMaterial({
-            map: turqTex,
-            transparent: true,
-            opacity: 0.34,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false,
-          })
-        );
-        glow.position.set(tx, 2.6, tz);
-        this.culturalAccentGroup.add(glow);
-        this.culturalAnimItems.push({ mesh: glow, kind: 'pulse', baseOpacity: 0.32, phase: tx });
-      }
-    } else if (mode === 'baku_sun_fire' && !this.angleCfg.isInterior) {
-      const sunTex = makeSoftGradientTex('rgba(255, 224, 152, 0.40)');
-      const sunPool = new THREE.Mesh(
-        new THREE.PlaneGeometry(4.8, 3.8),
-        new THREE.MeshBasicMaterial({
-          map: sunTex,
-          transparent: true,
-          opacity: 0.32,
-          blending: THREE.AdditiveBlending,
-          depthWrite: false,
-        })
-      );
-      sunPool.rotation.x = -Math.PI / 2;
-      sunPool.position.set(-1.3, 0.03, 2.6);
-      this.culturalAccentGroup.add(sunPool);
-      this.culturalAnimItems.push({ mesh: sunPool, kind: 'pulse', baseOpacity: 0.32, phase: 0.4 });
     }
 
     this.scene.add(this.culturalAccentGroup);
   }
 
-  async switchAngle(angleId, customSpawn = null) {
+  /**
+   * İkitərəfli Qapı Keçidi: `customSpawn` və `customYaw` sayəsində hansı qapıdan çıxmısansa,
+   * geri qayıdanda DÜZ HƏMİN QAPININ AĞZINDAN həyətə/otağa baxaraq çıxırsan!
+   */
+  async switchAngle(angleId, customSpawn = null, customYaw = null) {
     if (!this.angleConfigs[angleId] || angleId === this.activeAngleId || this.isTransitioning) return;
     this.isTransitioning = true;
-    this.portalCooldown = 1.8;
+    this.portalCooldown = 1.5;
     this.player.targetPos = null;
     this.dialogueFocus = null;
 
     const texPromise = this._loadAngleTextures(angleId);
-    const fadeOutSteps = 8;
+    const fadeOutSteps = 7;
     for (let i = 1; i <= fadeOutSteps; i++) {
       this.fadeAlpha = 1 - i / fadeOutSteps;
       if (this.shellUniforms) this.shellUniforms.uFade.value = this.fadeAlpha;
-      await new Promise((r) => setTimeout(r, 17));
+      await new Promise((r) => setTimeout(r, 16));
     }
 
     const bundle = await texPromise;
@@ -1505,16 +1630,11 @@ export class CinematicBazaar25DScene {
 
     this.activeAngleId = angleId;
     this.angleCfg = this.angleConfigs[angleId];
-    this.baseCamPos.set(...this.angleCfg.camPos);
-    this.baseLookAt.set(...this.angleCfg.lookAt);
-    this.liveCamPos.copy(this.baseCamPos);
-    this.liveLookAt.copy(this.baseLookAt);
-    this.camera.fov = this.angleCfg.liveFov;
-    this.camera.updateProjectionMatrix();
 
     if (bundle.colorMap?.image?.width && bundle.colorMap?.image?.height) {
       this.imageAspect = bundle.colorMap.image.width / bundle.colorMap.image.height;
     }
+    this._syncLiveCameraFov();
 
     if (this.shellUniforms) {
       if (bundle.colorMap) this.shellUniforms.uColorMap.value = bundle.colorMap;
@@ -1526,7 +1646,7 @@ export class CinematicBazaar25DScene {
       this.shellUniforms.uExposure.value = this.angleCfg.exposure;
       this.shellUniforms.uLanternA.value.set(...this.angleCfg.lanterns[0].uv);
       this.shellUniforms.uLanternB.value.set(...this.angleCfg.lanterns[1].uv);
-      this._syncShellReferenceCamera();
+      this._syncArchitecturalBoxUniforms();
     }
 
     if (this.sunLight) {
@@ -1535,11 +1655,6 @@ export class CinematicBazaar25DScene {
     }
     if (this.floorMesh) {
       this.floorMesh.material.opacity = this.angleCfg.shadowOpacity;
-      // Yamaclı otaqda kölgə müstəvisini də yamaca uyğun əy!
-      const rise = this.angleCfg.movement.slopeRise || 0;
-      const span = Math.max(1, this.angleCfg.zRange[1] - this.angleCfg.zRange[0]);
-      this.floorMesh.rotation.x = Math.atan2(rise, span);
-      this.floorMesh.position.y = rise * 0.35;
     }
     this.angleCfg.lanterns.forEach((lCfg, idx) => {
       if (this.flickerLights[idx]) {
@@ -1553,34 +1668,32 @@ export class CinematicBazaar25DScene {
 
     const sp = customSpawn || this.angleCfg.spawnPos;
     const safeSp = this._clampWalkable(sp[0], sp[2]);
-    this.player.pos.set(safeSp.x, safeSp.y, safeSp.z);
-    this.player.yaw = this.angleCfg.spawnYaw;
+    this.player.pos.set(safeSp.x, 0, safeSp.z);
+    this.player.yaw = customYaw !== null && customYaw !== undefined ? customYaw : this.angleCfg.spawnYaw;
     if (this.player.group) {
       this.player.group.scale.setScalar(this.player.baseNormScale * (this.angleCfg.playerScaleHeight / 1.84));
       this.player.group.position.copy(this.player.pos);
       this.player.group.rotation.y = this.player.yaw;
     }
 
+    this._snapFollowCameraImmediate();
     this._rebuildCulturalAccents();
-    this._rebuildHotspots(angleId);
+    this._rebuildHotspots();
     this._rebuildWalkBoundsDebug();
     this.eventBus.emit('bazaar:angle_changed', { angleId, title: this.angleCfg.title });
 
-    const fadeInSteps = 10;
+    const fadeInSteps = 9;
     for (let i = 1; i <= fadeInSteps; i++) {
       this.fadeAlpha = i / fadeInSteps;
       if (this.shellUniforms) this.shellUniforms.uFade.value = this.fadeAlpha;
-      await new Promise((r) => setTimeout(r, 17));
+      await new Promise((r) => setTimeout(r, 16));
     }
     this.fadeAlpha = 1.0;
     if (this.shellUniforms) this.shellUniforms.uFade.value = 1.0;
     this.isTransitioning = false;
   }
 
-  /**
-   * 140×84 seqmentli Həqiqi 3D Dərinlik Qabığı (Projected 3D World Shell)
-   */
-  async _buildProjected3DShell() {
+  async _buildArchitectural3DBoxShell() {
     const bundle = await this._loadAngleTextures(this.activeAngleId);
     if (bundle.colorMap?.image?.width && bundle.colorMap?.image?.height) {
       this.imageAspect = bundle.colorMap.image.width / bundle.colorMap.image.height;
@@ -1594,6 +1707,7 @@ export class CinematicBazaar25DScene {
       return t;
     };
 
+    const box = this.angleCfg.archBox;
     this.shellUniforms = {
       uColorMap: { value: bundle.colorMap || fallbackTex() },
       uDepthMap: { value: bundle.depthMap || fallbackTex() },
@@ -1603,12 +1717,18 @@ export class CinematicBazaar25DScene {
       uRefForward: { value: new THREE.Vector3(0, 0, -1) },
       uRefRight: { value: new THREE.Vector3(1, 0, 0) },
       uRefUp: { value: new THREE.Vector3(0, 1, 0) },
-      uRefTanHalfFov: { value: 0.45 },
+      uRefTanHalfFov: { value: 0.48 },
       uShellAspect: { value: this.imageAspect },
-      uNearDist: { value: this.angleCfg.depthShell.nearDist },
-      uFarDist: { value: this.angleCfg.depthShell.farDist },
-      uMaxGroundDist: { value: this.angleCfg.depthShell.maxGroundDist },
-      uSlopeRise: { value: this.angleCfg.movement.slopeRise || 0.0 },
+      uWallLeft: { value: box.xLeft },
+      uWallRight: { value: box.xRight },
+      uWallBack: { value: box.zBack },
+      uWallTopY: { value: box.wallTopY },
+      uGateHalfW: { value: box.gateHalfW },
+      uGateTopY: { value: box.gateTopY },
+      uHasCeiling: { value: box.hasCeiling },
+      uCeilY: { value: box.ceilY },
+      uOpenRightSea: { value: box.openRightSea || 0.0 },
+      uSkyZ: { value: box.skyZ },
       uTime: { value: 0 },
       uPlayerUV: { value: new THREE.Vector2(0.5, 0.25) },
       uPlayerDepth: { value: 0.6 },
@@ -1621,22 +1741,24 @@ export class CinematicBazaar25DScene {
       uFade: { value: 1.0 },
     };
 
-    this._syncShellReferenceCamera();
+    this._syncArchitecturalBoxUniforms();
 
     const mat = new THREE.ShaderMaterial({
       uniforms: this.shellUniforms,
-      vertexShader: SHELL_3D_VERT,
-      fragmentShader: SHELL_3D_FRAG,
+      vertexShader: ARCH_BOX_3D_VERT,
+      fragmentShader: ARCH_BOX_3D_FRAG,
       side: THREE.DoubleSide,
-      depthTest: false,
-      depthWrite: false,
+      depthTest: true,
+      depthWrite: true,
+      polygonOffset: true,
+      polygonOffsetFactor: 2,
+      polygonOffsetUnits: 2,
     });
 
-    // 140×84 yüksək dəqiqlikli 3D relyef toru (real kamera hərəkətində axıcı 3D perspektiv!)
-    const shellGeo = new THREE.PlaneGeometry(2, 2, 140, 84);
+    // 160×96 yüksək sıxlıqlı analitik 3D Memarlıq Qutusu toru
+    const shellGeo = new THREE.PlaneGeometry(2, 2, 160, 96);
     this.shellMesh = new THREE.Mesh(shellGeo, mat);
     this.shellMesh.frustumCulled = false;
-    this.shellMesh.renderOrder = -100;
     this.scene.add(this.shellMesh);
   }
 
@@ -1652,20 +1774,20 @@ export class CinematicBazaar25DScene {
     this.sunLight.position.set(...this.angleCfg.sunPos);
     this.sunLight.castShadow = true;
     this.sunLight.shadow.mapSize.set(2048, 2048);
-    this.sunLight.shadow.camera.left = -14;
-    this.sunLight.shadow.camera.right = 14;
-    this.sunLight.shadow.camera.top = 14;
-    this.sunLight.shadow.camera.bottom = -14;
+    this.sunLight.shadow.camera.left = -16;
+    this.sunLight.shadow.camera.right = 16;
+    this.sunLight.shadow.camera.top = 18;
+    this.sunLight.shadow.camera.bottom = -18;
     this.sunLight.shadow.bias = -0.0004;
     this.scene.add(this.sunLight);
 
     this.playerLanternLight = new THREE.PointLight(0xffb454, 0.18, 7.5, 1.5);
-    this.playerLanternLight.position.set(0.55, 1.25, 3.6);
+    this.playerLanternLight.position.set(0.55, 1.25, 2.5);
     this.scene.add(this.playerLanternLight);
 
     this.flickerLights = [];
     this.angleCfg.lanterns.forEach((lCfg, idx) => {
-      const pt = new THREE.PointLight(lCfg.color, lCfg.intensity, 16, 1.35);
+      const pt = new THREE.PointLight(lCfg.color, lCfg.intensity, 18, 1.3);
       pt.position.set(...lCfg.pos);
       this.scene.add(pt);
       this.flickerLights.push({ light: pt, base: lCfg.intensity, phase: idx * 2.3 + 0.5 });
@@ -1677,11 +1799,11 @@ export class CinematicBazaar25DScene {
   }
 
   _buildShadowFloorAndAtmosphere() {
-    const floorGeo = new THREE.PlaneGeometry(28, 38);
+    const floorGeo = new THREE.PlaneGeometry(36, 56);
     floorGeo.rotateX(-Math.PI / 2);
     const floorMat = new THREE.ShadowMaterial({ opacity: this.angleCfg.shadowOpacity });
     this.floorMesh = new THREE.Mesh(floorGeo, floorMat);
-    this.floorMesh.position.set(0, 0, -2);
+    this.floorMesh.position.set(0, 0.005, -8);
     this.floorMesh.receiveShadow = true;
     this.scene.add(this.floorMesh);
 
@@ -1714,21 +1836,21 @@ export class CinematicBazaar25DScene {
     const dustTex = new THREE.CanvasTexture(dustCanvas);
     this._createdTextures.push(dustTex);
 
-    const count = 82;
+    const count = 78;
     const positions = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 11.0;
-      positions[i * 3 + 1] = 0.3 + Math.random() * 5.2;
-      positions[i * 3 + 2] = -9.5 + Math.random() * 17.5;
+      positions[i * 3] = (Math.random() - 0.5) * 10.0;
+      positions[i * 3 + 1] = 0.3 + Math.random() * 4.8;
+      positions[i * 3 + 2] = -13.0 + Math.random() * 18.0;
     }
     const dustGeo = new THREE.BufferGeometry();
     dustGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     const dustMat = new THREE.PointsMaterial({
       color: this.cultureStyle.dustHex,
       map: dustTex,
-      size: 0.14,
+      size: 0.135,
       transparent: true,
-      opacity: 0.4,
+      opacity: 0.38,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     });
@@ -1736,7 +1858,7 @@ export class CinematicBazaar25DScene {
     this.scene.add(this.dustPoints);
   }
 
-  _rebuildHotspots(angleId) {
+  _rebuildHotspots() {
     if (this.interactGroup) {
       this.interactGroup.traverse((o) => {
         if (o.geometry) o.geometry.dispose();
@@ -1764,30 +1886,31 @@ export class CinematicBazaar25DScene {
           id: 'mission_point',
           type: 'mission_encounter',
           label: this.citySpec.missionPrompt || 'Xüsusi Missiya Hadisəsi',
-          pos: new THREE.Vector3(0.0, 0, -1.2),
-          npcPos: new THREE.Vector3(0.0, 1.5, -2.5),
-          radius: 2.8,
+          pos: new THREE.Vector3(0.0, 0, -4.5),
+          npcPos: new THREE.Vector3(0.0, 1.5, -6.0),
+          radius: 2.6,
           ringColor: 0xe6884c,
         },
         {
           id: 'exit_gate',
           type: 'exit_to_map',
           label: this.citySpec.gateLabel,
-          pos: new THREE.Vector3(0.0, 0, this.angleCfg.zRange[1] - 0.5),
-          npcPos: new THREE.Vector3(0.0, 1.6, 8.0),
-          radius: 2.2,
+          pos: new THREE.Vector3(0.0, 0, this.angleCfg.zRange[1] - 0.3),
+          npcPos: new THREE.Vector3(0.0, 1.6, 6.0),
+          radius: 1.9,
           ringColor: 0xf4cf76,
         }
       );
-    } else if (role === 'courtyard') {
+    } else if (role === 'courtyard_hub') {
+      // Bakı İçərişəhər: ticarət və fayton nöqtələri, mərkəzi Qız Qalası qapısı isə birbaşa Qala Yoluna/Limana aparır!
       defs.push(
         {
           id: 'market_stall_zone',
           type: 'market',
-          label: `Bazar Dəftəri & Ticarət (${this.city?.short_name || 'Bazar'})`,
-          pos: new THREE.Vector3(-2.1, 0, 2.0),
-          npcPos: new THREE.Vector3(-3.2, 1.5, 2.0),
-          radius: 2.4,
+          label: `Bazar Dəftəri & Ticarət (${this.city?.short_name || 'Bakı'})`,
+          pos: new THREE.Vector3(2.35, 0, -0.4),
+          npcPos: new THREE.Vector3(3.6, 1.5, -0.4),
+          radius: 2.2,
           defaultItem: primaryLuxury,
           ringColor: 0xd9ad58,
         },
@@ -1795,9 +1918,42 @@ export class CinematicBazaar25DScene {
           id: 'fayton_station',
           type: 'fayton',
           label: 'Fayton Dayanacağı · Şəhərlərarası Səfər',
-          pos: new THREE.Vector3(1.5, 0, 2.3),
-          npcPos: new THREE.Vector3(2.8, 1.5, 2.3),
+          pos: new THREE.Vector3(-2.6, 0, 1.4),
+          npcPos: new THREE.Vector3(-3.8, 1.5, 1.4),
+          radius: 2.1,
+          ringColor: 0x6cb8cf,
+        }
+      );
+    } else if (role === 'harbor_exit') {
+      // Bakı Xəzər Limanı: ən uzaqdakı Dəniz Qapısından Qədim Xəritəyə çıxış!
+      defs.push({
+        id: 'exit_gate',
+        type: 'exit_to_map',
+        label: 'Dəniz Darvazası · Qədim Xəritəyə Çıx',
+        pos: new THREE.Vector3(0.1, 0, this.angleCfg.zRange[0] + 0.7),
+        npcPos: new THREE.Vector3(0.0, 1.6, -21.0),
+        radius: 2.3,
+        ringColor: 0xf4cf76,
+      });
+    } else if (role === 'courtyard') {
+      defs.push(
+        {
+          id: 'market_stall_zone',
+          type: 'market',
+          label: `Bazar Dəftəri & Ticarət (${this.city?.short_name || 'Bazar'})`,
+          pos: new THREE.Vector3(-2.0, 0, 0.8),
+          npcPos: new THREE.Vector3(-3.2, 1.5, 0.8),
           radius: 2.3,
+          defaultItem: primaryLuxury,
+          ringColor: 0xd9ad58,
+        },
+        {
+          id: 'fayton_station',
+          type: 'fayton',
+          label: 'Fayton Dayanacağı · Şəhərlərarası Səfər',
+          pos: new THREE.Vector3(1.5, 0, 1.4),
+          npcPos: new THREE.Vector3(2.8, 1.5, 1.4),
+          radius: 2.2,
           ringColor: 0x6cb8cf,
         },
         {
@@ -1805,8 +1961,8 @@ export class CinematicBazaar25DScene {
           type: 'exit_to_map',
           label: this.citySpec.gateLabel,
           pos: new THREE.Vector3(0.0, 0, this.angleCfg.zRange[0] + 0.6),
-          npcPos: new THREE.Vector3(0.0, 1.6, -11.0),
-          radius: 2.5,
+          npcPos: new THREE.Vector3(0.0, 1.6, -13.0),
+          radius: 2.4,
           ringColor: 0xf4cf76,
         }
       );
@@ -1815,9 +1971,9 @@ export class CinematicBazaar25DScene {
         id: 'market_arcade_zone',
         type: 'market',
         label: `${this.angleCfg.title} · Sövdələş`,
-        pos: new THREE.Vector3(-0.95, 0, 1.5),
-        npcPos: new THREE.Vector3(-2.2, 1.5, 1.5),
-        radius: 2.6,
+        pos: new THREE.Vector3(-1.05, 0, -1.6),
+        npcPos: new THREE.Vector3(-2.2, 1.5, -1.6),
+        radius: 2.2,
         defaultItem: primaryLuxury,
         ringColor: 0xd9ad58,
       });
@@ -1827,9 +1983,9 @@ export class CinematicBazaar25DScene {
         type: 'palace_audience',
         label: this.citySpec.palaceTitle,
         palaceTitle: this.citySpec.palaceTitle,
-        pos: new THREE.Vector3(0.0, 0, -2.4),
-        npcPos: new THREE.Vector3(0.0, 1.6, -5.0),
-        radius: 2.9,
+        pos: new THREE.Vector3(0.0, 0, -3.55),
+        npcPos: new THREE.Vector3(0.0, 1.8, -5.4),
+        radius: 2.3,
         ringColor: 0xd96b54,
       });
     }
@@ -1839,39 +1995,39 @@ export class CinematicBazaar25DScene {
         id: p.id,
         type: 'angle_portal',
         targetAngle: p.targetAngle,
+        targetSpawn: p.targetSpawn || null,
+        targetYaw: p.targetYaw,
         label: p.label,
         pos: new THREE.Vector3(p.pos[0], 0, p.pos[2]),
         npcPos: new THREE.Vector3(p.pos[0], 1.5, p.pos[2]),
-        radius: p.triggerRadius + 0.85,
+        radius: p.triggerRadius + 0.75,
         ringColor: p.ringColor || 0xe6be68,
       });
     }
 
     for (const def of defs) {
-      const fy = this.angleCfg.getFloorY(def.pos.z);
-      def.pos.y = fy;
       this.interactables.push(def);
 
-      const ringGeo = new THREE.RingGeometry(0.46, 0.495, 44);
+      const ringGeo = new THREE.RingGeometry(0.44, 0.48, 44);
       ringGeo.rotateX(-Math.PI / 2);
       const ringMat = new THREE.MeshBasicMaterial({
         color: def.ringColor,
         transparent: true,
-        opacity: 0.24,
+        opacity: 0.26,
         blending: THREE.AdditiveBlending,
         side: THREE.DoubleSide,
         depthWrite: false,
       });
       const ring = new THREE.Mesh(ringGeo, ringMat);
-      ring.position.set(def.pos.x, fy + 0.022, def.pos.z);
+      ring.position.set(def.pos.x, 0.022, def.pos.z);
       this.interactGroup.add(ring);
 
-      const innerGeo = new THREE.RingGeometry(0.22, 0.245, 32);
+      const innerGeo = new THREE.RingGeometry(0.2, 0.23, 32);
       innerGeo.rotateX(-Math.PI / 2);
       const innerMat = ringMat.clone();
-      innerMat.opacity = 0.14;
+      innerMat.opacity = 0.16;
       const inner = new THREE.Mesh(innerGeo, innerMat);
-      inner.position.set(def.pos.x, fy + 0.026, def.pos.z);
+      inner.position.set(def.pos.x, 0.026, def.pos.z);
       this.interactGroup.add(inner);
 
       this.interactRings.push({ id: def.id, outer: ring, inner });
@@ -1928,8 +2084,8 @@ export class CinematicBazaar25DScene {
       mesh.add(coat);
     }
 
-    const safeSp = this._clampWalkable(this.player.pos.x, this.player.pos.z);
-    this.player.pos.set(safeSp.x, safeSp.y, safeSp.z);
+    const safeSp = this._clampWalkable(this.angleCfg.spawnPos[0], this.angleCfg.spawnPos[2]);
+    this.player.pos.set(safeSp.x, 0, safeSp.z);
     mesh.position.copy(this.player.pos);
     mesh.rotation.y = this.player.yaw;
     this.scene.add(mesh);
@@ -1942,7 +2098,7 @@ export class CinematicBazaar25DScene {
     const prevAction = this.player.actions[this.player.activeActionName];
     if (!nextAction) return;
 
-    const animScale = targetName === 'Walk' ? this.angleCfg.movement.animScale || 1.12 : 1.0;
+    const animScale = targetName === 'Walk' ? this.angleCfg.followCam.animScale || 1.1 : 1.0;
     nextAction.reset().setEffectiveTimeScale(animScale).setEffectiveWeight(1).play();
     if (prevAction) prevAction.crossFadeTo(nextAction, 0.2, true);
     this.player.activeActionName = targetName;
@@ -1952,10 +2108,9 @@ export class CinematicBazaar25DScene {
     if (!this.renderer || !this.camera) return;
     const w = this.container.clientWidth || window.innerWidth;
     const h = this.container.clientHeight || window.innerHeight;
-    this.camera.aspect = w / h;
-    this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h);
-    this._syncShellReferenceCamera();
+    this._syncLiveCameraFov();
+    this._syncArchitecturalBoxUniforms();
   }
 
   update(dt) {
@@ -1963,14 +2118,13 @@ export class CinematicBazaar25DScene {
     this.elapsed += dt;
     if (this.portalCooldown > 0) this.portalCooldown = Math.max(0, this.portalCooldown - dt);
 
-    // Səhər ↔ Gecə hamar animasiyası
     if (Math.abs(this.targetNightMix - this.currentNightMix) > 0.001) {
       this.currentNightMix += (this.targetNightMix - this.currentNightMix) * Math.min(1, dt * 3.5);
       if (this.shellUniforms) this.shellUniforms.uNightMix.value = this.currentNightMix;
       this._applyTimeLighting();
     }
 
-    const mv = this.angleCfg.movement;
+    const fc = this.angleCfg.followCam;
     let moveX = 0;
     let moveZ = 0;
     const modalBlocking = this.gameManager?.ui?.isInventoryOpen?.() || this.gameManager?.ui?.mapOpen;
@@ -2000,9 +2154,9 @@ export class CinematicBazaar25DScene {
     if (this.player.isMoving) {
       const nx = moveX / len;
       const nz = moveZ / len;
-      const step = (mv.speed || 4.4) * dt;
+      const step = (fc.speed || 4.6) * dt;
       const clamped = this._clampWalkable(this.player.pos.x + nx * step, this.player.pos.z + nz * step);
-      this.player.pos.set(clamped.x, clamped.y, clamped.z);
+      this.player.pos.set(clamped.x, 0, clamped.z);
 
       const targetYaw = Math.atan2(nx, nz);
       let diff = targetYaw - this.player.yaw;
@@ -2021,14 +2175,15 @@ export class CinematicBazaar25DScene {
       }
     }
     if (this.playerLanternLight) {
-      this.playerLanternLight.position.set(this.player.pos.x + 0.55, this.player.pos.y + 1.25, this.player.pos.z - 0.45);
+      this.playerLanternLight.position.set(this.player.pos.x + 0.55, 1.25, this.player.pos.z - 0.45);
     }
 
+    // Qapıya daxil olduqda ikitərəfli dəqiq spawn və istiqamətlə növbəti əlaqəli məkana keç!
     if (this.portalCooldown <= 0 && !this.isTransitioning && !this.dialogueFocus && !modalBlocking && this.player.isMoving) {
       for (const p of this.angleCfg.portals || []) {
         const pd = Math.hypot(this.player.pos.x - p.pos[0], this.player.pos.z - p.pos[2]);
         if (pd <= p.triggerRadius) {
-          this.switchAngle(p.targetAngle);
+          this.switchAngle(p.targetAngle, p.targetSpawn || null, p.targetYaw);
           break;
         }
       }
@@ -2058,9 +2213,9 @@ export class CinematicBazaar25DScene {
 
     for (const r of this.interactRings) {
       const isNear = best?.id === r.id;
-      const pulse = 0.2 + Math.sin(this.elapsed * 2.2) * 0.05;
-      r.outer.material.opacity = isNear ? 0.48 : pulse;
-      r.inner.material.opacity = isNear ? 0.3 : pulse * 0.65;
+      const pulse = 0.22 + Math.sin(this.elapsed * 2.2) * 0.05;
+      r.outer.material.opacity = isNear ? 0.55 : pulse;
+      r.inner.material.opacity = isNear ? 0.35 : pulse * 0.65;
       r.outer.scale.setScalar(isNear ? 1.08 : 1.0);
       r.inner.rotation.y = this.elapsed * 0.45;
     }
@@ -2088,77 +2243,43 @@ export class CinematicBazaar25DScene {
     for (const fl of this.flickerLights) {
       fl.light.intensity = fl.base * nightLanternBoost * (0.91 + Math.sin(this.elapsed * 5.8 + fl.phase) * 0.09);
     }
-    for (const hl of this.hangingLanterns) {
-      hl.pivot.rotation.z = Math.sin(this.elapsed * 1.15 + hl.phase) * 0.045;
-      hl.pivot.rotation.x = Math.cos(this.elapsed * 0.85 + hl.phase) * 0.02;
-      hl.glowCore.material.opacity = 0.78 + Math.sin(this.elapsed * 6.4 + hl.phase) * 0.18;
-    }
     if (this.dustPoints) {
       const posAttr = this.dustPoints.geometry.attributes.position;
       for (let i = 0; i < posAttr.count; i++) {
         let y = posAttr.getY(i) + dt * 0.13;
-        if (y > 5.6) y = 0.35;
+        if (y > 5.2) y = 0.35;
         posAttr.setY(i, y);
       }
       posAttr.needsUpdate = true;
     }
 
-    // REAL 3D KAMERA İZLƏMƏSİ: Hər məkanın öz fərdi 3D kamera davranışı (Pan + Forward Dolly + Yamac Yüksəlişi + Baxış)!
-    const depthT = this.angleCfg.getDepthT(this.player.pos.z);
-    const zOffsetFromSpawn = this.angleCfg.spawnPos[2] - this.player.pos.z; // Dərinə getdikcə müsbət
+    // HƏQİQİ 3D TƏQİB KAMERASI: Tacir irəli-geri/sola-sağa yeridikcə kamera 3D otağın içində onun arxasınca gedir!
+    const camTargets = this._computeFollowCameraTargets();
+    const camLerp = Math.min(1, dt * 5.2);
+    this.liveCamPos.x += (camTargets.camX - this.liveCamPos.x) * camLerp;
+    this.liveCamPos.y += (camTargets.camY - this.liveCamPos.y) * camLerp;
+    this.liveCamPos.z += (camTargets.camZ - this.liveCamPos.z) * camLerp;
 
-    const desiredCamX =
-      this.baseCamPos.x +
-      this.player.pos.x * (mv.followX || 0.4) +
-      this.mouseNorm.x * 0.52;
-    const desiredCamY =
-      this.baseCamPos.y +
-      this.player.pos.y * (mv.followY || 0.15) -
-      this.mouseNorm.y * 0.24 +
-      Math.sin(this.elapsed * 0.72) * 0.025;
-    const desiredCamZ =
-      this.baseCamPos.z -
-      Math.max(-0.5, zOffsetFromSpawn * (mv.followZ || 0.42)) -
-      (this.dialogueFocus ? 1.4 : 0);
-
-    const desiredLookX =
-      this.baseLookAt.x +
-      this.player.pos.x * (mv.lookX || 0.22) +
-      this.mouseNorm.x * 0.65;
-    const desiredLookY =
-      this.baseLookAt.y +
-      this.player.pos.y * 0.65 +
-      depthT * (mv.lookUpOnApproach || 0.3) -
-      this.mouseNorm.y * 0.32;
-    const desiredLookZ = this.baseLookAt.z;
-
-    const camLerp = Math.min(1, dt * 3.8);
-    this.liveCamPos.x += (desiredCamX - this.liveCamPos.x) * camLerp;
-    this.liveCamPos.y += (desiredCamY - this.liveCamPos.y) * camLerp;
-    this.liveCamPos.z += (desiredCamZ - this.liveCamPos.z) * camLerp;
-
-    this.liveLookAt.x += (desiredLookX - this.liveLookAt.x) * camLerp;
-    this.liveLookAt.y += (desiredLookY - this.liveLookAt.y) * camLerp;
-    this.liveLookAt.z += (desiredLookZ - this.liveLookAt.z) * camLerp;
+    this.liveLookAt.x += (camTargets.lookX - this.liveLookAt.x) * camLerp;
+    this.liveLookAt.y += (camTargets.lookY - this.liveLookAt.y) * camLerp;
+    this.liveLookAt.z += (camTargets.lookZ - this.liveLookAt.z) * camLerp;
 
     this.camera.position.copy(this.liveCamPos);
     this.camera.lookAt(this.liveLookAt);
-    if (mv.camRollAmp > 0) {
-      this.camera.rotation.z += Math.sin(this.elapsed * 0.85) * mv.camRollAmp;
-    }
 
+    const depthT = this.angleCfg.getDepthT(this.player.pos.z);
     if (this.shellUniforms) {
       this.shellUniforms.uTime.value = this.elapsed;
       const proj = this.player.pos.clone().add(new THREE.Vector3(0, 1.1, 0)).project(this.camera);
       this.shellUniforms.uPlayerUV.value.set(proj.x * 0.5 + 0.5, proj.y * 0.5 + 0.5);
-      this.shellUniforms.uPlayerDepth.value = Math.max(0.15, Math.min(1.0, 1.0 - depthT * 0.72));
+      this.shellUniforms.uPlayerDepth.value = Math.max(0.15, Math.min(1.0, 1.0 - depthT * 0.65));
     }
 
     if (this.showWalkBoundsDebug && this.debugHudEl) {
       this.debugHudEl.innerHTML =
-        `<b>3D Profil:</b> ${mv.profileName}<br/>` +
-        `<b>Sürət:</b> ${mv.speed} · <b>DollyZ:</b> ${mv.followZ} · <b>Yamac:</b> +${mv.slopeRise || 0}m<br/>` +
-        `<b>Tacir 3D:</b> X=${this.player.pos.x.toFixed(2)} Y=${this.player.pos.y.toFixed(2)} Z=${this.player.pos.z.toFixed(2)} · <b>Qadağan:</b> ${(this.angleCfg.blockedZones || []).length}`;
+        `<b>3D Kamera:</b> ${fc.profileName}<br/>` +
+        `<b>Kamera Z:</b> ${this.liveCamPos.z.toFixed(2)}m (Təqib məsafəsi: ${fc.chaseDistZ}m)<br/>` +
+        `<b>Tacir 3D:</b> X=${this.player.pos.x.toFixed(2)} Z=${this.player.pos.z.toFixed(2)} · <b>Qapılar:</b> ${(this.angleCfg.portals || []).length}`;
     }
 
     this.renderer.render(this.scene, this.camera);

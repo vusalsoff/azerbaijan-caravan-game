@@ -213,9 +213,13 @@ export class GameManager {
       }
     });
 
-    this.eventBus.on('bazaar:switch_angle', (angleId) => {
+    this.eventBus.on('bazaar:switch_angle', (payload) => {
       if (this.currentSceneName === 'Caravanserai_Bazaar' && this.bazaarScene?.switchAngle) {
-        this.bazaarScene.switchAngle(angleId);
+        if (payload && typeof payload === 'object') {
+          this.bazaarScene.switchAngle(payload.angleId, payload.targetSpawn || null, payload.targetYaw);
+        } else {
+          this.bazaarScene.switchAngle(payload);
+        }
       }
     });
 
@@ -491,7 +495,11 @@ export class GameManager {
           } else if (this.bazaarProximity?.type === 'mission_encounter') {
             this.eventBus.emit('world:trigger_event_now');
           } else if (this.bazaarProximity?.type === 'angle_portal' && this.bazaarProximity.targetAngle) {
-            this.bazaarScene?.switchAngle?.(this.bazaarProximity.targetAngle);
+            this.bazaarScene?.switchAngle?.(
+              this.bazaarProximity.targetAngle,
+              this.bazaarProximity.targetSpawn || null,
+              this.bazaarProximity.targetYaw
+            );
           } else if (this.bazaarProximity?.type === 'horse_mount') {
             this.bazaarScene?.toggleMountHorse?.();
           } else if (this.bazaarProximity?.type === 'fayton') {

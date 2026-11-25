@@ -277,8 +277,15 @@ export class UIManager {
       });
       this.hudEl.querySelector('#btn-angle-portal')?.addEventListener('click', (e) => {
         e.stopPropagation();
-        const targetAngle = e.currentTarget.dataset.targetAngle;
-        if (targetAngle) this.eventBus.emit('bazaar:switch_angle', targetAngle);
+        const prox = this.lastState?.bazaarProximity;
+        const targetAngle = e.currentTarget.dataset.targetAngle || prox?.targetAngle;
+        if (targetAngle) {
+          this.eventBus.emit('bazaar:switch_angle', {
+            angleId: targetAngle,
+            targetSpawn: prox?.targetSpawn || null,
+            targetYaw: prox?.targetYaw,
+          });
+        }
       });
       this.hudEl.querySelector('#btn-cinema-quests')?.addEventListener('click', (e) => {
         e.stopPropagation();
