@@ -1,6 +1,72 @@
 {
   "random_quests": [
     {
+      "quest_id": "quest_chain_1_baku_quba",
+      "npc_role": "PadishahNPC",
+      "npc_name": "Şirvan Divan Katibi",
+      "title": "I Fəsil · Möhürlü Quba Əmanəti",
+      "description": "Şahdağ yolundakı Quba karvansarayına 2 tuluq Abşeron Nefti çatdır — orada sənə Şəki ipək möhürü haqqında sirli məktub veriləcək.",
+      "required_item": "oil",
+      "required_amount": 2,
+      "target_city": "City_Quba",
+      "reward_gold": 175
+    },
+    {
+      "quest_id": "quest_chain_2_quba_sheki",
+      "npc_role": "NPC_Farmer",
+      "npc_name": "Quba Bağbanı Murad",
+      "title": "II Fəsil · Dağ Aşırımı Alma Karvanı",
+      "description": "Qubadan seçmə 3 səbət Dağ Almasını Şəki Yuxarı Karvansarayına çatdır — Şəki xəzinədarı yolun növbəti açarını gözləyir.",
+      "required_item": "apple",
+      "required_amount": 3,
+      "target_city": "City_Sheki",
+      "reward_gold": 160
+    },
+    {
+      "quest_id": "quest_chain_3_sheki_ganja",
+      "npc_role": "PadishahNPC",
+      "npc_name": "Şəki İpək Ustası Qasım",
+      "title": "III Fəsil · Şah Abbas Karvansarayına İpək",
+      "description": "Gəncədəki Şah Abbas Karvansarayının baş katibi 2 top xalis Şəki İpəyi sifariş edib. Möhürü qırmadan çatdır!",
+      "required_item": "silk",
+      "required_amount": 2,
+      "target_city": "City_Ganja",
+      "reward_gold": 210
+    },
+    {
+      "quest_id": "quest_chain_4_ganja_shusha",
+      "npc_role": "NPC_Craftsman",
+      "npc_name": "Gəncə Dəftərdarı Əli",
+      "title": "IV Fəsil · Qala Qapısında Şəki Halvası",
+      "description": "Şuşa qalasına gələn Qarabağ elçiləri üçün 2 qutu Şəki Halvası çatdır — Qala meydanında böyük xalça müqaviləsi açılacaq.",
+      "required_item": "halva",
+      "required_amount": 2,
+      "target_city": "City_Shusha",
+      "reward_gold": 185
+    },
+    {
+      "quest_id": "quest_chain_5_shusha_nakhchivan",
+      "npc_role": "PadishahNPC",
+      "npc_name": "Qarabağ Xalça Ustası Bəhmən",
+      "title": "V Fəsil · Möminə Xatun Türbəsinə Hədiyyə",
+      "description": "Naxçıvan Atabəylər meydanındakı elçi 1 ədəd nadir Qarabağ Xalçası gözləyir. Bu çatdırılma Qərb İpək Yolunun ən böyük mükafatıdır!",
+      "required_item": "carpet",
+      "required_amount": 1,
+      "target_city": "City_Nakhchivan",
+      "reward_gold": 275
+    },
+    {
+      "quest_id": "quest_chain_6_nakhchivan_baku",
+      "npc_role": "PadishahNPC",
+      "npc_name": "Duzdağ Kəndxudası Yusif",
+      "title": "VI Fəsil · Şirvanşahlar Divanına Böyük Möhür",
+      "description": "Naxçıvanın şəfalı 3 kisə kristal Duzunu Bakıya — Şirvanşahlar Divanına çatdır və Böyük Tacir fərmanını qazan!",
+      "required_item": "salt",
+      "required_amount": 3,
+      "target_city": "City_Baku",
+      "reward_gold": 260
+    },
+    {
       "quest_id": "quest_padishah_silk",
       "npc_role": "PadishahNPC",
       "npc_name": "Şirvan Elçisi",
@@ -12,70 +78,15 @@
       "reward_gold": 220
     },
     {
-      "quest_id": "quest_khan_halva",
-      "npc_role": "PadishahNPC",
-      "npc_name": "Qarabağ Xanı",
-      "title": "Qonaqlar Üçün Şəki Halvası",
-      "description": "Şuşa qalasına gələn elçilər üçün 3 qutu Şəki Halvası gətir.",
-      "required_item": "halva",
-      "required_amount": 3,
-      "target_city": "City_Shusha",
-      "reward_gold": 150
-    },
-    {
-      "quest_id": "quest_craftsman_oil",
-      "npc_role": "NPC_Craftsman",
-      "npc_name": "Karvansaray Ustası",
-      "title": "Məşəllər Üçün Neft",
-      "description": "Gecə karvan yollarını işıqlandırmaq üçün 2 tuluq Abşeron Nefti lazımdır.",
-      "required_item": "oil",
-      "required_amount": 2,
-      "target_city": "City_Sheki",
-      "reward_gold": 180
-    },
-    {
-      "quest_id": "quest_caravan_salt",
-      "npc_role": "NPC_Traveler",
-      "npc_name": "Yolçu Tacir",
-      "title": "Yol Azuqəsi Üçün Duz",
-      "description": "Karvanımız yolda qalıb, bizə 2 kisə Abşeron Duzu versən, haqqını artıqlaması ilə ödəyərik.",
-      "required_item": "salt",
-      "required_amount": 2,
-      "target_city": "ANY",
-      "reward_gold": 110
-    },
-    {
-      "quest_id": "quest_farmer_apples",
-      "npc_role": "NPC_Farmer",
-      "npc_name": "Dağ Bağbanı Kərim",
-      "title": "Təzə Alma Karvanı",
-      "description": "Bakı liman bazarı təzə dağ alması gözləyir! 3 səbət Dağ Almasını vaxtında Bakıya çatdır.",
-      "required_item": "apple",
-      "required_amount": 3,
-      "target_city": "City_Baku",
-      "reward_gold": 145
-    },
-    {
       "quest_id": "quest_farmer_pomegranate",
       "npc_role": "NPC_Farmer",
       "npc_name": "Nar Bağı Sahibi",
-      "title": "Şəki Bazarına Təzə Nar",
-      "description": "Şəki Karvansarayında nar şirəsi hazırlayırlar — 2 yeşik Qarabağ/Göyçay Narı apar, yaxşı qızıl qazan.",
+      "title": "Gəncə Bazarına Təzə Nar",
+      "description": "Gəncə Şah Abbas Karvansarayında nar şirəsi hazırlayırlar — 2 yeşik Nar apar, yaxşı qızıl qazan.",
       "required_item": "pomegranate",
       "required_amount": 2,
-      "target_city": "City_Sheki",
-      "reward_gold": 135
-    },
-    {
-      "quest_id": "quest_shamakhi_carpet",
-      "npc_role": "PadishahNPC",
-      "npc_name": "Şamaxı Karvansaray Ağsaqqalı",
-      "title": "Naxışlı Qarabağ Xalçası Sifarişi",
-      "description": "Bakıdakı xarici səfirlər üçün 1 ədəd nadir Naxışlı Qarabağ Xalçası çatdır, həm qızıl, həm hörmət qazan!",
-      "required_item": "carpet",
-      "required_amount": 1,
-      "target_city": "City_Baku",
-      "reward_gold": 250
+      "target_city": "City_Ganja",
+      "reward_gold": 145
     }
   ]
 }

@@ -66,8 +66,11 @@ export class GameManager {
     const cityId = this.tradeManager.currentCityId || this.bazaarCityId;
     const greetings = {
       City_Baku: 'Şirvanşah Hüzuru: "Xoş gəldin, tacir! Bakı limanı və karvansaray yolları sənə açıqdır."',
+      City_Quba: 'Quba Xanı Hüzuru: "Şahdağ aşırımlarından keçən igid tacirə Quba qapıları daim açıqdır!"',
       City_Sheki: 'Şəki Xanı Hüzuru: "Şəki ipəyi və halvası uzaq ellərə şöhrət gətirsin!"',
+      City_Ganja: 'Gəncə Bəylərbəyi Hüzuru: "Nizami yurdunun Şah Abbas karvansarayı sənin karvanına güvənir!"',
       City_Shusha: 'Qarabağ Xanı Hüzuru: "Şuşa qalası və xalçaları sənin karvanınla daha da güclənsin!"',
+      City_Nakhchivan: 'Naxçıvan Divanı Hüzuru: "Möminə Xatun kölgəsində Duzdağ yolları sənə uğur gətirsin!"',
     };
     this._palaceVisited = this._palaceVisited || {};
     if (!this._palaceVisited[cityId]) {
@@ -90,6 +93,8 @@ export class GameManager {
       sceneName: this.currentSceneName,
       bazaarProximity: this.bazaarProximity,
       bazaarRenderMode: this.bazaarRenderMode,
+      bazaarAngleId: this.bazaarScene?.activeAngleId || 'courtyard',
+      bazaarAngleTitle: this.bazaarScene?.angleCfg?.title || 'Karvansaray Həyəti',
     };
   }
 
@@ -129,7 +134,14 @@ export class GameManager {
 
     this.eventBus.on('fayton:open', () => {
       if (this.currentSceneName !== 'Caravanserai_Bazaar' || !this.bazaarScene) return;
-      const fareByCity = { City_Baku: 25, City_Sheki: 25, City_Shusha: 35 };
+      const fareByCity = {
+        City_Baku: 25,
+        City_Quba: 22,
+        City_Sheki: 25,
+        City_Ganja: 28,
+        City_Shusha: 35,
+        City_Nakhchivan: 40,
+      };
       this.ui.showFaytonModal(
         this.bazaarCityId,
         this.data.cities,
@@ -171,6 +183,16 @@ export class GameManager {
       if (this.currentSceneName === 'Caravanserai_Bazaar' && this.bazaarScene) {
         this.bazaarScene.setCityWaypoint(wp);
       }
+    });
+
+    this.eventBus.on('bazaar:switch_angle', (angleId) => {
+      if (this.currentSceneName === 'Caravanserai_Bazaar' && this.bazaarScene?.switchAngle) {
+        this.bazaarScene.switchAngle(angleId);
+      }
+    });
+
+    this.eventBus.on('bazaar:angle_changed', () => {
+      this.ui.updateHUD(this._getUIState(this.tradeManager.getSnapshot()));
     });
 
     this.eventBus.on('state:updated', (snapshot) => {
@@ -438,6 +460,8 @@ export class GameManager {
             this.eventBus.emit('market:close');
           } else if (this.bazaarProximity?.type === 'exit_to_map') {
             this.eventBus.emit('scene:exit_to_world');
+          } else if (this.bazaarProximity?.type === 'angle_portal' && this.bazaarProximity.targetAngle) {
+            this.bazaarScene?.switchAngle?.(this.bazaarProximity.targetAngle);
           } else if (this.bazaarProximity?.type === 'horse_mount') {
             this.bazaarScene?.toggleMountHorse?.();
           } else if (this.bazaarProximity?.type === 'fayton') {

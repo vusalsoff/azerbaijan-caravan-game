@@ -25,62 +25,101 @@ export class WorldAzerbaijanScene {
     this.worldMinZ = -42;
     this.worldMaxZ = 42;
 
-    // Rəsmdəki abidələrin dəqiq koordinatları:
-    // Bakı (Abşeron Qız Qalası: u≈0.755, v≈0.485), Şəki (Dağ ətəyi: u≈0.465, v≈0.275), Şuşa (Qərb Qalası: u≈0.155, v≈0.445)
+    // 6 Tarixi Azərbaycan Şəhərinin Xəritə Koordinatları (dostunun yeni 6 şəhərlik xəritəsi gələndə u,v 10 saniyədə incə tənzimlənə bilər)
     this.cityPositions = {
       City_Baku: {
         x: this._uToWorldX(0.755),
         z: this._vToWorldZ(0.485),
         u: 0.755,
         v: 0.485,
-        radius: 8.5,
+        radius: 7.2,
         label: 'Bakı · İçərişəhər',
         short: 'Bakı',
       },
+      City_Quba: {
+        x: this._uToWorldX(0.625),
+        z: this._vToWorldZ(0.245),
+        u: 0.625,
+        v: 0.245,
+        radius: 7.2,
+        label: 'Quba · Dağ Bazarı',
+        short: 'Quba',
+      },
       City_Sheki: {
-        x: this._uToWorldX(0.465),
+        x: this._uToWorldX(0.455),
         z: this._vToWorldZ(0.275),
-        u: 0.465,
+        u: 0.455,
         v: 0.275,
-        radius: 8.5,
-        label: 'Şəki · Karvansaray',
+        radius: 7.2,
+        label: 'Şəki · Yuxarı Karvansaray',
         short: 'Şəki',
       },
+      City_Ganja: {
+        x: this._uToWorldX(0.285),
+        z: this._vToWorldZ(0.365),
+        u: 0.285,
+        v: 0.365,
+        radius: 7.2,
+        label: 'Gəncə · Şah Abbas',
+        short: 'Gəncə',
+      },
       City_Shusha: {
-        x: this._uToWorldX(0.155),
-        z: this._vToWorldZ(0.445),
-        u: 0.155,
-        v: 0.445,
-        radius: 8.5,
+        x: this._uToWorldX(0.165),
+        z: this._vToWorldZ(0.465),
+        u: 0.165,
+        v: 0.465,
+        radius: 7.2,
         label: 'Şuşa · Qala Şəhəri',
         short: 'Şuşa',
       },
+      City_Nakhchivan: {
+        x: this._uToWorldX(0.495),
+        z: this._vToWorldZ(0.755),
+        u: 0.495,
+        v: 0.755,
+        radius: 7.2,
+        label: 'Naxçıvan · Möminə Xatun',
+        short: 'Naxçıvan',
+      },
     };
 
-    // Rəsmdəki qırmızı nöqtəli karvan cığırları və daş körpülərdən keçən dəqiq Fast-Travel marşrutları (u, v)
+    // Şəhərlərarası əsas karvan yolları (qalan cütlüklər üçün hamar əyri avtomatik qurulur)
     this.uvRoutes = {
+      'City_Baku->City_Quba': [
+        [0.755, 0.485],
+        [0.71, 0.36],
+        [0.625, 0.245],
+      ],
+      'City_Quba->City_Sheki': [
+        [0.625, 0.245],
+        [0.54, 0.255],
+        [0.455, 0.275],
+      ],
       'City_Baku->City_Sheki': [
         [0.755, 0.485],
-        [0.72, 0.512],
-        [0.625, 0.435],
-        [0.54, 0.358],
-        [0.465, 0.275],
+        [0.62, 0.41],
+        [0.53, 0.34],
+        [0.455, 0.275],
       ],
-      'City_Baku->City_Shusha': [
+      'City_Sheki->City_Ganja': [
+        [0.455, 0.275],
+        [0.37, 0.315],
+        [0.285, 0.365],
+      ],
+      'City_Ganja->City_Shusha': [
+        [0.285, 0.365],
+        [0.22, 0.415],
+        [0.165, 0.465],
+      ],
+      'City_Shusha->City_Nakhchivan': [
+        [0.165, 0.465],
+        [0.296, 0.685],
+        [0.495, 0.755],
+      ],
+      'City_Baku->City_Nakhchivan': [
         [0.755, 0.485],
-        [0.72, 0.512],
-        [0.585, 0.578],
-        [0.435, 0.618],
-        [0.296, 0.695], // Cənub daş körpüsü
-        [0.215, 0.585],
-        [0.155, 0.445],
-      ],
-      'City_Sheki->City_Shusha': [
-        [0.465, 0.275],
-        [0.395, 0.305],
-        [0.286, 0.356], // Şimal daş körpüsü
-        [0.215, 0.402],
-        [0.155, 0.445],
+        [0.64, 0.62],
+        [0.495, 0.755],
       ],
     };
 

@@ -122,9 +122,180 @@ export class UIManager {
 
     const isGTA = state.cameraMode === 'gta';
     const isBazaar = state.sceneName === 'Caravanserai_Bazaar';
+    const isCinema25D = isBazaar && state.bazaarRenderMode === '25d';
     const eraBanner = state.currentCity
       ? `${state.currentCity.short_name || state.currentCity.display_name} · ${state.currentCity.era_name}`
       : `Qədim İpək Yolu · Gün ${state.gameDay}`;
+
+    // 2.5D Kinematik Rejim üçün Ultra-Minimalist Alt Menyu (~90% açıq kino ekranı!)
+    if (isCinema25D) {
+      const prox = state.bazaarProximity;
+      const activeAngle = state.bazaarAngleId || 'courtyard';
+      const angleLabel = state.bazaarAngleTitle || 'Karvansaray Həyəti';
+
+      let contextBtnHtml = '';
+      if (prox && !this.marketOpen) {
+        const btnId =
+          prox.type === 'exit_to_map'
+            ? 'btn-exit-map'
+            : prox.type === 'angle_portal'
+            ? 'btn-angle-portal'
+            : prox.type === 'fayton'
+            ? 'btn-board-fayton'
+            : prox.type === 'palace_audience'
+            ? 'btn-palace-audience'
+            : 'btn-open-market';
+        contextBtnHtml = `
+          <div class="cinema-context-bar">
+            <button id="${btnId}" class="btn-primary cinema-action-pill" data-target-angle="${prox.targetAngle || ''}">
+              <span class="key-cap">E</span>
+              <span>${prox.label}</span>
+            </button>
+          </div>
+        `;
+      }
+
+      const activeQuestCount = state.activeQuests?.length || 0;
+      const questPopoverHtml =
+        this._cinemaQuestOpen && !this.marketOpen
+          ? `
+        <div class="cinema-quest-popover lotm-plate">
+          <h4>Divan Əmanətləri (${activeQuestCount})</h4>
+          ${
+            activeQuestCount === 0
+              ? '<div style="color:#a89474;font-style:italic;font-size:12px;">Hələ aktiv əmanət yoxdur. Şəhər tacirləri və yol rəvayətləri sizə tapşırıq verəcək.</div>'
+              : state.activeQuests
+                  .map(
+                    (q) => `
+                <div class="quest-mini">
+                  <strong style="color:#efe1c6;">${q.title}</strong><br/>
+                  <span style="color:#bda886;">${q.npc_name}: ${q.required_amount}× ${this.data.getItemName(q.required_item)} → ${
+                      q.target_city === 'ANY'
+                        ? 'Hər hansı mənzil'
+                        : this.data.getCityById(q.target_city)?.short_name || q.target_city
+                    }</span><br/>
+                  <span style="color:var(--gold-bright);">+${q.reward_gold} qızıl</span>
+                </div>`
+                  )
+                  .join('')
+          }
+          <div style="margin-top:8px;padding-top:6px;border-top:1px solid rgba(196,152,76,0.22);display:flex;gap:12px;font-size:11.5px;color:#cbb796;">
+            <span>${renderSigil('charisma', 13)} Nüfuz: <strong style="color:var(--gold-bright);">${state.charisma}</strong></span>
+            <span>${renderSigil('intelligence', 13)} Fərasət: <strong style="color:var(--gold-bright);">${state.intelligence}</strong></span>
+          </div>
+        </div>
+      `
+          : '';
+
+      this.hudEl.innerHTML = `
+        <div class="cinema-hud-shell">
+          <div class="cinema-top-strip">
+            <div class="cinema-location-whisper">
+              <span class="cinema-brand-mark">KARVA</span>
+              <span class="cinema-sep">·</span>
+              <span class="cinema-city-text">${state.currentCity?.short_name || 'Bakı'}</span>
+              <span class="cinema-sep">·</span>
+              <span class="cinema-zone-text">${angleLabel}</span>
+            </div>
+            <div class="cinema-top-right-mini">
+              <button id="btn-toggle-25d" class="cinema-mini-btn" title="Klassik 3D Rejiminə keç">🏛️ 3D</button>
+              <button id="btn-mute" class="cinema-mini-btn" title="Səs">${this.muted ? '🔇' : '🔊'}</button>
+              <button id="btn-settings" class="cinema-mini-btn" title="Ayarlar">⚙</button>
+            </div>
+          </div>
+
+          <div class="cinema-bottom-wrap">
+            ${questPopoverHtml}
+            ${contextBtnHtml}
+            <div class="cinema-dock lotm-plate">
+              <div class="cinema-stat" title="Xəzinə">
+                ${renderSigil('coin', 14)}
+                <strong>${state.gold}</strong><small>/${state.winGoldGoal}</small>
+              </div>
+              <div class="cinema-stat" title="Gün">
+                ${renderSigil('sun', 13)}
+                <span>G.${state.gameDay}</span>
+              </div>
+              <span class="cinema-dock-div"></span>
+              <div class="cinema-angle-pills" title="Məkan bucaqları">
+                <button class="cinema-pill ${activeAngle === 'courtyard' ? 'active' : ''}" data-angle="courtyard">Həyət</button>
+                <button class="cinema-pill ${activeAngle === 'carpet_gallery' ? 'active' : ''}" data-angle="carpet_gallery">Pasaj</button>
+                <button class="cinema-pill ${activeAngle === 'palace_hall' ? 'active' : ''}" data-angle="palace_hall">Divan</button>
+              </div>
+              <span class="cinema-dock-div"></span>
+              <button id="btn-inv-top" class="cinema-dock-btn" title="Karvan Heybəsi (I)">
+                ${renderSigil('satchel', 14)}
+                <span>Heybə <b>${state.totalItems}/${state.maxInventory}</b></span>
+              </button>
+              <button id="btn-exit-map-top" class="cinema-dock-btn gold" title="Qədim Xəritə (X)">
+                ${renderSigil('compass', 14)}
+                <span>Xəritə</span>
+              </button>
+              <button id="btn-cinema-quests" class="cinema-dock-btn ${this._cinemaQuestOpen ? 'active' : ''}" title="Divan Əmanətləri & Bacarıqlar">
+                ${renderSigil('seal', 14)}
+                <span>Əmanət (${activeQuestCount})</span>
+              </button>
+              <button id="btn-map" class="cinema-dock-btn" title="Tarixi Salnamə (M)">
+                ${renderSigil('scroll', 14)}
+                <span>Salnamə</span>
+              </button>
+              <button id="btn-event-test" class="cinema-dock-btn" title="Yol Rəvayəti">✦</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      this.hudEl.querySelectorAll('.cinema-pill[data-angle]').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.eventBus.emit('bazaar:switch_angle', btn.dataset.angle);
+        });
+      });
+      this.hudEl.querySelector('#btn-angle-portal')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const targetAngle = e.currentTarget.dataset.targetAngle;
+        if (targetAngle) this.eventBus.emit('bazaar:switch_angle', targetAngle);
+      });
+      this.hudEl.querySelector('#btn-cinema-quests')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this._cinemaQuestOpen = !this._cinemaQuestOpen;
+        this.updateHUD(this.lastState);
+      });
+      this.hudEl.querySelector('#btn-toggle-25d')?.addEventListener('click', () => {
+        this.eventBus.emit('bazaar:toggle_render_mode');
+      });
+      this.hudEl.querySelector('#btn-exit-map')?.addEventListener('click', () => {
+        this.eventBus.emit('scene:exit_to_world');
+      });
+      this.hudEl.querySelector('#btn-exit-map-top')?.addEventListener('click', () => {
+        this.eventBus.emit('scene:exit_to_world');
+      });
+      this.hudEl.querySelector('#btn-open-market')?.addEventListener('click', () => {
+        this.eventBus.emit('market:open');
+      });
+      this.hudEl.querySelector('#btn-board-fayton')?.addEventListener('click', () => {
+        this.eventBus.emit('fayton:open');
+      });
+      this.hudEl.querySelector('#btn-palace-audience')?.addEventListener('click', () => {
+        this.eventBus.emit('palace:audience');
+      });
+      this.hudEl.querySelector('#btn-inv-top')?.addEventListener('click', () => {
+        this.eventBus.emit('ui:toggle_inventory');
+      });
+      this.hudEl.querySelector('#btn-map')?.addEventListener('click', () => {
+        this.eventBus.emit('ui:toggle_map');
+      });
+      this.hudEl.querySelector('#btn-event-test')?.addEventListener('click', () => {
+        this.eventBus.emit('world:trigger_event_now');
+      });
+      this.hudEl.querySelector('#btn-mute')?.addEventListener('click', () => {
+        this.eventBus.emit('audio:toggle_mute');
+      });
+      this.hudEl.querySelector('#btn-settings')?.addEventListener('click', () => {
+        this.eventBus.emit('ui:open_settings');
+      });
+      return;
+    }
 
     const bonuses = [];
     if (state.hasHorseBonus) bonuses.push('Köhlən +35%');

@@ -1,112 +1,294 @@
 import * as THREE from 'three';
+import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { ModelLoader } from '../Prefabs/ModelLoader.js';
 
 /**
  * Scenes/Cinematic_Bazaar_25D.js
- * Çox-Bucaqlı «Offline DLSS 5» 2.5D Kinematik Dərinlik + Canlı 3D Mühərrik:
- * - 3 fərqli göz səviyyəli kinematik bucaq:
- *     1) courtyard       — Bakı Karvansarayı Həyəti & Qız Qalası
- *     2) carpet_gallery  — Xalça və İpək Qalereyası (Fənər işıqlı yaxın ticarət planı)
- *     3) palace_hall     — Şirvanşahlar Divan Zalı (Şəbəkə işıqlı saray qəbulu)
- * - Hər bucaqda 6-addımlı GLSL Relief/Depth Parallax + Normal-Map canlı fənər işığı + Glow nəfəsi
- * - Həyətdə günəş şüası ↔ kölgə zonasına görə 3D Tacirin işıqlandırması real vaxtda dəyişir!
+ * 6 Şəhərlik Canlı 2.5D Kinematik Mühərrik:
+ * - Hər 6 Azərbaycan şəhəri (Bakı, Quba, Şəki, Gəncə, Şuşa, Naxçıvan) öz geniş 2.5D memarlıq fonu,
+ *   dəqiq üfüq-uyğunluqlu (horizon-matched) kamerası və öz adlı canlı 3D NPC-ləri ilə işləyir!
+ * - İzləyən kamera (Pan + Dolly) + 6-addımlı GLSL Relief Parallax + Normal-Map dinamik işıq
+ * - Tağlardan/qapılardan yeriyərək avtomatik kinematik bucaq keçidi (Həyət ↔ Pasaj ↔ Divan)
  */
 
-const ANGLE_CONFIGS = {
-  courtyard: {
-    id: 'courtyard',
-    title: 'I. Karvansaray Həyəti',
-    baseImage: './images/bazaar_baku_25d',
-    camPos: [0, 2.32, 14.2],
-    lookAt: [0, 1.72, -12.0],
-    fov: 43,
-    spawnPos: [0.0, 0, 4.4],
-    spawnYaw: Math.PI,
-    zRange: [-10.2, 7.2],
-    xBoundsFn: (z) => {
-      const tBack = (7.2 - z) / 17.4;
-      return [-4.2 + tBack * 1.15, 3.3 - tBack * 0.45];
-    },
+const NPC_PALETTES = {
+  carpet_master: { coat: 0x1e3556, trim: 0xe2b65c, papaq: 0x1a1714 },
+  gardener: { coat: 0x22442e, trim: 0xd6a04c, papaq: 0x1f1914 },
+  fayton: { coat: 0x2a2d36, trim: 0xc98a4a, papaq: 0x151414 },
+  silk_merchant: { coat: 0x521c36, trim: 0xe4b85e, papaq: 0x1e1815 },
+  spice_broker: { coat: 0x54351a, trim: 0x6ea666, papaq: 0x1e1813 },
+  vizier: { coat: 0x611720, trim: 0xf0c866, papaq: 0x1a1411 },
+  palace_guard: { coat: 0x1e2028, trim: 0xc2984e, papaq: 0x121214 },
+};
+
+const CITY_PROFILES = {
+  City_Baku: {
+    courtyardImage: './images/bazaar_baku_25d',
+    courtyardTitle: 'Karvansaray Həyəti',
+    palaceTitle: 'Şirvanşahlar Divan Qəbulu',
+    gateLabel: 'Qız Qalası Darvazası · Qədim Xəritəyə Çıx',
+    camPos: [0, 1.82, 13.4],
+    lookAt: [0, 3.35, -12.0],
     sunColor: 0xffd79a,
     sunPos: [14, 17, 7],
     sunBaseIntensity: 2.35,
     ambientSky: 0xffe6bd,
     ambientGround: 0x2d1f14,
-    ambientIntensity: 0.85,
-    shadowOpacity: 0.48,
-    lanterns: [
-      { pos: [-4.6, 2.6, 1.2], uv: [0.11, 0.58], color: 0xffa442, intensity: 2.4 },
-      { pos: [4.2, 2.5, 2.0], uv: [0.90, 0.57], color: 0xffa84c, intensity: 2.3 },
-    ],
+    ambientIntensity: 0.9,
     useDynamicSunZone: true,
     showSunbeams: true,
-    playerScaleHeight: 1.84,
-  },
-  carpet_gallery: {
-    id: 'carpet_gallery',
-    title: 'II. Xalça Qalereyası',
-    baseImage: './images/bazaar_baku_carpet_25d',
-    camPos: [-0.4, 1.95, 10.6],
-    lookAt: [0.4, 1.48, -6.0],
-    fov: 41,
-    spawnPos: [-1.72, 0, 3.45],
-    spawnYaw: 2.25, // Piştaxtadakı Baş Tacirə tərəf dönür
-    zRange: [0.2, 5.4],
-    xBoundsFn: (z) => {
-      const t = (5.4 - z) / 5.2;
-      return [-3.7 + t * 0.5, 0.25 - t * 0.4];
-    },
-    sunColor: 0xffb35c,
-    sunPos: [4.5, 6.2, 3.0],
-    sunBaseIntensity: 1.55,
-    ambientSky: 0x855e3a,
-    ambientGround: 0x1d130b,
-    ambientIntensity: 0.78,
-    shadowOpacity: 0.42,
-    lanterns: [
-      { pos: [-2.8, 3.0, 2.0], uv: [0.32, 0.74], color: 0xff9e38, intensity: 3.2 },
-      { pos: [2.6, 3.2, 1.4], uv: [0.84, 0.78], color: 0xffaa44, intensity: 3.1 },
+    tint: new THREE.Color(1.0, 1.0, 1.0),
+    npcs: [
+      { id: 'trader_carpet', npcName: 'Hacı Səlim', npcRole: 'Baş Xalça Taciri', palette: 'carpet_master', defaultItem: 'carpet' },
+      { id: 'trader_farmer', npcName: 'Usta Kərim', npcRole: 'Bağban və Misgər', palette: 'gardener', defaultItem: 'grape' },
+      { id: 'fayton_station', npcName: 'Faytonçu Bəhram', npcRole: 'Şəhərlərarası Səfər', palette: 'fayton' },
     ],
+  },
+  City_Quba: {
+    courtyardImage: './images/bazaar_quba_25d',
+    courtyardTitle: 'Quba Dağ Bazarı',
+    palaceTitle: 'Quba Xan Divanı Qəbulu',
+    gateLabel: 'Şahdağ Darvazası · Qədim Xəritəyə Çıx',
+    camPos: [0, 1.66, 12.6],
+    lookAt: [0, 4.15, -12.0],
+    sunColor: 0xffe0aa,
+    sunPos: [-12, 16, 6],
+    sunBaseIntensity: 2.25,
+    ambientSky: 0xdbe6f0,
+    ambientGround: 0x2b221a,
+    ambientIntensity: 0.92,
     useDynamicSunZone: false,
     showSunbeams: false,
-    playerScaleHeight: 2.38,
-  },
-  palace_hall: {
-    id: 'palace_hall',
-    title: 'III. Divan Zalı',
-    baseImage: './images/bazaar_baku_palace_25d',
-    camPos: [0, 2.25, 13.6],
-    lookAt: [0, 1.78, -10.0],
-    fov: 43,
-    spawnPos: [0.0, 0, 4.8],
-    spawnYaw: Math.PI,
-    zRange: [-4.8, 6.8],
-    xBoundsFn: (z) => {
-      const t = (6.8 - z) / 11.6;
-      return [-3.8 + t * 0.4, 3.8 - t * 0.4];
-    },
-    sunColor: 0xffd288,
-    sunPos: [3.0, 16.0, -4.0],
-    sunBaseIntensity: 1.65,
-    ambientSky: 0x9c7b52,
-    ambientGround: 0x1f160f,
-    ambientIntensity: 0.78,
-    shadowOpacity: 0.44,
-    lanterns: [
-      { pos: [-4.4, 2.1, 2.0], uv: [0.15, 0.48], color: 0xffa642, intensity: 2.8 },
-      { pos: [4.4, 2.1, 2.0], uv: [0.85, 0.48], color: 0xffa642, intensity: 2.8 },
+    tint: new THREE.Color(1.0, 1.0, 1.0),
+    npcs: [
+      { id: 'trader_carpet', npcName: 'Usta Səməd', npcRole: 'Quba-Çıraq Xalçaçısı', palette: 'carpet_master', defaultItem: 'carpet' },
+      { id: 'trader_farmer', npcName: 'Bağban Murad', npcRole: 'Dağ Alması və Bal', palette: 'gardener', defaultItem: 'apple' },
+      { id: 'fayton_station', npcName: 'Dağ Faytonçusu', npcRole: 'Şəhərlərarası Səfər', palette: 'fayton' },
     ],
+  },
+  City_Sheki: {
+    courtyardImage: './images/bazaar_sheki_25d',
+    courtyardTitle: 'Yuxarı Karvansaray',
+    palaceTitle: 'Şəki Xan Sarayı Qəbulu',
+    gateLabel: 'Karvansaray Qapısı · Qədim Xəritəyə Çıx',
+    camPos: [0, 1.84, 13.4],
+    lookAt: [0, 3.25, -12.0],
+    sunColor: 0xffdf9e,
+    sunPos: [10, 17, 5],
+    sunBaseIntensity: 2.3,
+    ambientSky: 0xdfefd8,
+    ambientGround: 0x2a2117,
+    ambientIntensity: 0.92,
     useDynamicSunZone: false,
-    showSunbeams: true,
-    playerScaleHeight: 2.0,
+    showSunbeams: false,
+    tint: new THREE.Color(1.0, 1.0, 1.0),
+    npcs: [
+      { id: 'trader_carpet', npcName: 'İpəkçi Qasım', npcRole: 'Şəki İpək Ustası', palette: 'silk_merchant', defaultItem: 'silk' },
+      { id: 'trader_farmer', npcName: 'Halvaçı Nəsib', npcRole: 'Şəki Halvası və Armud', palette: 'gardener', defaultItem: 'halva', pos: [1.32, 0, 3.35] },
+      { id: 'fayton_station', npcName: 'Faytonçu Teymur', npcRole: 'Şəhərlərarası Səfər', palette: 'fayton' },
+    ],
+  },
+  City_Ganja: {
+    courtyardImage: './images/bazaar_ganja_25d',
+    courtyardTitle: 'Şah Abbas Karvansarayı',
+    palaceTitle: 'Gəncə Bəylərbəyi Qəbulu',
+    gateLabel: 'Gəncə Darvazası · Qədim Xəritəyə Çıx',
+    camPos: [0, 1.74, 13.0],
+    lookAt: [0, 3.85, -12.0],
+    sunColor: 0xffca82,
+    sunPos: [-11, 15, 6],
+    sunBaseIntensity: 2.2,
+    ambientSky: 0xf2d1a8,
+    ambientGround: 0x301d12,
+    ambientIntensity: 0.9,
+    useDynamicSunZone: false,
+    showSunbeams: false,
+    tint: new THREE.Color(1.0, 1.0, 1.0),
+    npcs: [
+      { id: 'trader_carpet', npcName: 'Dəftərdar Əli', npcRole: 'Nizami Yurdu Taciri', palette: 'carpet_master', defaultItem: 'silk' },
+      { id: 'trader_farmer', npcName: 'Misgər Fərhad', npcRole: 'Saxsı və Bağ Nemətləri', palette: 'spice_broker', defaultItem: 'pomegranate' },
+      { id: 'fayton_station', npcName: 'Karvanbaşı Rəşid', npcRole: 'Şəhərlərarası Səfər', palette: 'fayton' },
+    ],
+  },
+  City_Shusha: {
+    courtyardImage: './images/bazaar_shusha_25d',
+    courtyardTitle: 'Şuşa Qala Meydanı',
+    palaceTitle: 'Qarabağ Xanı Qəbulu',
+    gateLabel: 'Gəncə Qapısı · Qədim Xəritəyə Çıx',
+    camPos: [0, 1.6, 12.4],
+    lookAt: [0, 4.45, -12.0],
+    sunColor: 0xf5cc9c,
+    sunPos: [8, 15, 4],
+    sunBaseIntensity: 2.05,
+    ambientSky: 0xcbc2d8,
+    ambientGround: 0x261e1a,
+    ambientIntensity: 0.9,
+    useDynamicSunZone: false,
+    showSunbeams: false,
+    tint: new THREE.Color(1.0, 1.0, 1.0),
+    npcs: [
+      { id: 'trader_carpet', npcName: 'Usta Bəhmən', npcRole: 'Qarabağ Xalçaçısı', palette: 'vizier', defaultItem: 'carpet' },
+      { id: 'trader_farmer', npcName: 'Atçı Rüstəm', npcRole: 'Qarabağ Atı Ləvazimatı', palette: 'fayton', defaultItem: 'horse_gear' },
+      { id: 'fayton_station', npcName: 'Qala Faytonçusu', npcRole: 'Şəhərlərarası Səfər', palette: 'gardener' },
+    ],
+  },
+  City_Nakhchivan: {
+    courtyardImage: './images/bazaar_nakhchivan_25d',
+    courtyardTitle: 'Möminə Xatun Meydanı',
+    palaceTitle: 'Atabəylər Divan Qəbulu',
+    gateLabel: 'Qərb Karvan Qapısı · Qədim Xəritəyə Çıx',
+    camPos: [0, 1.74, 13.0],
+    lookAt: [0, 3.85, -12.0],
+    sunColor: 0xffa862,
+    sunPos: [-10, 13, -4],
+    sunBaseIntensity: 2.15,
+    ambientSky: 0xe6a87c,
+    ambientGround: 0x2d190f,
+    ambientIntensity: 0.88,
+    useDynamicSunZone: false,
+    showSunbeams: false,
+    tint: new THREE.Color(1.0, 1.0, 1.0),
+    npcs: [
+      { id: 'trader_carpet', npcName: 'Kəndxuda Yusif', npcRole: 'Duzdağ Kristal Taciri', palette: 'carpet_master', defaultItem: 'salt' },
+      { id: 'trader_farmer', npcName: 'Zəfərançı Məcid', npcRole: 'Ədviyyat və Dağ Balı', palette: 'spice_broker', defaultItem: 'honey' },
+      { id: 'fayton_station', npcName: 'Qərb Karvançısı', npcRole: 'Şəhərlərarası Səfər', palette: 'fayton' },
+    ],
   },
 };
 
-const CITY_TINTS = {
-  City_Baku: { tint: new THREE.Color(1.0, 1.0, 1.0), palaceTitle: 'Şirvanşahlar Sarayı Qəbulu' },
-  City_Sheki: { tint: new THREE.Color(0.92, 0.99, 1.04), palaceTitle: 'Şəki Xan Sarayı Qəbulu' },
-  City_Shusha: { tint: new THREE.Color(0.94, 0.94, 1.02), palaceTitle: 'Qarabağ Xanı Qəbulu' },
-};
+function buildAngleConfigsForCity(cityProfile) {
+  return {
+    courtyard: {
+      id: 'courtyard',
+      title: cityProfile.courtyardTitle,
+      baseImage: cityProfile.courtyardImage,
+      camPos: cityProfile.camPos,
+      lookAt: cityProfile.lookAt,
+      fov: 43,
+      baseZoom: 1.08,
+      spawnPos: [0.0, 0, 4.4],
+      spawnYaw: Math.PI,
+      zRange: [-8.8, 6.8],
+      xBoundsFn: (z) => {
+        const tBack = (6.8 - z) / 15.6;
+        return [-3.6 + tBack * 0.9, 3.2 - tBack * 0.6];
+      },
+      sunColor: cityProfile.sunColor,
+      sunPos: cityProfile.sunPos,
+      sunBaseIntensity: cityProfile.sunBaseIntensity,
+      ambientSky: cityProfile.ambientSky,
+      ambientGround: cityProfile.ambientGround,
+      ambientIntensity: cityProfile.ambientIntensity,
+      shadowOpacity: 0.45,
+      lanterns: [
+        { pos: [-4.4, 2.6, 1.4], uv: [0.12, 0.56], color: 0xffa442, intensity: 2.5 },
+        { pos: [4.2, 2.5, 1.8], uv: [0.89, 0.56], color: 0xffa84c, intensity: 2.4 },
+      ],
+      useDynamicSunZone: cityProfile.useDynamicSunZone,
+      showSunbeams: cityProfile.showSunbeams,
+      playerScaleHeight: 1.84,
+      portals: [
+        {
+          id: 'portal_to_carpet',
+          label: 'Xalça və İpək Pasajına Daxil Ol',
+          targetAngle: 'carpet_gallery',
+          pos: [-3.3, 0, -2.2],
+          triggerRadius: 1.35,
+          ringColor: 0xe6be68,
+        },
+        {
+          id: 'portal_to_palace',
+          label: `${cityProfile.palaceTitle} · Divan Zalı`,
+          targetAngle: 'palace_hall',
+          pos: [-2.4, 0, -6.2],
+          triggerRadius: 1.45,
+          ringColor: 0xd46a54,
+        },
+      ],
+    },
+    carpet_gallery: {
+      id: 'carpet_gallery',
+      title: 'Xalça və İpək Pasajı',
+      baseImage: './images/bazaar_baku_carpet_25d',
+      // Üfüq dəqiq rəsmdəki arxa işıqlı qapı astanasına (~71% hündürlük) uyğunlaşdırılıb!
+      camPos: [0, 1.56, 12.2],
+      lookAt: [0, 4.72, -12.0],
+      fov: 43,
+      baseZoom: 1.08,
+      spawnPos: [0.0, 0, 4.2],
+      spawnYaw: Math.PI,
+      zRange: [-7.2, 5.8],
+      xBoundsFn: (z) => {
+        const tBack = (5.8 - z) / 13.0;
+        return [-2.35 + tBack * 0.75, 2.35 - tBack * 0.75];
+      },
+      sunColor: 0xffcb7e,
+      sunPos: [5.5, 14.0, 2.0],
+      sunBaseIntensity: 2.1,
+      ambientSky: 0xdfb174,
+      ambientGround: 0x26180d,
+      ambientIntensity: 0.92,
+      shadowOpacity: 0.46,
+      lanterns: [
+        { pos: [-3.2, 2.8, 1.8], uv: [0.22, 0.72], color: 0xffa23c, intensity: 3.1 },
+        { pos: [3.2, 2.8, -0.8], uv: [0.78, 0.72], color: 0xffaa44, intensity: 3.0 },
+      ],
+      useDynamicSunZone: false,
+      showSunbeams: false, // Rəsmin özündə real tavan günəş şüaları var
+      playerScaleHeight: 1.78,
+      portals: [
+        {
+          id: 'portal_back_courtyard_far',
+          label: `${cityProfile.courtyardTitle} · Çıxış`,
+          targetAngle: 'courtyard',
+          pos: [0.0, 0, -6.7],
+          triggerRadius: 1.45,
+          ringColor: 0xf4cf76,
+        },
+      ],
+    },
+    palace_hall: {
+      id: 'palace_hall',
+      title: cityProfile.palaceTitle,
+      baseImage: './images/bazaar_baku_palace_25d',
+      camPos: [0, 1.72, 13.0],
+      lookAt: [0, 3.8, -12.0],
+      fov: 43,
+      baseZoom: 1.08,
+      spawnPos: [0.0, 0, 4.5],
+      spawnYaw: Math.PI,
+      zRange: [-4.6, 6.2],
+      xBoundsFn: (z) => {
+        const t = (6.2 - z) / 10.8;
+        return [-3.2 + t * 0.45, 3.2 - t * 0.45];
+      },
+      sunColor: 0xffd288,
+      sunPos: [3.0, 16.0, 1.0],
+      sunBaseIntensity: 1.95,
+      ambientSky: 0xb08c5e,
+      ambientGround: 0x21170f,
+      ambientIntensity: 0.88,
+      shadowOpacity: 0.45,
+      lanterns: [
+        { pos: [-4.2, 2.2, 2.0], uv: [0.15, 0.48], color: 0xffa642, intensity: 2.9 },
+        { pos: [4.2, 2.2, 2.0], uv: [0.85, 0.48], color: 0xffa642, intensity: 2.9 },
+      ],
+      useDynamicSunZone: false,
+      showSunbeams: false,
+      playerScaleHeight: 1.84,
+      portals: [
+        {
+          id: 'portal_palace_back',
+          label: `${cityProfile.courtyardTitle} · Qayıt`,
+          targetAngle: 'courtyard',
+          pos: [0.0, 0, 5.9],
+          triggerRadius: 1.25,
+          ringColor: 0xe6be68,
+        },
+      ],
+    },
+  };
+}
 
 const BACKDROP_VERT = /* glsl */ `
   varying vec2 vUv;
@@ -144,7 +326,7 @@ const BACKDROP_FRAG = /* glsl */ `
     } else {
       centered.x *= uAspectRatio;
     }
-    centered *= (0.935 / max(0.85, uZoom));
+    centered *= (0.91 / max(0.85, uZoom));
     return centered + 0.5;
   }
 
@@ -155,44 +337,44 @@ const BACKDROP_FRAG = /* glsl */ `
     float depth = 0.0;
     for (int i = 0; i < 6; i++) {
       depth = texture2D(uDepthMap, clamp(pUv, 0.002, 0.998)).r;
-      float shift = (depth - 0.35);
+      float shift = 0.25 + (depth - 0.30) * 1.15;
       vec2 targetUv = baseUv - uParallax * shift;
-      pUv = mix(pUv, targetUv, 0.55);
+      pUv = mix(pUv, targetUv, 0.58);
     }
 
     pUv = clamp(pUv, 0.002, 0.998);
     vec3 color = texture2D(uColorMap, pUv).rgb * uCityTint;
     vec3 normalTex = texture2D(uNormalMap, pUv).rgb * 2.0 - 1.0;
-    vec3 N = normalize(vec3(normalTex.x * 1.15, normalTex.y * 1.15, max(0.25, normalTex.z)));
+    vec3 N = normalize(vec3(normalTex.x * 1.18, normalTex.y * 1.18, max(0.25, normalTex.z)));
     float glow = texture2D(uGlowMap, pUv).r;
 
     float flickerA = 0.86 + 0.14 * sin(uTime * 5.3 + pUv.x * 19.0) * cos(uTime * 3.1 + pUv.y * 11.0);
     float flickerB = 0.90 + 0.10 * sin(uTime * 7.8 + pUv.x * 31.0);
-    vec3 lanternBloom = vec3(1.0, 0.66, 0.24) * glow * (0.50 * flickerA);
+    vec3 lanternBloom = vec3(1.0, 0.66, 0.24) * glow * (0.52 * flickerA);
 
     vec3 lDir1 = normalize(vec3(uLanternA - pUv, 0.18));
     float dist1 = length((uLanternA - pUv) * vec2(1.45, 1.0));
-    float att1 = exp(-dist1 * 4.2) * flickerA;
+    float att1 = exp(-dist1 * 4.1) * flickerA;
     float diff1 = max(dot(N, lDir1), 0.0);
 
     vec3 lDir2 = normalize(vec3(uLanternB - pUv, 0.18));
     float dist2 = length((uLanternB - pUv) * vec2(1.45, 1.0));
-    float att2 = exp(-dist2 * 4.2) * flickerB;
+    float att2 = exp(-dist2 * 4.1) * flickerB;
     float diff2 = max(dot(N, lDir2), 0.0);
 
     vec2 playerLight = uPlayerUV + vec2(0.0, 0.05);
     vec3 lDirP = normalize(vec3(playerLight - pUv, 0.22));
     float distP = length((playerLight - pUv) * vec2(1.45, 1.8));
-    float attP = exp(-distP * 5.8) * (0.35 + 0.5 * uPlayerDepth) * (0.94 + 0.06 * sin(uTime * 4.2));
+    float attP = exp(-distP * 5.6) * (0.35 + 0.5 * uPlayerDepth) * (0.94 + 0.06 * sin(uTime * 4.2));
     float diffP = max(dot(N, lDirP), 0.0);
 
     vec3 dynamicWarmLight =
-      vec3(1.0, 0.72, 0.34) * (diff1 * att1 * 0.25 + diff2 * att2 * 0.25 + diffP * attP * 0.22);
+      vec3(1.0, 0.72, 0.34) * (diff1 * att1 * 0.26 + diff2 * att2 * 0.26 + diffP * attP * 0.24);
 
     vec3 finalCol = color + lanternBloom + dynamicWarmLight * color;
 
-    float vig = smoothstep(0.95, 0.28, length((vUv - 0.5) * vec2(1.15, 1.05)));
-    finalCol *= mix(0.74, 1.03, vig);
+    float vig = smoothstep(0.96, 0.28, length((vUv - 0.5) * vec2(1.12, 1.04)));
+    finalCol *= mix(0.75, 1.03, vig);
     finalCol *= clamp(uFade, 0.0, 1.0);
 
     gl_FragColor = vec4(finalCol, 1.0);
@@ -207,7 +389,9 @@ export class CinematicBazaar25DScene {
     this.gameManager = gameManager;
     this.cityId = cityId;
     this.city = data.getCityById(cityId) || data.cities[0];
-    this.cityTheme = CITY_TINTS[cityId] || CITY_TINTS.City_Baku;
+    this.cityProfile = CITY_PROFILES[cityId] || CITY_PROFILES.City_Baku;
+    this.angleConfigs = buildAngleConfigsForCity(this.cityProfile);
+
     this.modelLoader = new ModelLoader();
     this.textureLoader = new THREE.TextureLoader();
 
@@ -217,37 +401,47 @@ export class CinematicBazaar25DScene {
     this.isMounted = false;
 
     this.activeAngleId = 'courtyard';
-    this.angleCfg = ANGLE_CONFIGS.courtyard;
+    this.angleCfg = this.angleConfigs.courtyard;
     this.angleTexCache = new Map();
     this.fadeAlpha = 1.0;
     this.isTransitioning = false;
-    this.angleBarEl = null;
+    this.portalCooldown = 1.5;
 
     this.backdropMesh = null;
     this.backdropUniforms = null;
     this.imageAspect = 16 / 9;
 
-    // 3D Tacir vəziyyəti
+    this.heroTemplate = null;
+
     this.player = {
       group: null,
       baseNormScale: 1.0,
       pos: new THREE.Vector3(0.0, 0, 4.4),
       yaw: Math.PI,
-      speed: 4.4,
+      speed: 4.5,
       walkPhase: 0,
       isMoving: false,
       targetPos: null,
+      pendingInteraction: null,
       mountedHorse: false,
       mixer: null,
       actions: {},
       activeActionName: null,
     };
 
+    this.npcGroup = null;
+    this.liveNPCs = [];
+    this.hoveredNPC = null;
+    this.npcTagEl = null;
+
+    this.foregroundGroup = null;
+    this.hangingLanterns = [];
+
     this.baseCamPos = new THREE.Vector3(...this.angleCfg.camPos);
     this.baseLookAt = new THREE.Vector3(...this.angleCfg.lookAt);
     this.mouseNorm = { x: 0, y: 0 };
     this.smoothParallax = new THREE.Vector2(0, 0);
-    this.smoothZoom = 1.0;
+    this.smoothZoom = this.angleCfg.baseZoom;
 
     this.dialogueFocus = null;
     this.interactables = [];
@@ -288,9 +482,8 @@ export class CinematicBazaar25DScene {
     this.dialogueFocus = target;
     if (target) {
       this.player.targetPos = null;
-      if (target.id === 'trader_carpet' && this.activeAngleId !== 'carpet_gallery') {
-        this.switchAngle('carpet_gallery');
-      } else if (this.player.group && target.npcPos) {
+      this.player.pendingInteraction = null;
+      if (this.player.group && target.npcPos) {
         const dx = target.npcPos.x - this.player.pos.x;
         const dz = target.npcPos.z - this.player.pos.z;
         this.player.yaw = Math.atan2(dx, dz);
@@ -309,7 +502,7 @@ export class CinematicBazaar25DScene {
 
   toggleMountHorse() {
     this.eventBus.emit('ui:toast', {
-      message: 'At sürmə funksiyası «Klassik 3D» rejimində aktivdir — yuxarıdan keçid edə bilərsiniz.',
+      message: 'At sürmə funksiyası «Klassik 3D» rejimində aktivdir — yuxarı sağdakı «🏛️ 3D» düyməsindən keçə bilərsiniz.',
       type: 'info',
     });
   }
@@ -331,16 +524,45 @@ export class CinematicBazaar25DScene {
     if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(code)) {
       this.keys.add(code);
       this.player.targetPos = null;
+      this.player.pendingInteraction = null;
     }
   }
 
   _handlePointerMove(e) {
-    if (!this.renderer) return;
+    if (!this.renderer || !this.camera) return;
     const rect = this.renderer.domElement.getBoundingClientRect();
     const nx = ((e.clientX - rect.left) / Math.max(1, rect.width)) * 2 - 1;
     const ny = ((e.clientY - rect.top) / Math.max(1, rect.height)) * 2 - 1;
     this.mouseNorm.x = Math.max(-1, Math.min(1, nx));
     this.mouseNorm.y = Math.max(-1, Math.min(1, ny));
+
+    if (this.liveNPCs.length > 0 && !this.dialogueFocus && !this.gameManager?.ui?.isAnyModalOpen?.()) {
+      this.pointer.set(nx, -ny);
+      this.raycaster.setFromCamera(this.pointer, this.camera);
+      const hitboxes = this.liveNPCs.map((n) => n.hitbox).filter(Boolean);
+      const hits = this.raycaster.intersectObjects(hitboxes, false);
+      const hitNpc = hits.length > 0 ? hits[0].object.userData.npcRef : null;
+      this.hoveredNPC = hitNpc;
+      this.renderer.domElement.style.cursor = hitNpc ? 'pointer' : 'default';
+    } else {
+      this.hoveredNPC = null;
+      if (this.renderer) this.renderer.domElement.style.cursor = 'default';
+    }
+  }
+
+  _triggerInteractable(def) {
+    if (!def) return;
+    if (def.type === 'market') {
+      this.eventBus.emit('market:open', { interactable: def });
+    } else if (def.type === 'palace_audience') {
+      this.eventBus.emit('palace:audience');
+    } else if (def.type === 'fayton') {
+      this.eventBus.emit('fayton:open');
+    } else if (def.type === 'exit_to_map') {
+      this.eventBus.emit('scene:exit_to_world');
+    } else if (def.type === 'angle_portal' && def.targetAngle) {
+      this.switchAngle(def.targetAngle);
+    }
   }
 
   _handlePointerDown(e) {
@@ -352,9 +574,34 @@ export class CinematicBazaar25DScene {
     this.pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
 
     this.raycaster.setFromCamera(this.pointer, this.camera);
+
+    // 1. Canlı 3D NPC-yə klikləndikdə düz qarşısına yeriyib sövdələşməni aç
+    const hitboxes = this.liveNPCs.map((n) => n.hitbox).filter(Boolean);
+    if (hitboxes.length > 0) {
+      const npcHits = this.raycaster.intersectObjects(hitboxes, false);
+      if (npcHits.length > 0) {
+        const npc = npcHits[0].object.userData.npcRef;
+        if (npc?.def) {
+          const dist = Math.hypot(this.player.pos.x - npc.def.pos.x, this.player.pos.z - npc.def.pos.z);
+          if (dist <= Math.max(2.2, npc.def.radius * 0.85)) {
+            this._triggerInteractable(npc.def);
+          } else {
+            const dirX = this.player.pos.x - npc.def.pos.x;
+            const dirZ = this.player.pos.z - npc.def.pos.z;
+            const d = Math.max(0.01, Math.hypot(dirX, dirZ));
+            this._setWalkTarget(npc.def.pos.x + (dirX / d) * 1.4, npc.def.pos.z + (dirZ / d) * 1.4);
+            this.player.pendingInteraction = npc.def;
+          }
+          return;
+        }
+      }
+    }
+
+    // 2. Döşəməyə klikləndikdə ora yeri
     const hits = this.raycaster.intersectObject(this.floorMesh);
     if (hits.length > 0) {
       const pt = hits[0].point;
+      this.player.pendingInteraction = null;
       this._setWalkTarget(pt.x, pt.z);
     }
   }
@@ -371,7 +618,7 @@ export class CinematicBazaar25DScene {
     const clamped = this._clampWalkable(x, z);
     this.player.targetPos = new THREE.Vector3(clamped.x, 0, clamped.z);
     if (this.clickRipple) {
-      this.clickRipple.position.set(clamped.x, 0.04, clamped.z);
+      this.clickRipple.position.set(clamped.x, 0.035, clamped.z);
       this.clickRipple.visible = true;
       this.clickRippleLife = 1.0;
     }
@@ -400,7 +647,7 @@ export class CinematicBazaar25DScene {
     if (this.angleTexCache.has(angleId)) {
       return this.angleTexCache.get(angleId);
     }
-    const cfg = ANGLE_CONFIGS[angleId] || ANGLE_CONFIGS.courtyard;
+    const cfg = this.angleConfigs[angleId] || this.angleConfigs.courtyard;
     const base = cfg.baseImage;
     const [colorMap, depthMap, normalMap, glowMap] = await Promise.all([
       this._loadTextureSafe(`${base}.jpg`, true),
@@ -433,17 +680,24 @@ export class CinematicBazaar25DScene {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.06;
+    this.renderer.toneMappingExposure = 1.07;
     this.container.appendChild(this.renderer.domElement);
+
+    // Diegetic NPC ad etiketi birbaşa body üzərində (z-index 25, heç vaxt kəsilmir)
+    if (this.npcTagEl) this.npcTagEl.remove();
+    this.npcTagEl = document.createElement('div');
+    this.npcTagEl.className = 'npc-diegetic-tag';
+    this.npcTagEl.style.zIndex = '25';
+    this.npcTagEl.style.opacity = '0';
+    document.body.appendChild(this.npcTagEl);
 
     await this._buildDepthParallaxBackdrop();
     this._buildLights();
     this._buildShadowFloorAndAtmosphere();
-    this._rebuildHotspotsForAngle(this.activeAngleId);
+    this._buildForegroundFrame();
     await this._buildPlayableMerchant();
-    this._buildAngleSwitcherOverlay();
+    this._rebuildHotspotsAndNPCs(this.activeAngleId);
 
-    // Digər bucaqların teksturalarını arxa fonda sakitcə keşlə (keçid anında ləngimə olmasın)
     this._loadAngleTextures('carpet_gallery');
     this._loadAngleTextures('palace_hall');
 
@@ -459,66 +713,72 @@ export class CinematicBazaar25DScene {
     this.isMounted = true;
   }
 
-  _buildAngleSwitcherOverlay() {
-    if (this.angleBarEl) this.angleBarEl.remove();
-    const bar = document.createElement('div');
-    bar.id = 'cinematic-angle-bar';
-    bar.style.cssText =
-      'position:fixed;bottom:68px;left:50%;transform:translateX(-50%);z-index:18;display:flex;gap:6px;padding:4px 8px;background:rgba(16,12,8,0.88);border:1px solid rgba(207,163,85,0.45);border-radius:3px;pointer-events:auto;';
+  _buildForegroundFrame() {
+    this.foregroundGroup = new THREE.Group();
+    this.hangingLanterns = [];
 
-    for (const id of ['courtyard', 'carpet_gallery', 'palace_hall']) {
-      const cfg = ANGLE_CONFIGS[id];
-      const btn = document.createElement('button');
-      btn.dataset.angle = id;
-      btn.textContent = cfg.title;
-      btn.className = id === this.activeAngleId ? 'btn-primary' : 'btn-secondary';
-      btn.style.cssText = 'padding:4px 10px;font-size:11.5px;';
-      btn.addEventListener('click', (ev) => {
-        ev.stopPropagation();
-        this.switchAngle(id);
-      });
-      bar.appendChild(btn);
+    const ironMat = new THREE.MeshStandardMaterial({ color: 0x1a1510, roughness: 0.55, metalness: 0.78 });
+    const brassMat = new THREE.MeshStandardMaterial({ color: 0x997236, roughness: 0.36, metalness: 0.85 });
+    const flameMat = new THREE.MeshBasicMaterial({ color: 0xffca6e, transparent: true, opacity: 0.92 });
+
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 4.35, 5.2, 8.2);
+
+      const chain = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 1.35, 6), ironMat);
+      chain.position.y = -0.68;
+      pivot.add(chain);
+
+      const cap = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.22, 6), brassMat);
+      cap.position.y = -1.42;
+      pivot.add(cap);
+
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.12, 0.34, 6), ironMat);
+      body.position.y = -1.68;
+      pivot.add(body);
+
+      const glowCore = new THREE.Mesh(new THREE.OctahedronGeometry(0.095, 0), flameMat.clone());
+      glowCore.position.y = -1.68;
+      pivot.add(glowCore);
+
+      const bottomTip = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.16, 6), brassMat);
+      bottomTip.rotation.x = Math.PI;
+      bottomTip.position.y = -1.92;
+      pivot.add(bottomTip);
+
+      this.foregroundGroup.add(pivot);
+      this.hangingLanterns.push({ pivot, glowCore, phase: side > 0 ? 1.7 : 0.0 });
     }
 
-    this.container.appendChild(bar);
-    this.angleBarEl = bar;
+    this.scene.add(this.foregroundGroup);
   }
 
-  _refreshAngleBarHighlight() {
-    if (!this.angleBarEl) return;
-    this.angleBarEl.querySelectorAll('button[data-angle]').forEach((btn) => {
-      btn.className = btn.dataset.angle === this.activeAngleId ? 'btn-primary' : 'btn-secondary';
-    });
-  }
-
-  /**
-   * Müxtəlif 2.5D kinematik bucaqlar arasında (Həyət ↔ Xalça Qalereyası ↔ Divan Zalı)
-   * hamar qaralma-açılma (crossfade) keçidi
-   */
-  async switchAngle(angleId) {
-    if (!ANGLE_CONFIGS[angleId] || angleId === this.activeAngleId || this.isTransitioning) return;
+  async switchAngle(angleId, customSpawn = null) {
+    if (!this.angleConfigs[angleId] || angleId === this.activeAngleId || this.isTransitioning) return;
     this.isTransitioning = true;
+    this.portalCooldown = 1.8;
     this.player.targetPos = null;
+    this.player.pendingInteraction = null;
+    this.dialogueFocus = null;
 
-    // 1. Qısa kinematik fade-out
     const texPromise = this._loadAngleTextures(angleId);
     const fadeOutSteps = 8;
     for (let i = 1; i <= fadeOutSteps; i++) {
       this.fadeAlpha = 1 - i / fadeOutSteps;
       if (this.backdropUniforms) this.backdropUniforms.uFade.value = this.fadeAlpha;
-      await new Promise((r) => setTimeout(r, 18));
+      await new Promise((r) => setTimeout(r, 17));
     }
 
     const bundle = await texPromise;
     if (!this.isMounted) return;
 
-    // 2. Yeni bucağın tekstura, kamera, işıq və hotspotlarını tətbiq et
     this.activeAngleId = angleId;
-    this.angleCfg = ANGLE_CONFIGS[angleId];
+    this.angleCfg = this.angleConfigs[angleId];
     this.baseCamPos.set(...this.angleCfg.camPos);
     this.baseLookAt.set(...this.angleCfg.lookAt);
     this.camera.fov = this.angleCfg.fov;
     this.camera.updateProjectionMatrix();
+    this.smoothZoom = this.angleCfg.baseZoom;
 
     if (bundle.colorMap?.image?.width && bundle.colorMap?.image?.height) {
       this.imageAspect = bundle.colorMap.image.width / bundle.colorMap.image.height;
@@ -536,7 +796,6 @@ export class CinematicBazaar25DScene {
       this.backdropUniforms.uAspectRatio.value = (w / Math.max(1, h)) / this.imageAspect;
     }
 
-    // İşıqları yeni məkana uyğunlaşdır
     if (this.hemiLight) {
       this.hemiLight.color.setHex(this.angleCfg.ambientSky);
       this.hemiLight.groundColor.setHex(this.angleCfg.ambientGround);
@@ -561,8 +820,8 @@ export class CinematicBazaar25DScene {
       }
     });
 
-    // Taciri yeni bucağın başlanğıc nöqtəsinə yerləşdir
-    this.player.pos.set(...this.angleCfg.spawnPos);
+    const sp = customSpawn || this.angleCfg.spawnPos;
+    this.player.pos.set(sp[0], 0, sp[2]);
     this.player.yaw = this.angleCfg.spawnYaw;
     if (this.player.group) {
       this.player.group.scale.setScalar(this.player.baseNormScale * (this.angleCfg.playerScaleHeight / 1.84));
@@ -570,15 +829,14 @@ export class CinematicBazaar25DScene {
       this.player.group.rotation.y = this.player.yaw;
     }
 
-    this._rebuildHotspotsForAngle(angleId);
-    this._refreshAngleBarHighlight();
+    this._rebuildHotspotsAndNPCs(angleId);
+    this.eventBus.emit('bazaar:angle_changed', { angleId, title: this.angleCfg.title });
 
-    // 3. Hamar fade-in
     const fadeInSteps = 10;
     for (let i = 1; i <= fadeInSteps; i++) {
       this.fadeAlpha = i / fadeInSteps;
       if (this.backdropUniforms) this.backdropUniforms.uFade.value = this.fadeAlpha;
-      await new Promise((r) => setTimeout(r, 18));
+      await new Promise((r) => setTimeout(r, 17));
     }
     this.fadeAlpha = 1.0;
     if (this.backdropUniforms) this.backdropUniforms.uFade.value = 1.0;
@@ -608,12 +866,12 @@ export class CinematicBazaar25DScene {
       uNormalMap: { value: bundle.normalMap || fallbackTex() },
       uGlowMap: { value: bundle.glowMap || fallbackTex() },
       uParallax: { value: new THREE.Vector2(0, 0) },
-      uZoom: { value: 1.0 },
+      uZoom: { value: this.angleCfg.baseZoom },
       uAspectRatio: { value: (w / Math.max(1, h)) / this.imageAspect },
       uTime: { value: 0 },
       uPlayerUV: { value: new THREE.Vector2(0.5, 0.25) },
       uPlayerDepth: { value: 0.6 },
-      uCityTint: { value: this.cityTheme.tint.clone() },
+      uCityTint: { value: this.cityProfile.tint.clone() },
       uLanternA: { value: new THREE.Vector2(...this.angleCfg.lanterns[0].uv) },
       uLanternB: { value: new THREE.Vector2(...this.angleCfg.lanterns[1].uv) },
       uFade: { value: 1.0 },
@@ -654,19 +912,19 @@ export class CinematicBazaar25DScene {
 
     this.flickerLights = [];
     this.angleCfg.lanterns.forEach((lCfg, idx) => {
-      const pt = new THREE.PointLight(lCfg.color, lCfg.intensity, 14, 1.45);
+      const pt = new THREE.PointLight(lCfg.color, lCfg.intensity, 16, 1.35);
       pt.position.set(...lCfg.pos);
       this.scene.add(pt);
       this.flickerLights.push({ light: pt, base: lCfg.intensity, phase: idx * 2.3 + 0.5 });
     });
 
-    this.rimLight = new THREE.DirectionalLight(0xffcb80, 0.8);
+    this.rimLight = new THREE.DirectionalLight(0xffcf88, 0.9);
     this.rimLight.position.set(0, 6, -15);
     this.scene.add(this.rimLight);
   }
 
   _buildShadowFloorAndAtmosphere() {
-    const floorGeo = new THREE.PlaneGeometry(24, 34);
+    const floorGeo = new THREE.PlaneGeometry(28, 38);
     floorGeo.rotateX(-Math.PI / 2);
     const floorMat = new THREE.ShadowMaterial({ opacity: this.angleCfg.shadowOpacity });
     this.floorMesh = new THREE.Mesh(floorGeo, floorMat);
@@ -690,11 +948,25 @@ export class CinematicBazaar25DScene {
     this.clickRipple.visible = false;
     this.scene.add(this.clickRipple);
 
+    // Kənarı yumşaq əriyən günəş şüası teksturası (sərt düz xətt kənarları olmasın)
+    const beamCanvas = document.createElement('canvas');
+    beamCanvas.width = 128;
+    beamCanvas.height = 128;
+    const bctx = beamCanvas.getContext('2d');
+    const bgrad = bctx.createLinearGradient(0, 0, 128, 0);
+    bgrad.addColorStop(0.0, 'rgba(255, 215, 138, 0.0)');
+    bgrad.addColorStop(0.5, 'rgba(255, 215, 138, 0.42)');
+    bgrad.addColorStop(1.0, 'rgba(255, 215, 138, 0.0)');
+    bctx.fillStyle = bgrad;
+    bctx.fillRect(0, 0, 128, 128);
+    const beamTex = new THREE.CanvasTexture(beamCanvas);
+    this._createdTextures.push(beamTex);
+
     this.sunBeamGroup = new THREE.Group();
     const beamMat = new THREE.MeshBasicMaterial({
-      color: 0xffd58a,
+      map: beamTex,
       transparent: true,
-      opacity: 0.042,
+      opacity: 0.09,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       side: THREE.DoubleSide,
@@ -702,17 +974,17 @@ export class CinematicBazaar25DScene {
     for (const [bx, bz, rotZ] of [
       [-1.5, 1.5, 0.46],
       [-0.2, -3.0, 0.44],
-      [0.8, -6.5, 0.42],
     ]) {
-      const beam = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 16), beamMat);
+      const beam = new THREE.Mesh(new THREE.PlaneGeometry(5.5, 16), beamMat);
       beam.position.set(bx, 5.8, bz);
       beam.rotation.z = rotZ;
       beam.rotation.y = 0.25;
       this.sunBeamGroup.add(beam);
     }
+    this.sunBeamGroup.visible = Boolean(this.angleCfg.showSunbeams);
     this.scene.add(this.sunBeamGroup);
 
-    // Yumşaq dairəvi qızılı toz zərrəcikləri (kvadrat nöqtələr əvəzinə kinematik işıq tozu)
+    // Yumşaq dairəvi qızılı toz zərrəcikləri
     const dustCanvas = document.createElement('canvas');
     dustCanvas.width = 32;
     dustCanvas.height = 32;
@@ -726,10 +998,10 @@ export class CinematicBazaar25DScene {
     const dustTex = new THREE.CanvasTexture(dustCanvas);
     this._createdTextures.push(dustTex);
 
-    const count = 88;
+    const count = 84;
     const positions = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 10.5;
+      positions[i * 3] = (Math.random() - 0.5) * 11.0;
       positions[i * 3 + 1] = 0.3 + Math.random() * 5.2;
       positions[i * 3 + 2] = -9.5 + Math.random() * 17.5;
     }
@@ -740,7 +1012,7 @@ export class CinematicBazaar25DScene {
       map: dustTex,
       size: 0.145,
       transparent: true,
-      opacity: 0.44,
+      opacity: 0.42,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     });
@@ -748,7 +1020,69 @@ export class CinematicBazaar25DScene {
     this.scene.add(this.dustPoints);
   }
 
-  _rebuildHotspotsForAngle(angleId) {
+  _spawnLive3DNPC(def, idx) {
+    if (!this.heroTemplate?.model) return null;
+    const palette = NPC_PALETTES[def.palette] || NPC_PALETTES.carpet_master;
+    const clone = SkeletonUtils.clone(this.heroTemplate.model);
+
+    clone.traverse((child) => {
+      if (!child.isMesh || !child.material) return;
+      const mat = child.material.clone();
+      const mName = (mat.name || child.name || '').toLowerCase();
+      if (mName.includes('chukha') || mName.includes('coat') || mName.includes('mantle') || mName.includes('sleeve')) {
+        mat.color = new THREE.Color(palette.coat);
+        if (mat.map) mat.color.lerp(new THREE.Color(0xffffff), 0.25);
+      } else if (mName.includes('gold') || mName.includes('clasp') || mName.includes('chain') || mName.includes('trim')) {
+        mat.color = new THREE.Color(palette.trim);
+      } else if (mName.includes('papaq') || mName.includes('hat')) {
+        mat.color = new THREE.Color(palette.papaq);
+      }
+      child.material = mat;
+      child.castShadow = true;
+      child.receiveShadow = true;
+    });
+
+    const npcScale = this.player.baseNormScale * ((this.angleCfg.playerScaleHeight * (def.scaleMul || 1.0)) / 1.84);
+    clone.scale.setScalar(npcScale);
+    clone.position.set(def.pos.x, 0, def.pos.z);
+    clone.rotation.y = def.baseYaw ?? 0;
+
+    let mixer = null;
+    if (this.heroTemplate.animations?.length > 0) {
+      mixer = new THREE.AnimationMixer(clone);
+      const idleClip =
+        this.heroTemplate.animations.find((c) => c.name.toLowerCase().includes('idle')) ||
+        this.heroTemplate.animations[0];
+      if (idleClip) {
+        const action = mixer.clipAction(idleClip);
+        action.play();
+        action.time = (idx + 1) * 1.37;
+      }
+    }
+
+    const hitbox = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.55, 0.55, 2.0, 10),
+      new THREE.MeshBasicMaterial({ visible: false })
+    );
+    hitbox.position.set(def.pos.x, 1.0, def.pos.z);
+
+    const npcObj = {
+      id: def.id,
+      def,
+      group: clone,
+      mixer,
+      hitbox,
+      baseYaw: def.baseYaw ?? 0,
+      currentYaw: def.baseYaw ?? 0,
+    };
+    hitbox.userData.npcRef = npcObj;
+
+    this.npcGroup.add(clone);
+    this.npcGroup.add(hitbox);
+    return npcObj;
+  }
+
+  _rebuildHotspotsAndNPCs(angleId) {
     if (this.interactGroup) {
       this.interactGroup.traverse((o) => {
         if (o.geometry) o.geometry.dispose();
@@ -756,9 +1090,20 @@ export class CinematicBazaar25DScene {
       });
       this.scene.remove(this.interactGroup);
     }
+    if (this.npcGroup) {
+      this.npcGroup.traverse((o) => {
+        if (o.geometry && o.userData?.npcRef) o.geometry.dispose();
+        if (o.material && !Array.isArray(o.material)) o.material.dispose();
+      });
+      this.scene.remove(this.npcGroup);
+    }
+
     this.interactGroup = new THREE.Group();
+    this.npcGroup = new THREE.Group();
     this.interactables = [];
     this.interactRings = [];
+    this.liveNPCs = [];
+    this.hoveredNPC = null;
     this.nearestInteractable = null;
 
     const primaryLuxury =
@@ -770,69 +1115,112 @@ export class CinematicBazaar25DScene {
       this.city?.goods?.[0]?.item_id ||
       'pomegranate';
 
+    const cNpcs = this.cityProfile.npcs;
     let defs = [];
     if (angleId === 'courtyard') {
       defs = [
         {
           id: 'trader_carpet',
           type: 'market',
-          label: `Baş Tacirlə Sövdələş (${this.city?.short_name || 'Bazar'})`,
-          pos: new THREE.Vector3(-3.3, 0, 0.8),
-          npcPos: new THREE.Vector3(-4.8, 1.4, 0.6),
+          npcName: cNpcs[0].npcName,
+          npcRole: cNpcs[0].npcRole,
+          palette: cNpcs[0].palette,
+          label: `${cNpcs[0].npcName} · Sövdələş (${this.city?.short_name || 'Bazar'})`,
+          pos: new THREE.Vector3(-2.75, 0, 1.9),
+          npcPos: new THREE.Vector3(-2.75, 1.5, 1.9),
+          baseYaw: 1.35,
           radius: 2.8,
-          defaultItem: primaryLuxury,
-          ringColor: 0xe6be68,
+          defaultItem: cNpcs[0].defaultItem || primaryLuxury,
+          ringColor: 0xd9ad58,
+          spawnNPC: true,
         },
         {
           id: 'trader_farmer',
           type: 'market',
-          label: 'Bağbanla Sövdələş (Meyvə və Mis)',
-          pos: new THREE.Vector3(2.8, 0, 2.2),
-          npcPos: new THREE.Vector3(4.5, 1.35, 2.0),
+          npcName: cNpcs[1].npcName,
+          npcRole: cNpcs[1].npcRole,
+          palette: cNpcs[1].palette,
+          label: `${cNpcs[1].npcName} · Sövdələş`,
+          pos: new THREE.Vector3(...(cNpcs[1].pos || [2.45, 0, 2.55])),
+          npcPos: new THREE.Vector3(...(cNpcs[1].pos ? [cNpcs[1].pos[0], 1.5, cNpcs[1].pos[2]] : [2.45, 1.5, 2.55])),
+          baseYaw: -1.35,
           radius: 2.8,
-          defaultItem: primaryAgri,
-          ringColor: 0x8cc87c,
-        },
-        {
-          id: 'palace_gate',
-          type: 'palace_audience',
-          label: this.cityTheme.palaceTitle,
-          palaceTitle: this.cityTheme.palaceTitle,
-          pos: new THREE.Vector3(-2.7, 0, -5.8),
-          npcPos: new THREE.Vector3(-4.2, 1.5, -6.2),
-          radius: 2.7,
-          ringColor: 0xc95e50,
+          defaultItem: cNpcs[1].defaultItem || primaryAgri,
+          ringColor: 0x82be74,
+          spawnNPC: true,
         },
         {
           id: 'fayton_station',
           type: 'fayton',
-          label: 'Faytonçu · Şəhərlərarası Səfər',
-          pos: new THREE.Vector3(2.4, 0, -6.0),
-          npcPos: new THREE.Vector3(3.8, 1.5, -6.2),
-          radius: 2.7,
+          npcName: cNpcs[2].npcName,
+          npcRole: cNpcs[2].npcRole,
+          palette: cNpcs[2].palette,
+          label: `${cNpcs[2].npcName} · Şəhərlərarası Səfər`,
+          pos: new THREE.Vector3(2.0, 0, -4.6),
+          npcPos: new THREE.Vector3(2.0, 1.5, -4.6),
+          baseYaw: -0.55,
+          radius: 2.8,
           ringColor: 0x6cb8cf,
+          spawnNPC: true,
         },
         {
           id: 'exit_gate',
           type: 'exit_to_map',
-          label: 'Qız Qalası Darvazası · Qədim Xəritəyə Çıx',
-          pos: new THREE.Vector3(0.0, 0, -9.4),
-          npcPos: new THREE.Vector3(0.0, 1.6, -12.0),
-          radius: 2.9,
+          label: this.cityProfile.gateLabel,
+          pos: new THREE.Vector3(0.0, 0, -8.2),
+          npcPos: new THREE.Vector3(0.0, 1.6, -11.0),
+          radius: 2.7,
           ringColor: 0xf4cf76,
+          spawnNPC: false,
         },
       ];
     } else if (angleId === 'carpet_gallery') {
+      // Hər 3 canlı NPC dəqiq daş döşəmənin sol və sağ piştaxtalarının qarşısında dayanır
       defs = [
         {
           id: 'trader_carpet',
           type: 'market',
-          label: `Baş Tacirlə Sövdələş (${this.city?.short_name || 'Bazar'})`,
-          pos: new THREE.Vector3(-0.6, 0, 2.2),
-          npcPos: new THREE.Vector3(1.6, 1.45, 0.2),
-          radius: 3.4,
+          npcName: cNpcs[0].npcName,
+          npcRole: 'Xalça və İpək Ustası',
+          palette: 'carpet_master',
+          label: `${cNpcs[0].npcName} · Xalça və İpək`,
+          pos: new THREE.Vector3(-1.85, 0, 2.15),
+          npcPos: new THREE.Vector3(-1.85, 1.5, 2.15),
+          baseYaw: 1.4,
+          radius: 2.85,
           defaultItem: primaryLuxury,
-          ringColor: 0xe6be68,
+          ringColor: 0xd9ad58,
+          spawnNPC: true,
+        },
+        {
+          id: 'trader_silk',
+          type: 'market',
+          npcName: 'İpəkçi Səid',
+          npcRole: 'Misgər və Parça Ustası',
+          palette: 'silk_merchant',
+          label: 'İpəkçi Səidlə Sövdələş',
+          pos: new THREE.Vector3(1.85, 0, 0.95),
+          npcPos: new THREE.Vector3(1.85, 1.5, 0.95),
+          baseYaw: -1.4,
+          radius: 2.85,
+          defaultItem: 'silk',
+          ringColor: 0xc97b54,
+          spawnNPC: true,
+        },
+        {
+          id: 'trader_spice',
+          type: 'market',
+          npcName: 'Ədviyyatçı Mirzə',
+          npcRole: 'Zəfəran və Bağ Nemətləri',
+          palette: 'spice_broker',
+          label: 'Ədviyyatçı Mirzə ilə Sövdələş',
+          pos: new THREE.Vector3(-1.55, 0, -2.55),
+          npcPos: new THREE.Vector3(-1.55, 1.5, -2.55),
+          baseYaw: 1.35,
+          radius: 2.75,
+          defaultItem: primaryAgri,
+          ringColor: 0x82be74,
+          spawnNPC: true,
         },
       ];
     } else if (angleId === 'palace_hall') {
@@ -840,45 +1228,85 @@ export class CinematicBazaar25DScene {
         {
           id: 'palace_throne',
           type: 'palace_audience',
-          label: this.cityTheme.palaceTitle,
-          palaceTitle: this.cityTheme.palaceTitle,
-          pos: new THREE.Vector3(0.0, 0, -3.5),
-          npcPos: new THREE.Vector3(0.0, 1.8, -8.0),
-          radius: 3.6,
+          npcName: 'Baş Vəzir Mirzə Rəhim',
+          npcRole: this.cityProfile.palaceTitle,
+          palette: 'vizier',
+          label: this.cityProfile.palaceTitle,
+          palaceTitle: this.cityProfile.palaceTitle,
+          pos: new THREE.Vector3(0.0, 0, -2.8),
+          npcPos: new THREE.Vector3(0.0, 1.6, -2.8),
+          baseYaw: 0.0,
+          radius: 3.2,
           ringColor: 0xd96b54,
+          spawnNPC: true,
+        },
+        {
+          id: 'palace_guard',
+          type: 'palace_audience',
+          npcName: 'Saray Keşikçisi',
+          npcRole: 'Divan Mühafizəsi',
+          palette: 'palace_guard',
+          label: 'Divan Qəbuluna Yazıl',
+          palaceTitle: this.cityProfile.palaceTitle,
+          pos: new THREE.Vector3(-2.15, 0, -1.2),
+          npcPos: new THREE.Vector3(-2.15, 1.6, -1.2),
+          baseYaw: 0.7,
+          radius: 2.5,
+          ringColor: 0xb08b46,
+          spawnNPC: true,
         },
       ];
     }
 
-    for (const def of defs) {
+    for (const p of this.angleCfg.portals || []) {
+      defs.push({
+        id: p.id,
+        type: 'angle_portal',
+        targetAngle: p.targetAngle,
+        label: p.label,
+        pos: new THREE.Vector3(p.pos[0], 0, p.pos[2]),
+        npcPos: new THREE.Vector3(p.pos[0], 1.5, p.pos[2]),
+        radius: p.triggerRadius + 0.85,
+        ringColor: p.ringColor || 0xe6be68,
+        spawnNPC: false,
+      });
+    }
+
+    defs.forEach((def, idx) => {
       this.interactables.push(def);
 
-      const ringGeo = new THREE.RingGeometry(0.56, 0.595, 48);
+      if (def.spawnNPC) {
+        const npcObj = this._spawnLive3DNPC(def, idx);
+        if (npcObj) this.liveNPCs.push(npcObj);
+      }
+
+      const ringGeo = new THREE.RingGeometry(0.48, 0.515, 44);
       ringGeo.rotateX(-Math.PI / 2);
       const ringMat = new THREE.MeshBasicMaterial({
         color: def.ringColor,
         transparent: true,
-        opacity: 0.26,
+        opacity: def.spawnNPC ? 0.16 : 0.28,
         blending: THREE.AdditiveBlending,
         side: THREE.DoubleSide,
         depthWrite: false,
       });
       const ring = new THREE.Mesh(ringGeo, ringMat);
-      ring.position.set(def.pos.x, 0.025, def.pos.z);
+      ring.position.set(def.pos.x, 0.022, def.pos.z);
       this.interactGroup.add(ring);
 
-      const innerGeo = new THREE.RingGeometry(0.28, 0.305, 36);
+      const innerGeo = new THREE.RingGeometry(0.24, 0.265, 32);
       innerGeo.rotateX(-Math.PI / 2);
       const innerMat = ringMat.clone();
-      innerMat.opacity = 0.16;
+      innerMat.opacity = def.spawnNPC ? 0.1 : 0.18;
       const inner = new THREE.Mesh(innerGeo, innerMat);
-      inner.position.set(def.pos.x, 0.03, def.pos.z);
+      inner.position.set(def.pos.x, 0.026, def.pos.z);
       this.interactGroup.add(inner);
 
-      this.interactRings.push({ id: def.id, outer: ring, inner });
-    }
+      this.interactRings.push({ id: def.id, outer: ring, inner, isNPC: Boolean(def.spawnNPC) });
+    });
 
     this.scene.add(this.interactGroup);
+    this.scene.add(this.npcGroup);
     this.eventBus.emit('bazaar:proximity', null);
   }
 
@@ -887,7 +1315,9 @@ export class CinematicBazaar25DScene {
     let mesh = null;
 
     if (animated?.model) {
-      mesh = animated.model;
+      this.heroTemplate = animated;
+      mesh = SkeletonUtils.clone(animated.model);
+
       const box = new THREE.Box3().setFromObject(mesh);
       const size = new THREE.Vector3();
       box.getSize(size);
@@ -922,14 +1352,6 @@ export class CinematicBazaar25DScene {
       coat.position.y = 0.85;
       coat.castShadow = true;
       mesh.add(coat);
-
-      const head = new THREE.Mesh(
-        new THREE.SphereGeometry(0.21, 14, 12),
-        new THREE.MeshStandardMaterial({ color: 0xdfb18a, roughness: 0.65 })
-      );
-      head.position.y = 1.66;
-      head.castShadow = true;
-      mesh.add(head);
     }
 
     mesh.position.copy(this.player.pos);
@@ -944,7 +1366,7 @@ export class CinematicBazaar25DScene {
     const prevAction = this.player.actions[this.player.activeActionName];
     if (!nextAction) return;
 
-    nextAction.reset().setEffectiveTimeScale(targetName === 'Walk' ? 1.12 : 1.0).setEffectiveWeight(1).play();
+    nextAction.reset().setEffectiveTimeScale(targetName === 'Walk' ? 1.15 : 1.0).setEffectiveWeight(1).play();
     if (prevAction) prevAction.crossFadeTo(nextAction, 0.2, true);
     this.player.activeActionName = targetName;
   }
@@ -964,6 +1386,7 @@ export class CinematicBazaar25DScene {
   update(dt) {
     if (!this.isMounted || !this.renderer || !this.scene || !this.camera) return;
     this.elapsed += dt;
+    if (this.portalCooldown > 0) this.portalCooldown = Math.max(0, this.portalCooldown - dt);
 
     // 1. 3D Tacirin hərəkəti
     let moveX = 0;
@@ -980,8 +1403,13 @@ export class CinematicBazaar25DScene {
         const dx = this.player.targetPos.x - this.player.pos.x;
         const dz = this.player.targetPos.z - this.player.pos.z;
         const dist = Math.hypot(dx, dz);
-        if (dist < 0.22) {
+        if (dist < 0.24) {
           this.player.targetPos = null;
+          if (this.player.pendingInteraction) {
+            const pending = this.player.pendingInteraction;
+            this.player.pendingInteraction = null;
+            this._triggerInteractable(pending);
+          }
         } else {
           moveX = dx / dist;
           moveZ = dz / dist;
@@ -1017,16 +1445,40 @@ export class CinematicBazaar25DScene {
       }
     }
 
-    // 2. Dinamik Günəş Şüası ↔ Kölgə Zonası İşıqlandırması (Tacir həyətdə kölgəyə girəndə real qaralır!)
+    // 2. Avtomatik Tağ/Qapı Keçidi
+    if (this.portalCooldown <= 0 && !this.isTransitioning && !this.dialogueFocus && !modalBlocking && this.player.isMoving) {
+      for (const p of this.angleCfg.portals || []) {
+        const pd = Math.hypot(this.player.pos.x - p.pos[0], this.player.pos.z - p.pos[2]);
+        if (pd <= p.triggerRadius) {
+          this.switchAngle(p.targetAngle);
+          break;
+        }
+      }
+    }
+
+    // 3. Canlı 3D NPC-lərin nəfəsalması və oyunçuya tərəf dönməsi
+    for (const npc of this.liveNPCs) {
+      if (npc.mixer) npc.mixer.update(dt);
+      const dx = this.player.pos.x - npc.def.pos.x;
+      const dz = this.player.pos.z - npc.def.pos.z;
+      const dist = Math.hypot(dx, dz);
+      const desiredYaw = dist < 5.0 ? Math.atan2(dx, dz) : npc.baseYaw;
+      let diff = desiredYaw - npc.currentYaw;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      npc.currentYaw += diff * Math.min(1, dt * 4.5);
+      npc.group.rotation.y = npc.currentYaw;
+    }
+
+    // 4. Dinamik Günəş Şüası ↔ Kölgə Zonası İşıqlandırması
     if (this.sunLight && this.angleCfg.useDynamicSunZone) {
-      // Şəkildə diaqonal günəş sol daşlara düşür (x < -0.35 - z*0.14), sağ tərəf tağ kölgəsindədir
       const sunBoundaryX = -0.35 - this.player.pos.z * 0.14;
       const sunFactor = Math.max(0, Math.min(1, (sunBoundaryX - this.player.pos.x + 1.4) / 2.8));
       const targetSun = 0.72 + sunFactor * 1.95;
       this.sunLight.intensity += (targetSun - this.sunLight.intensity) * Math.min(1, dt * 5.0);
     }
 
-    // 3. Yaxın interaktiv nöqtə
+    // 5. Yaxın interaktiv nöqtə & diegetic NPC etiketi
     let best = null;
     let bestDist = Infinity;
     for (const item of this.interactables) {
@@ -1041,11 +1493,40 @@ export class CinematicBazaar25DScene {
       this.eventBus.emit('bazaar:proximity', best);
     }
 
+    // Hover və ya 3.8m yaxınlıqdakı NPC üzərində zərif ad etiketi göstər
+    let tagTarget = this.hoveredNPC;
+    if (!tagTarget) {
+      let minNpcD = 3.8;
+      for (const n of this.liveNPCs) {
+        const nd = Math.hypot(this.player.pos.x - n.def.pos.x, this.player.pos.z - n.def.pos.z);
+        if (nd < minNpcD) {
+          minNpcD = nd;
+          tagTarget = n;
+        }
+      }
+    }
+    if (this.npcTagEl) {
+      if (tagTarget && !this.dialogueFocus && !this.gameManager?.ui?.isAnyModalOpen?.()) {
+        const headWorld = new THREE.Vector3(tagTarget.def.pos.x, 2.2, tagTarget.def.pos.z);
+        headWorld.project(this.camera);
+        const rect = this.renderer.domElement.getBoundingClientRect();
+        const sx = rect.left + (headWorld.x * 0.5 + 0.5) * rect.width;
+        const sy = rect.top + (-headWorld.y * 0.5 + 0.5) * rect.height;
+        this.npcTagEl.innerHTML = `${tagTarget.def.npcName}<small>${tagTarget.def.npcRole}</small>`;
+        this.npcTagEl.style.left = `${sx}px`;
+        this.npcTagEl.style.top = `${sy}px`;
+        this.npcTagEl.style.opacity = '1';
+      } else {
+        this.npcTagEl.style.opacity = '0';
+      }
+    }
+
     for (const r of this.interactRings) {
       const isNear = best?.id === r.id;
-      const pulse = 0.2 + Math.sin(this.elapsed * 2.2) * 0.06;
+      const basePulse = r.isNPC ? 0.14 : 0.24;
+      const pulse = basePulse + Math.sin(this.elapsed * 2.2) * 0.05;
       r.outer.material.opacity = isNear ? 0.48 : pulse;
-      r.inner.material.opacity = isNear ? 0.32 : pulse * 0.68;
+      r.inner.material.opacity = isNear ? 0.3 : pulse * 0.65;
       r.outer.scale.setScalar(isNear ? 1.08 : 1.0);
       r.inner.rotation.y = this.elapsed * 0.45;
     }
@@ -1057,40 +1538,48 @@ export class CinematicBazaar25DScene {
       } else {
         const s = 1 + (1 - this.clickRippleLife) * 0.85;
         this.clickRipple.scale.setScalar(s);
-        this.clickRipple.material.opacity = this.clickRippleLife * 0.7;
+        this.clickRipple.material.opacity = this.clickRippleLife * 0.5;
       }
     }
 
-    // 4. Fənər titrəməsi & toz zərrəcikləri
     for (const fl of this.flickerLights) {
       fl.light.intensity = fl.base * (0.9 + Math.sin(this.elapsed * 5.8 + fl.phase) * 0.1);
+    }
+    for (const hl of this.hangingLanterns) {
+      hl.pivot.rotation.z = Math.sin(this.elapsed * 1.15 + hl.phase) * 0.045;
+      hl.pivot.rotation.x = Math.cos(this.elapsed * 0.85 + hl.phase) * 0.02;
+      hl.glowCore.material.opacity = 0.78 + Math.sin(this.elapsed * 6.4 + hl.phase) * 0.18;
     }
     if (this.dustPoints) {
       const posAttr = this.dustPoints.geometry.attributes.position;
       for (let i = 0; i < posAttr.count; i++) {
-        let y = posAttr.getY(i) + dt * 0.14;
+        let y = posAttr.getY(i) + dt * 0.13;
         if (y > 5.6) y = 0.35;
         posAttr.setY(i, y);
       }
       posAttr.needsUpdate = true;
     }
 
-    // 5. Kamera + GLSL 3D Depth-Parallax sinxronizasiyası
-    const targetParX = this.player.pos.x * 0.0048 + this.mouseNorm.x * 0.0105;
-    const targetParY = -this.mouseNorm.y * 0.006 + (this.player.pos.z - 2.0) * 0.0007;
-    this.smoothParallax.x += (targetParX - this.smoothParallax.x) * Math.min(1, dt * 4.5);
-    this.smoothParallax.y += (targetParY - this.smoothParallax.y) * Math.min(1, dt * 4.5);
+    // 7. İzləyən Kamera (Pan + Dolly) + GLSL 3D Depth-Parallax sinxronizasiyası
+    const targetParX = this.player.pos.x * 0.0108 + this.mouseNorm.x * 0.0082;
+    const targetParY = -this.mouseNorm.y * 0.005 + (this.player.pos.z - 2.0) * 0.001;
+    this.smoothParallax.x += (targetParX - this.smoothParallax.x) * Math.min(1, dt * 3.8);
+    this.smoothParallax.y += (targetParY - this.smoothParallax.y) * Math.min(1, dt * 3.8);
 
-    const targetZoom = this.dialogueFocus ? 1.06 : 1.0 + Math.max(0, (4.5 - this.player.pos.z) * 0.003);
-    this.smoothZoom += (targetZoom - this.smoothZoom) * Math.min(1, dt * 3.5);
+    const depthZoom = Math.max(0, (4.8 - this.player.pos.z) * 0.0045);
+    const targetZoom = this.dialogueFocus
+      ? this.angleCfg.baseZoom + 0.07
+      : this.angleCfg.baseZoom + depthZoom;
+    this.smoothZoom += (targetZoom - this.smoothZoom) * Math.min(1, dt * 3.2);
 
+    const breatheY = Math.sin(this.elapsed * 0.72) * 0.022;
     this.camera.position.set(
-      this.baseCamPos.x + this.smoothParallax.x * 22.0,
-      this.baseCamPos.y - this.smoothParallax.y * 9.5,
-      this.baseCamPos.z - (this.smoothZoom - 1.0) * 13.0
+      this.baseCamPos.x + this.smoothParallax.x * 24.0,
+      this.baseCamPos.y - this.smoothParallax.y * 8.5 + breatheY,
+      this.baseCamPos.z - (this.smoothZoom - this.angleCfg.baseZoom) * 14.0
     );
     this.camera.lookAt(
-      this.baseLookAt.x + this.smoothParallax.x * 6.0,
+      this.baseLookAt.x + this.smoothParallax.x * 9.0,
       this.baseLookAt.y,
       this.baseLookAt.z
     );
@@ -1117,9 +1606,9 @@ export class CinematicBazaar25DScene {
     window.removeEventListener('keydown', this._onKeyDown);
     window.removeEventListener('keyup', this._onKeyUp);
     window.removeEventListener('blur', this._onBlur);
-    if (this.angleBarEl) {
-      this.angleBarEl.remove();
-      this.angleBarEl = null;
+    if (this.npcTagEl) {
+      this.npcTagEl.remove();
+      this.npcTagEl = null;
     }
     if (this.renderer) {
       const dom = this.renderer.domElement;
