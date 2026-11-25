@@ -1362,6 +1362,7 @@ export class UIManager {
           <h2 style="margin-top:8px;">${quest.title}</h2>
           ${renderSeljukStarDivider()}
           <p style="margin:10px 0 16px;line-height:1.68;color:#eadcc3;font-size:14.5px;">${quest.description}</p>
+          ${quest.clue_text ? `<div style="margin:-6px 0 14px;padding:8px 12px;border-left:2px solid var(--gold-bright);background:rgba(212,175,55,0.08);font-size:12.5px;color:#e7d3a5;font-style:italic;">📜 Sirli İpucu: ${quest.clue_text}</div>` : ''}
           <div class="lotm-lore-box" style="margin-bottom:18px;font-size:13.5px;">
             <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px;">
               ${renderItemSvg(quest.required_item, 18)}
@@ -1405,6 +1406,7 @@ export class UIManager {
             Rəvayətçi: ${evt.npc_name} (${npc?.title || evt.npc_role})
           </div>
           ${renderSeljukStarDivider()}
+          ${evt.video_file ? `<video src="${evt.video_file}" autoplay loop muted playsinline style="width:100%;max-height:230px;object-fit:cover;border-radius:8px;border:1px solid rgba(212,175,55,0.48);margin:8px 0 12px;background:#0e0b08;"></video>` : ''}
           <p style="line-height:1.7;color:#ede0c7;margin-bottom:14px;font-size:14.5px;">${evt.story_text}</p>
           <div class="lotm-lore-box" style="margin-bottom:18px;">
             <strong style="color:var(--gold-bright);">Tarixi Qeyd:</strong> ${evt.history_fact}

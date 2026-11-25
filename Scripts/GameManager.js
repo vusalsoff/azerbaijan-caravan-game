@@ -11,6 +11,7 @@ import { StoryIntroScene } from '../Scenes/Story_Intro.js';
 import { WorldAzerbaijanScene } from '../Scenes/World_Azerbaijan.js';
 import { CaravanseraiBazaarScene } from '../Scenes/Caravanserai_Bazaar.js';
 import { CinematicBazaar25DScene } from '../Scenes/Cinematic_Bazaar_25D.js';
+import dialoguesData from '../Data/dialogues.json';
 
 /**
  * GameManager — Bütün səhnələri, Karvan Heybəsini, Bazar ticarətini və tarixi hadisələri birləşdirir.
@@ -192,8 +193,18 @@ export class GameManager {
       }
     });
 
-    this.eventBus.on('bazaar:angle_changed', () => {
+    this.eventBus.on('bazaar:angle_changed', (payload) => {
       this.ui.updateHUD(this._getUIState(this.tradeManager.getSnapshot()));
+      const angleId = payload?.angleId;
+      if (angleId && this.bazaarCityId) {
+        const roomInfo = dialoguesData?.rooms?.[this.bazaarCityId]?.[angleId];
+        if (roomInfo?.vo_id) {
+          this.audio.playVoiceover(roomInfo.vo_id);
+        }
+        if (roomInfo?.line) {
+          this.ui.showToast(roomInfo.line, 'info');
+        }
+      }
     });
 
     this.eventBus.on('state:updated', (snapshot) => {
@@ -345,15 +356,18 @@ export class GameManager {
       this.paused = true;
       this.merchant.clearWaypoint();
       this.audio.playSFX('quest');
+      if (quest?.vo_id) this.audio.playVoiceover(quest.vo_id);
       this.ui.showQuest(quest, npc);
     });
 
     this.eventBus.on('quest:accept', (quest) => {
+      this.audio.stopVoiceover();
       this.tradeManager.acceptQuest(quest);
       this.paused = false;
     });
 
     this.eventBus.on('quest:decline', () => {
+      this.audio.stopVoiceover();
       this.paused = false;
     });
 
@@ -361,10 +375,12 @@ export class GameManager {
       this.paused = true;
       this.merchant.clearWaypoint();
       this.audio.playSFX('quest');
+      if (event?.vo_id) this.audio.playVoiceover(event.vo_id);
       this.ui.showHistoricalEvent(event, npc);
     });
 
     this.eventBus.on('event:choose', ({ event, choiceIndex }) => {
+      this.audio.stopVoiceover();
       this.tradeManager.applyHistoricalEventChoice(event, choiceIndex);
       this.paused = false;
     });
@@ -429,8 +445,16 @@ export class GameManager {
       this.paused = false;
     });
 
-    this.eventBus.on('world:trigger_event_now', () => {
+    this.eventBus.on('world:trigger_event_now', (payload) => {
       if (!this.paused) {
+        if (payload?.spotId) {
+          const spotEvt = (this.data.events || []).find((e) => e.spot_id === payload.spotId);
+          if (spotEvt) {
+            const npc = this.data.getNpcByRole(spotEvt.npc_role);
+            this.eventBus.emit('encounter:historical_event', { event: spotEvt, npc });
+            return;
+          }
+        }
         const cityMap =
           this.currentSceneName === 'Caravanserai_Bazaar' && this.bazaarCityId
             ? { [this.bazaarCityId]: { x: this.merchant.position.x, z: this.merchant.position.z } }
@@ -544,6 +568,7 @@ export class GameManager {
 
     this.storyScene = new StoryIntroScene(this.sceneRoot, this.eventBus, this.data);
     this.storyScene.mount();
+    this.audio.playVoiceover('intro_narrator');
   }
 
   async loadBazaarScene(cityId = 'City_Baku') {
@@ -563,6 +588,10 @@ export class GameManager {
     const city = this.data.getCityById(cityId);
     if (city) {
       this.audio.playCityMusic(city.music_track);
+    }
+    const welcome = dialoguesData?.city_welcomes?.[cityId];
+    if (welcome?.vo_id) {
+      this.audio.playVoiceover(welcome.vo_id);
     }
 
     this.lastTime = performance.now();
