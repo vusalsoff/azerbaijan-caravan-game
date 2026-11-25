@@ -66,11 +66,11 @@ export class GameManager {
     const cityId = this.tradeManager.currentCityId || this.bazaarCityId;
     const greetings = {
       City_Baku: 'Şirvanşah Hüzuru: "Xoş gəldin, tacir! Bakı limanı və karvansaray yolları sənə açıqdır."',
-      City_Quba: 'Quba Xanı Hüzuru: "Şahdağ aşırımlarından keçən igid tacirə Quba qapıları daim açıqdır!"',
+      City_Shamakhi: 'Şamaxı Divanı Hüzuru: "Firuzəyi günbəzli Şirvan bazarı sənin karvanına güvənir!"',
       City_Sheki: 'Şəki Xanı Hüzuru: "Şəki ipəyi və halvası uzaq ellərə şöhrət gətirsin!"',
-      City_Ganja: 'Gəncə Bəylərbəyi Hüzuru: "Nizami yurdunun Şah Abbas karvansarayı sənin karvanına güvənir!"',
+      City_Ganja: 'Gəncə Bəylərbəyi Hüzuru: "Nizami yurdunun Şah Abbas karvansarayı sənin karvanına açıqdır!"',
       City_Shusha: 'Qarabağ Xanı Hüzuru: "Şuşa qalası və xalçaları sənin karvanınla daha da güclənsin!"',
-      City_Nakhchivan: 'Naxçıvan Divanı Hüzuru: "Möminə Xatun kölgəsində Duzdağ yolları sənə uğur gətirsin!"',
+      City_Lankaran: 'Lənkəran Qala Hüzuru: "Cənub bağları və Dairəvi Qala yolları sənə uğur gətirsin!"',
     };
     this._palaceVisited = this._palaceVisited || {};
     if (!this._palaceVisited[cityId]) {
@@ -95,6 +95,7 @@ export class GameManager {
       bazaarRenderMode: this.bazaarRenderMode,
       bazaarAngleId: this.bazaarScene?.activeAngleId || 'courtyard',
       bazaarAngleTitle: this.bazaarScene?.angleCfg?.title || 'Karvansaray Həyəti',
+      bazaarRooms: this.bazaarScene?.getRoomList?.() || [],
     };
   }
 
@@ -136,11 +137,11 @@ export class GameManager {
       if (this.currentSceneName !== 'Caravanserai_Bazaar' || !this.bazaarScene) return;
       const fareByCity = {
         City_Baku: 25,
-        City_Quba: 22,
+        City_Shamakhi: 22,
         City_Sheki: 25,
         City_Ganja: 28,
         City_Shusha: 35,
-        City_Nakhchivan: 40,
+        City_Lankaran: 38,
       };
       this.ui.showFaytonModal(
         this.bazaarCityId,
