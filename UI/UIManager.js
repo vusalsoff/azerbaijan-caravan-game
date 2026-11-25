@@ -200,7 +200,8 @@ export class UIManager {
           <div class="hud-actions-bar lotm-plate">
             ${
               isBazaar
-                ? `<button id="btn-exit-map-top" class="btn-primary">${renderSigil('compass', 15)} <span>Qədim Xəritə (X)</span></button>`
+                ? `<button id="btn-toggle-25d" class="btn-emerald" title="2.5D Kinematik və Klassik 3D arasında keçid">${state.bazaarRenderMode === '25d' ? '🏛️ Klassik 3D' : '✦ 2.5D Kinematik'}</button>
+                   <button id="btn-exit-map-top" class="btn-primary">${renderSigil('compass', 15)} <span>Qədim Xəritə (X)</span></button>`
                 : ''
             }
             <button id="btn-inv-top" class="btn-secondary" title="İnventar (I)">
@@ -256,7 +257,7 @@ export class UIManager {
 
         <div class="hud-bottom-grid">
           <div class="irs-stats-stack">
-            <div class="gta-minimap-wrap${this.minimapExpanded ? ' is-expanded' : ''}" id="gta-minimap-wrap" title="Şəhər xəritəsini açmaq / bağlamaq üçün klikləyin" style="display:${isBazaar ? 'block' : 'none'};">
+            <div class="gta-minimap-wrap${this.minimapExpanded ? ' is-expanded' : ''}" id="gta-minimap-wrap" title="Şəhər xəritəsini açmaq / bağlamaq üçün klikləyin" style="display:${isBazaar && state.bazaarRenderMode !== '25d' ? 'block' : 'none'};">
               <div class="gta-minimap-controls">
                 <button type="button" class="gta-minimap-btn" id="btn-minimap-rot">${this.minimapRotate ? 'Yön: Oyunçu' : 'Yön: Şimal ↑'}</button>
                 <button type="button" class="gta-minimap-btn" id="btn-minimap-clear-wp">Hədəfi Sil</button>
@@ -335,6 +336,9 @@ export class UIManager {
     });
     this.hudEl.querySelector('#btn-exit-map')?.addEventListener('click', () => {
       this.eventBus.emit('scene:exit_to_world');
+    });
+    this.hudEl.querySelector('#btn-toggle-25d')?.addEventListener('click', () => {
+      this.eventBus.emit('bazaar:toggle_render_mode');
     });
     this.hudEl.querySelector('#btn-exit-map-top')?.addEventListener('click', () => {
       this.eventBus.emit('scene:exit_to_world');

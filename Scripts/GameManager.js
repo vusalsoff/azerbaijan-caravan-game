@@ -10,6 +10,7 @@ import { AudioManager } from '../Audio/AudioManager.js';
 import { StoryIntroScene } from '../Scenes/Story_Intro.js';
 import { WorldAzerbaijanScene } from '../Scenes/World_Azerbaijan.js';
 import { CaravanseraiBazaarScene } from '../Scenes/Caravanserai_Bazaar.js';
+import { CinematicBazaar25DScene } from '../Scenes/Cinematic_Bazaar_25D.js';
 
 /**
  * GameManager — Bütün səhnələri, Karvan Heybəsini, Bazar ticarətini və tarixi hadisələri birləşdirir.
@@ -42,6 +43,7 @@ export class GameManager {
     this.bazaarScene = null;
     this.currentSceneName = 'Story_Intro';
     this.bazaarCityId = 'City_Baku';
+    this.bazaarRenderMode = localStorage.getItem('karva_bazaar_mode') || '25d'; // '25d' | '3d'
 
     this.cameraMode = 'map';
     this.bazaarProximity = null;
@@ -84,6 +86,7 @@ export class GameManager {
       cameraMode: this.cameraMode,
       sceneName: this.currentSceneName,
       bazaarProximity: this.bazaarProximity,
+      bazaarRenderMode: this.bazaarRenderMode,
     };
   }
 
@@ -100,6 +103,25 @@ export class GameManager {
 
     this.eventBus.on('scene:exit_to_world', () => {
       this.loadWorldScene(this.bazaarCityId);
+    });
+
+    this.eventBus.on('bazaar:toggle_render_mode', () => {
+      this.bazaarRenderMode = this.bazaarRenderMode === '25d' ? '3d' : '25d';
+      try {
+        localStorage.setItem('karva_bazaar_mode', this.bazaarRenderMode);
+      } catch {
+        // ignore
+      }
+      if (this.currentSceneName === 'Caravanserai_Bazaar') {
+        this.loadBazaarScene(this.bazaarCityId).then(() => {
+          this.ui.showToast(
+            this.bazaarRenderMode === '25d'
+              ? '2.5D Kinematik Dərinlik Rejimi aktivdir (WASD və ya döşəməyə kliklə gəz).'
+              : 'Klassik 3D Karvansaray Rejiminə keçildi.',
+            'info'
+          );
+        });
+      }
     });
 
     this.eventBus.on('fayton:open', () => {
@@ -501,7 +523,9 @@ export class GameManager {
     this.currentSceneName = 'Caravanserai_Bazaar';
     this.bazaarCityId = cityId;
 
-    this.bazaarScene = new CaravanseraiBazaarScene(this.sceneRoot, this.eventBus, this.data, this, cityId);
+    const SceneClass =
+      this.bazaarRenderMode === '25d' ? CinematicBazaar25DScene : CaravanseraiBazaarScene;
+    this.bazaarScene = new SceneClass(this.sceneRoot, this.eventBus, this.data, this, cityId);
     await this.bazaarScene.mount();
 
     this.ui.mount();

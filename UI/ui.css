@@ -208,10 +208,15 @@
 .hud-actions-bar {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   flex-wrap: wrap;
-  padding: 6px 8px;
+  padding: 5px 7px;
   pointer-events: auto;
+}
+
+.hud-actions-bar button {
+  padding: 5px 9px;
+  font-size: 12px;
 }
 
 .hud-pill {
