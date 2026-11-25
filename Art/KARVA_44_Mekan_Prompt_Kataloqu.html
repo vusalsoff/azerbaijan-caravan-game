@@ -341,7 +341,17 @@
     }
     .toast.show { opacity: 1; transform: translateY(0); }
     @media (max-width: 700px) {
+      body { padding: 14px 10px 70px; }
+      header { padding: 16px 14px; }
+      h1 { font-size: 19px; }
       .file-pill { display: none; }
+      .scene-head { padding: 12px; gap: 9px; }
+      .scene-title { font-size: 14px; }
+      .scene-drawer { padding: 12px; }
+      .prompt-box { font-size: 12px; padding: 11px; }
+      .act-btn { flex: 1 1 auto; text-align: center; padding: 10px 12px; font-size: 13px; }
+      .search-inp { width: 100%; min-width: 0; }
+      .tab-btn { padding: 7px 10px; font-size: 12px; }
     }
   </style>
 </head>
@@ -855,7 +865,25 @@
     }
 
     function copyText(txt, label) {
-      navigator.clipboard.writeText(txt).then(() => showToast(label));
+      const fallbackCopy = () => {
+        const ta = document.createElement("textarea");
+        ta.value = txt;
+        ta.setAttribute("readonly", "");
+        ta.style.cssText = "position:fixed;top:-9999px;left:-9999px;opacity:0;";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        ta.setSelectionRange(0, txt.length);
+        let ok = false;
+        try { ok = document.execCommand("copy"); } catch {}
+        document.body.removeChild(ta);
+        showToast(ok ? label : "Kopyalamaq üçün mətnin üstündən basıb saxlayın.");
+      };
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(txt).then(() => showToast(label)).catch(fallbackCopy);
+      } else {
+        fallbackCopy();
+      }
     }
 
     function renderCatalog() {

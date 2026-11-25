@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KARVA — 44 Məkanlı Ultra-Detallı 2.5D / 3D Şəkil Prompt Kataloqu</title>
+  <style>
+    :root {
+      --bg-deep: #0f0b08;
+      --bg-card: #1a130d;
+      --bg-card-hover: #241a12;
+      --bg-drawer: #130e0a;
+      --gold: #d9ae59;
+      --gold-bright: #f4cf78;
+      --gold-dim: rgba(217, 174, 89, 0.26);
+      --text-main: #f3e6ce;
+      --text-muted: #b8a382;
+      --emerald: #3fa876;
+      --accent-red: #c95c48;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: radial-gradient(circle at top, #23180f 0%, var(--bg-deep) 58%);
+      color: var(--text-main);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.55;
+      min-height: 100vh;
+      padding: 28px 18px 80px;
+    }
+    .wrap { max-width: 1120px; margin: 0 auto; }
+    header {
+      background: linear-gradient(180deg, rgba(36, 26, 17, 0.95), rgba(20, 14, 10, 0.95));
+      border: 1px solid var(--gold-dim);
+      border-radius: 12px;
+      padding: 24px 26px;
+      margin-bottom: 20px;
+      box-shadow: 0 14px 38px rgba(0, 0, 0, 0.55);
+    }
+    .brand-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 12px;
+    }
+    .brand-badge {
+      font-size: 12px;
+      letter-spacing: 2.2px;
+      text-transform: uppercase;
+      color: var(--gold-bright);
+      background: rgba(217, 174, 89, 0.12);
+      border: 1px solid var(--gold-dim);
+      padding: 4px 10px;
+      border-radius: 999px;
+    }
+    h1 {
+      font-size: 24px;
+      color: var(--gold-bright);
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .sub {
+      color: var(--text-muted);
+      font-size: 14px;
+      max-width: 820px;
+    }
+    .rules-bar {
+      margin-top: 16px;
+      padding: 12px 15px;
+      border-radius: 8px;
+      background: rgba(217, 174, 89, 0.07);
+      border-left: 3px solid var(--gold);
+      font-size: 13px;
+      color: #e6d5b6;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .progress-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 240px;
+    }
+    .progress-track {
+      flex: 1;
+      height: 9px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid var(--gold-dim);
+    }
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--gold), var(--emerald));
+      transition: width 0.25s ease;
+    }
+    .controls-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 18px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+    .tab-btn {
+      background: var(--bg-card);
+      color: var(--text-muted);
+      border: 1px solid var(--gold-dim);
+      padding: 7px 13px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.16s ease;
+    }
+    .tab-btn:hover { color: var(--text-main); border-color: var(--gold); }
+    .tab-btn.active {
+      background: linear-gradient(180deg, #3b2a17, #271b0f);
+      color: var(--gold-bright);
+      border-color: var(--gold-bright);
+      box-shadow: 0 0 12px rgba(217, 174, 89, 0.22);
+    }
+    .right-tools {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .search-inp {
+      background: var(--bg-card);
+      border: 1px solid var(--gold-dim);
+      color: var(--text-main);
+      padding: 7px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      min-width: 210px;
+    }
+    .tool-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12.5px;
+      color: var(--text-muted);
+      background: var(--bg-card);
+      border: 1px solid var(--gold-dim);
+      padding: 6px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .group-section { margin-bottom: 24px; }
+    .group-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 8px 4px 10px;
+      border-bottom: 1px solid var(--gold-dim);
+      margin-bottom: 10px;
+    }
+    .group-title {
+      font-size: 18px;
+      color: var(--gold-bright);
+      font-weight: 700;
+    }
+    .group-flow {
+      font-size: 12.5px;
+      color: var(--text-muted);
+    }
+    .scene-list { display: flex; flex-direction: column; gap: 8px; }
+    .scene-card {
+      background: var(--bg-card);
+      border: 1px solid rgba(217, 174, 89, 0.22);
+      border-radius: 10px;
+      overflow: hidden;
+      transition: border-color 0.16s ease, background 0.16s ease;
+    }
+    .scene-card:hover { border-color: rgba(244, 207, 120, 0.5); }
+    .scene-card.done { border-color: rgba(63, 168, 118, 0.55); }
+    .scene-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 13px 16px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .scene-head:hover { background: var(--bg-card-hover); }
+    .done-chk {
+      width: 20px;
+      height: 20px;
+      accent-color: var(--emerald);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .num-pill {
+      font-family: Consolas, monospace;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--gold-bright);
+      background: rgba(217, 174, 89, 0.14);
+      border: 1px solid var(--gold-dim);
+      padding: 2px 8px;
+      border-radius: 6px;
+      flex-shrink: 0;
+    }
+    .scene-title-wrap { flex: 1; min-width: 0; }
+    .scene-title {
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--text-main);
+    }
+    .scene-card.done .scene-title {
+      color: #9fe0be;
+    }
+    .scene-conn {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .file-pill {
+      font-family: Consolas, monospace;
+      font-size: 11.5px;
+      color: #d8c7a8;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(217, 174, 89, 0.2);
+      padding: 3px 8px;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+    .chev {
+      color: var(--gold);
+      font-size: 14px;
+      transition: transform 0.18s ease;
+      flex-shrink: 0;
+    }
+    .scene-card.open .chev { transform: rotate(180deg); }
+    .scene-drawer {
+      display: none;
+      background: var(--bg-drawer);
+      border-top: 1px solid rgba(217, 174, 89, 0.18);
+      padding: 16px 18px 18px;
+    }
+    .scene-card.open .scene-drawer { display: block; }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .meta-box {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(217, 174, 89, 0.16);
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-size: 12.5px;
+    }
+    .meta-box b { color: var(--gold-bright); display: block; margin-bottom: 2px; }
+    .prompt-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--gold-bright);
+      margin: 10px 0 6px;
+      font-weight: 700;
+    }
+    .prompt-box {
+      background: #0a0705;
+      border: 1px solid rgba(217, 174, 89, 0.32);
+      border-radius: 8px;
+      padding: 13px 14px;
+      font-family: Consolas, 'Courier New', monospace;
+      font-size: 13px;
+      color: #f6ebd7;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .neg-box {
+      background: rgba(201, 92, 72, 0.07);
+      border: 1px solid rgba(201, 92, 72, 0.32);
+      color: #e8c5be;
+      font-size: 12px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      font-family: Consolas, monospace;
+    }
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .act-btn {
+      background: linear-gradient(180deg, #d9ae59, #b58632);
+      color: #160f08;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 7px;
+      font-weight: 700;
+      font-size: 12.5px;
+      cursor: pointer;
+      transition: transform 0.1s ease, filter 0.15s ease;
+    }
+    .act-btn:hover { filter: brightness(1.08); }
+    .act-btn:active { transform: scale(0.98); }
+    .act-btn.sec {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-main);
+      border: 1px solid var(--gold-dim);
+      font-weight: 600;
+    }
+    .toast {
+      position: fixed;
+      bottom: 22px;
+      right: 22px;
+      background: #1d3b2b;
+      color: #e9fff2;
+      border: 1px solid var(--emerald);
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 10px 26px rgba(0,0,0,0.5);
+      opacity: 0;
+      transform: translateY(10px);
+      pointer-events: none;
+      transition: all 0.2s ease;
+      z-index: 999;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    @media (max-width: 700px) {
+      body { padding: 14px 10px 70px; }
+      header { padding: 16px 14px; }
+      h1 { font-size: 19px; }
+      .file-pill { display: none; }
+      .scene-head { padding: 12px; gap: 9px; }
+      .scene-title { font-size: 14px; }
+      .scene-drawer { padding: 12px; }
+      .prompt-box { font-size: 12px; padding: 11px; }
+      .act-btn { flex: 1 1 auto; text-align: center; padding: 10px 12px; font-size: 13px; }
+      .search-inp { width: 100%; min-width: 0; }
+      .tab-btn { padding: 7px 10px; font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand-row">
+        <span class="brand-badge">KARVA · XVI ƏSR AZƏRBAYCAN İPƏK YOLU</span>
+        <div class="progress-box">
+          <span id="prog-text" style="font-size:13px;font-weight:700;color:var(--gold-bright);">Hazır: 0 / 44</span>
+          <div class="progress-track"><div id="prog-fill" class="progress-fill"></div></div>
+        </div>
+      </div>
+      <h1>44 Məkanlı İnteraktiv 2.5D / 3D Şəkil Prompt Kataloqu</h1>
+      <p class="sub">
+        6 Böyük Şəhər (6 × 6 = 36 əlaqəli məkan) + 4 Xüsusi Missiya Nöqtəsi (4 × 2 = 8 əlaqəli məkan) = <b>44 ultra-detallı səhnə</b>.
+        İstənilən sətrin üstünə kliklədikdə həmin məkanın tam İngiliscə promptu, qapı əlaqəsi və fayl adı açılır.
+      </p>
+      <div class="rules-bar">
+        <div>
+          <b>Vacib Texniki Standart:</b> Bütün şəkillər <code>16:9</code> üfüqi nisbətdə, <code>2560×1440 (2K)</code> və ya <code>3840×2160 (4K)</code> ölçüdə, <b>sıfır insan/NPC</b> və <b>mərkəzi açıq hərəkət döşəməsi</b> ilə çıxarılmalıdır ki, 3D tacir və təqib kamerası şəklə 1:1 otursun.
+        </div>
+      </div>
+    </header>
+
+    <div class="controls-row">
+      <div class="tabs" id="region-tabs"></div>
+      <div class="right-tools">
+        <label class="tool-label" title="Midjourney istifadə edirsinizsə sonuna avtomatik --ar 16:9 --v 6.1 --style raw əlavə edir">
+          <input type="checkbox" id="chk-mj" /> Midjourney <code>--ar 16:9</code> sonluğu
+        </label>
+        <button class="tab-btn" id="btn-expand-all">Hamısını Aç / Bağla</button>
+        <input type="text" id="search-inp" class="search-inp" placeholder="Məkan və ya fayl axtar..." />
+      </div>
+    </div>
+
+    <div id="catalog-root"></div>
+  </div>
+
+  <div id="toast" class="toast">Kopyalandı!</div>
+
+  <script>
+    const GLOBAL_SPEC_PREFIX =
+      "Ultra-sharp 4K 16:9 widescreen architectural game environment concept art, strict one-point linear perspective, eye-level camera at 1.68m human height, wide unobstructed flat walkable stone floor in the lower-center foreground leading straight into the scene depth for a third-person 3D character, ";
+
+    const GLOBAL_SPEC_SUFFIX =
+      ", crisp 8K stone mortar and textile micro-textures, physically accurate global illumination, cinematic natural depth, strictly zero people, empty of humans, no characters, no crowd, no silhouettes, no text, no letters, no watermark, Unreal Engine 5 Lumen historical photorealism.";
+
+    const GLOBAL_NEGATIVE =
+      "people, humans, person, crowd, merchant, silhouette, animal, horse, camel, text, watermark, logo, signature, modern electric wires, modern lamps, asphalt, cars, plastic, blurry, low resolution, fisheye lens, tilted Dutch angle, cluttered center floor, stairs blocking foreground";
+
+    const GROUPS = [
+      {
+        id: "baku",
+        title: "1. Bakı — Şirvanşahlar & İçərişəhər (6 Əlaqəli Məkan)",
+        flow: "Qapı Zənciri: İçərişəhər Karvansarayı ↔ Buxara Bazarı / Şirvanşahlar Divanı / Qız Qalası Önü ↔ Qız Qalası Zirvəsi & Xəzər Limanı",
+        scenes: [
+          {
+            num: 1,
+            file: "room_baku_01_courtyard_25d.jpg",
+            name: "İçərişəhər · İkimərtəbəli Daş Karvansaray Həyəti",
+            conn: "Sol tağ → Buxara Bazarı | Sağ-arxa tağ → Şirvanşahlar | Mərkəzi darvaza → Qız Qalası Önü",
+            walkNote: "Mərkəzdə geniş açıq Abşeron əhəngdaşı döşəmə; sağ kənarda nar/üzüm səbətləri, sol tağlarda asılı Şirvan xalçaları.",
+            corePrompt: "16th-century Old Baku (Icherisheher) two-story golden Absheron limestone caravanserai courtyard, symmetrical pointed stone arcades on both left and right sides with carved muqarnas capitals and hanging brass oil lanterns, vibrant handwoven Shirvan carpets draped over the left upper balustrade and an open arched doorway on the left arcade leading into a covered market, wicker baskets of ruby pomegranates and copper jugs neatly tucked strictly along the right arcade curb, grand central pointed stone gateway at the far back wall framing the iconic cylindrical ribbed limestone Maiden Tower (Qiz Qalasi) rising behind the courtyard wall under warm golden Caspian morning sunlight, secondary carved palace archway on the far right back wall"
+          },
+          {
+            num: 2,
+            file: "room_baku_02_bukhara_arcade_25d.jpg",
+            name: "Buxara & Multani Örtülü Xalça-Ədviyyat Bazarı",
+            conn: "Giriş/Arxa işıqlı qapı ↔ İçərişəhər Karvansarayının Sol Xalçalı Tağı",
+            walkNote: "Sol xalça taxçası ilə sağ mis-ədviyyat səkilərinin arasında düz, tam boş daş dəhliz.",
+            corePrompt: "16th-century Baku covered vaulted stone bazaar gallery inspired by Bukhara and Multani caravanserais, soaring pointed limestone groin-vaulted ceiling with circular stone oculi skylights pouring diagonal shafts of warm golden sunbeams through gentle dust motes, straight wide empty flagstone walkway down the center, ornate rolled Shirvan and Baku carpets and brass balance scales displayed on raised carved walnut counters inside the left stone niches, hammered copper ewers, saffron bowls, silk bolts and glowing amber glass lanterns arranged on raised stone plinths inside the right niches, open sunlit arched limestone doorway dead-center at the far end looking back out into the bright caravanserai courtyard"
+          },
+          {
+            num: 3,
+            file: "room_baku_03_shirvanshah_divan_25d.jpg",
+            name: "Şirvanşahlar Sarayı · Səkkizguşəli Divanxana Zalı",
+            conn: "Arxa çıxış qapısı ↔ İçərişəhər Həyətinin Sağ-Arxa Saray Tağı",
+            walkNote: "Mərmər döşəmə üzərində uzun qırmızı Şirvan xalçası — düz taxt pilləkəninin ətəyində dayanır.",
+            corePrompt: "16th-century Palace of the Shirvanshahs grand octagonal limestone Divankhana audience hall in Baku, monumental carved Absheron stone pillars with intricate Seljuk-Shirvan geometric arabesque reliefs and muqarnas stalactite capitals on both sides, tall amber honey-colored shebeke lattice windows high above casting warm volumetric sunbeams, long royal crimson and gold Shirvan runner carpet laid straight down the polished golden limestone floor leading up to four wide stone steps and an elevated carved walnut Shirvanshah throne and low scroll table with wax-sealed decrees at the far end, tall standing brass candelabras flanking the outer colonnade"
+          },
+          {
+            num: 4,
+            file: "room_baku_04_maiden_plaza_25d.jpg",
+            name: "Qız Qalası Önü Tarixi Daş Meydanı",
+            conn: "Sol qapı → Karvansaray Həyəti | Mərkəz qapı → Qız Qalası Zirvəsi | Sağ darvaza → Xəzər Limanı",
+            walkNote: "Qız Qalasının ətəyinə qədər geniş boş daş meydan; həm Karvansarayı, həm Qalanı, həm Limanı birləşdirən qovşaq.",
+            corePrompt: "16th-century Old Baku stone plaza directly in front of the monumental cylindrical horizontally-ribbed limestone Maiden Tower (Qiz Qalasi), wide open sunlit worn cobblestone square in the foreground and center leading straight to the heavy iron-studded arched oak entrance door at the base of the Maiden Tower, fortified sandstone caravanserai gatehouse archway on the left wall with hanging brass lantern, crenellated sea-wall archway on the right revealing wooden ship masts and shimmering turquoise Caspian Sea water beyond, clay oil amphorae and coiled hemp ropes tucked neatly against the side walls"
+          },
+          {
+            num: 5,
+            file: "room_baku_05_maiden_top_25d.jpg",
+            name: "Qız Qalası Bürcləri · Zirvə Baxış Meydançası",
+            conn: "Daş pilləkən qapısı ↔ Qız Qalası Önü Meydanı",
+            walkNote: "Qalanın üstündə daş dişli sədd boyu uzanan geniş açıq döşəmə və sonunda alov məşəli.",
+            corePrompt: "16th-century rooftop battlement terrace atop the Maiden Tower (Qiz Qalasi) in Baku, wide empty weathered golden limestone walkway extending forward toward a wrought-iron fire brazier beacon at the far center parapet, thick crenellated stone merlons along both sides, arched stone spiral-staircase doorway recess on the near left, breathtaking panoramic backdrop of medieval Old Baku's domes, minarets and fortress walls on the left and the vast turquoise Caspian Sea with lateen-rigged wooden merchant vessels on the right under dramatic golden-hour clouds"
+          },
+          {
+            num: 6,
+            file: "room_baku_06_caspian_harbor_25d.jpg",
+            name: "Bakı Xəzər Sahil Körpüsü & Dəniz Darvazası",
+            conn: "Arxa keçid ↔ Qız Qalası Önü | Uzaq Dəniz Qapısı → Qədim Xəritəyə Çıxış",
+            walkNote: "Solda daş anbar divarı və sandıqlar, sağda açıq Xəzər dənizi və yelkənli gəmilər, ortada düz yaş daş körpü.",
+            corePrompt: "16th-century medieval Baku fortified Caspian Sea stone harbor pier at golden sunset, straight wide wet flagstone quay in the center reflecting warm lantern light, heavy dressed-limestone warehouse arcade wall on the left with arched oak cargo doors, stacked wooden spice crates, sealed clay naphtha jars and glowing iron lanterns tucked strictly against the left wall, stone mooring bollards and gentle turquoise Caspian waves with moored wooden Silk Road merchant ships on the open right side, fortified crenellated Sea Gate archway and stone lighthouse beacon dead-center at the far end of the pier, silhouette of Baku fortress walls and Maiden Tower across the misty bay"
+          }
+        ]
+      },
+      {
+        id: "shamakhi",
+        title: "2. Şamaxı — Qədim Şirvan Paytaxtı (6 Əlaqəli Məkan)",
+        flow: "Qapı Zənciri: Firuzəyi Karvansaray ↔ İpək Rəstəsi ↔ Cümə Məscidi Keçidi ↔ Şirvan Divanı ↔ Yeddi Günbəz ↔ Gülüstan Qalası",
+        scenes: [
+          {
+            num: 7,
+            file: "room_shamakhi_01_courtyard_25d.jpg",
+            name: "Şamaxı Firuzəyi Günbəzli Baş Karvansaray Həyəti",
+            conn: "Sol tağ → İpək Rəstəsi | Sağ tağ → Cümə Məscidi Keçidi | Mərkəzi darvaza → Yeddi Günbəz & Gülüstan Yolu",
+            walkNote: "Ağ-qızılı Şirvan daşı döşəmə, firuzəyi kaşılı baştağ (pishtaq), yanlarda ipək tayları.",
+            corePrompt: "16th-century Shamakhi grand royal Shirvan caravanserai courtyard, magnificent symmetrical pointed stone arcades inlaid with luminous turquoise and cobalt glazed Seljuk-Shirvan geometric tilework, wide clean pale-limestone courtyard floor in the center, neatly tied silk bales, indigo dye jars and woven Maraza carpets tucked strictly under the side colonnades, towering turquoise-tiled dome and monumental arched pishtaq gateway dead-center at the back wall with misty green Shirvan foothills beyond under crisp morning light"
+          },
+          {
+            num: 8,
+            file: "room_shamakhi_02_silk_rasta_25d.jpg",
+            name: "Şamaxı Örtülü İpək & Venesiya Tacirləri Rəstəsi",
+            conn: "Giriş/Çıxış tağı ↔ Firuzəyi Karvansaray Həyəti",
+            walkNote: "İki tərəfdə parlaq Şamaxı xam ipəyi və kəlağayı dəzgahları, ortada tam açıq daş keçid.",
+            corePrompt: "16th-century Shamakhi covered Silk Bazaar arcade where Eastern and Venetian Silk Road merchants traded, high pointed brick-and-limestone vaulted ceiling with turquoise glazed tile medallions and skylight shafts, wide unobstructed central flagstone corridor, cascading rolls of shimmering crimson, saffron-gold and turquoise raw Shamakhi silk, wooden silk-reeling spools and brass scales arranged inside carved wooden shopfront alcoves along both walls, warm hanging pierced-brass lanterns, bright arched courtyard doorway at the far end"
+          },
+          {
+            num: 9,
+            file: "room_shamakhi_03_juma_plaza_25d.jpg",
+            name: "Tarixi Şamaxı Cümə Məscidi Sütunlu Həyət Keçidi",
+            conn: "Sol qapı ↔ Karvansaray | Ön tağ → Şirvan Hökmdar Divanı",
+            walkNote: "Abdəst hovuzunun yanından uzanan geniş sərin daş xiyaban və qədim daş kitabələr.",
+            corePrompt: "16th-century historic Juma Mosque of Shamakhi monumental stone colonnade courtyard passage, ancient honey-colored cut limestone arches with carved Kufic-inspired geometric stone friezes (purely ornamental patterns, zero readable text), wide empty wet-polished flagstone walkway down the center, serene octagonal stone ablution fountain basin tucked to the left side under a cypress tree, tall arched portal with turquoise ceramic rosettes at the far center leading toward the royal Shirvan quarter, soft golden afternoon sunbeams"
+          },
+          {
+            num: 10,
+            file: "room_shamakhi_04_shirvan_divan_25d.jpg",
+            name: "Şamaxı Şirvanşah Hökmdar Divanxanası",
+            conn: "Giriş darvazası ↔ Cümə Sütunlu Keçidi",
+            walkNote: "Firuzəyi-qızılı xalça üzərində düz hökmdar taxt pilləkəninə qədər təntənəli yol.",
+            corePrompt: "16th-century Shamakhi royal Shirvan governor Divan hall, grand vaulted limestone chamber adorned with turquoise, lapis-lazuli and gold glazed mosaic tile panels and carved stucco muqarnas niches, straight wide royal turquoise-and-burgundy Bijo Shirvan carpet runner down the center of a polished stone floor stopping cleanly before carved stone dais steps and an inlaid walnut throne at the far end, brass oil lamps suspended on chains, parchment scrolls and astrolabe on a side credence table"
+          },
+          {
+            num: 11,
+            file: "room_shamakhi_05_yeddi_gunbez_25d.jpg",
+            name: "Yeddi Günbəz Daş Türbələr Yolu",
+            conn: "Arxa darvaza ↔ Karvansaray | İrəli daş yol → Gülüstan Qalası",
+            walkNote: "Sərv ağacları və səkkizguşəli daş günbəzlər arasından keçən düz daş döşəməli cığır.",
+            corePrompt: "16th-century Shamakhi Yeddi Gunbez (Seven Domes) hillside stone mausoleum terrace, wide straight ancient cobblestone avenue in the center bordered by low carved limestone walls and tall dark-green cypress trees, pointed conical and octagonal carved limestone mausoleum domes rising gracefully on the left and right hillsides, warm golden late-afternoon sunlight casting long dramatic shadows across the stone path, fortified mountain archway at the far end leading up toward Gulustan Fortress"
+          },
+          {
+            num: 12,
+            file: "room_shamakhi_06_gulustan_gate_25d.jpg",
+            name: "Gülüstan Qalası Qayaüstü Darvazası",
+            conn: "Eniş yolu ↔ Yeddi Günbəz | Qala Darvazası → Qədim Xəritəyə Çıxış",
+            walkNote: "Sıldırım qaya üstündə daş qala divarı boyu uzanan geniş keşik yolu və çıxış darvazası.",
+            corePrompt: "16th-century Shamakhi legendary cliffside Gulustan Fortress stone rampart and main mountain gate, wide walkable weathered limestone battlement road in the center flanked by massive round stone defensive towers and crenellated walls on the left and a low stone parapet overlooking sweeping green Shirvan valleys and distant snow-dusted Greater Caucasus peaks on the right, iron-bound arched fortress gatehouse with glowing torch sconces dead-center at the far end under dramatic amber clouds"
+          }
+        ]
+      },
+      {
+        id: "sheki",
+        title: "3. Şəki — İpək Yolu & Şəbəkə Sənəti Mərkəzi (6 Əlaqəli Məkan)",
+        flow: "Qapı Zənciri: Yuxarı Karvansaray ↔ İpək-Halva Çarşısı ↔ Şəbəkə Karxanası ↔ Xan Sarayı Bağı ↔ Şəbəkə Zalı ↔ Gələrsən-Görərsən Çıxışı",
+        scenes: [
+          {
+            num: 13,
+            file: "room_sheki_01_caravanserai_25d.jpg",
+            name: "Şəki Yuxarı Karvansarayı · Daş-Kərpic Həyət",
+            conn: "Sol tağ → İpək-Halva Çarşısı | Sağ tağ → Şəbəkə Karxanası | Arxa darvaza → Xan Sarayı Bağı",
+            walkNote: "Şəkiyə xas çay daşı və qırmızı bişmiş kərpic hörgü, geniş daş həyət, kənarda daş bulaq.",
+            corePrompt: "16th-century Sheki Upper Caravanserai grand two-story courtyard built in authentic Sheki style of grey river cobblestones banded with warm red baked brick pointed arches and terracotta tiled eaves, wide open cobblestone courtyard floor down the center, carved stone water spring basin and mulberry tree tucked on the right side, wooden balconies with colorful stained-glass shebeke transoms above, massive arched brick-and-stone gatehouse dead-center at the far end framing lush green forested Caucasus mountains"
+          },
+          {
+            num: 14,
+            file: "room_sheki_02_silk_halva_25d.jpg",
+            name: "Şəki İpək Kəlağayı & Halva Çarşısı",
+            conn: "Qapı keçidi ↔ Yuxarı Karvansaray Həyəti",
+            walkNote: "Solda buta naxışlı ipək kəlağayılar, sağda mis sinilərdə paxlava-halva piştaxtaları, ortada təmiz daş yol.",
+            corePrompt: "16th-century Sheki traditional covered Silk Kelaghayi and Halva bazaar street, timber-framed tiled roof overhangs and red-brick arches on both sides, wide empty river-cobblestone walkway straight down the center, delicate colorful Sheki silk kelaghayi scarves with paisley buta patterns, golden silk cocoons and wooden block-printing stamps displayed in left shop alcoves, wide hammered copper trays of diamond-cut saffron Sheki halva, copper samovars and honey jars on raised wooden counters along the right wall, warm golden sunbeams filtering through mulberry leaves toward an arched stone doorway at the far end"
+          },
+          {
+            num: 15,
+            file: "room_sheki_03_shebeke_workshop_25d.jpg",
+            name: "Usta Karxanası · Şəbəkə & Misgər Dəhlizi",
+            conn: "Arxa qapı ↔ Yuxarı Karvansaray | Ön işıqlı qapı → Xan Sarayı Bağı",
+            walkNote: "Rəngli şüşə kölgələri düşən taxta-daş sənətkar dəhlizi; dəzgahlar yalnız divar dibindədir.",
+            corePrompt: "16th-century Sheki master craftsmen guild corridor combining nail-free wooden Shebeke stained-glass artistry and Lahij-Sheki coppersmithing, warm brick-and-walnut beamed interior, wide clean stone floor down the center illuminated by vivid ruby, sapphire, emerald and amber rainbow light patterns cast from intricate geometric shebeke lattice windows on the left wall, carved walnut lattice frames and colored Venetian glass panes neatly leaning against workbenches on the left, gleaming tinned copper pitchers and engraved trays on shelves along the right wall, sunlit arched doorway at the far end opening to palace plane trees"
+          },
+          {
+            num: 16,
+            file: "room_sheki_04_palace_garden_25d.jpg",
+            name: "Şəki Xan Sarayı Önü · Qocaman Çinarlar & Fasad Həyəti",
+            conn: "Sol darvaza → Gələrsən-Görərsən Dağ Yolu | Mərkəzi saray qapısı → Rəngli Şəbəkə Zalı",
+            walkNote: "İki nəhəng Xan çinarı arasından birbaşa Xan Sarayının rəngli şəbəkəli girişinə gedən düz daş xiyaban.",
+            corePrompt: "16th-to-18th-century inspired historic Sheki Khan Palace forecourt garden, wide straight patterned river-stone avenue in the center flanked by two colossal ancient Oriental plane trees (Xan Cinari) and rose-bordered stone water channels on the left and right, breathtaking ornate two-story palace facade dead-center at the far end featuring intricate geometric wooden Shebeke stained-glass mosaic windows, mirror-mosaic eaves and painted floral wall panels, arched stone garden gate on the left leading toward mountain trails, dappled golden sunlight"
+          },
+          {
+            num: 17,
+            file: "room_sheki_05_shebeke_hall_25d.jpg",
+            name: "Şəki Xan Sarayı · Rəngli Şəbəkə Divan Zalı",
+            conn: "Zərif oyma qapı ↔ Xan Sarayı Çinarlı Həyəti",
+            walkNote: "Döşəməyə düşən möhtəşəm göyqurşağı şəbəkə işıqları və düz xan taxtına gedən mərkəzi xalça.",
+            corePrompt: "16th-to-18th-century Sheki Khan Palace resplendent interior Shebeke Divan hall, floor-to-ceiling handcrafted geometric wooden Shebeke stained-glass wall on the left flooding the wide polished parquet-and-marble floor and central silk carpet runner with dazzling red, blue, turquoise and gold jewel-toned sunbeams, intricately painted miniature floral and pomegranate frescoes and muqarnas niches on the right and back walls, low carved walnut Khan cushion dais at the far center, zero people, ultra-crisp artisan detail"
+          },
+          {
+            num: 18,
+            file: "room_sheki_06_gelersen_pass_25d.jpg",
+            name: "Kiş Dağ Yolu & Gələrsən-Görərsən Qala Çıxışı",
+            conn: "Arxa cığır ↔ Xan Sarayı Bağı | Qala Tağı → Qədim Xəritəyə Çıxış",
+            walkNote: "Yaşıl Kiş dərəsi boyu daş döşənmiş dağ karvan yolu və uzaqda qala darvazası.",
+            corePrompt: "16th-century Sheki Kish mountain valley caravan stone road approaching the cliffside Gelersen-Gorersen Fortress gate, wide walkable river-cobblestone road in the center bordered by mossy stone retaining walls, walnut trees and woven baskets of mountain apples on the left and a timber-and-stone guard parapet overlooking a rushing emerald mountain stream and misty forested Caucasus peaks on the right, rugged stone fortress archway dead-center at the far end under golden sunrays"
+          }
+        ]
+      },
+      {
+        id: "ganja",
+        title: "4. Gəncə — Şah Abbas Memarlığı & Nizami Yurdu (6 Əlaqəli Məkan)",
+        flow: "Qapı Zənciri: Şah Abbas Karvansarayı ↔ Misgər Rəstəsi ↔ Çökək Hamam Meydanı ↔ Cavad Xan Divanı ↔ Nizami Türbəsi ↔ Qədim Gəncə Qapısı",
+        scenes: [
+          {
+            num: 19,
+            file: "room_ganja_01_shah_abbas_25d.jpg",
+            name: "Gəncə Şah Abbas Qırmızı Kərpic Karvansaray Həyəti",
+            conn: "Sol tağ → Misgər Rəstəsi | Sağ tağ → Çökək Hamam Meydanı | Mərkəzi darvaza → Nizami & Qala Yolu",
+            walkNote: "Qırmızı bişmiş kərpic tağlar, qoşa çinar ağacları (yanlarda) və ortada geniş açıq daş meydan.",
+            corePrompt: "16th-century Ganja monumental Shah Abbas Caravanserai courtyard constructed of warm terracotta-red baked brick in classic Arran-Safavid architectural style, two-story pointed red-brick arcades with geometric brick-bond patterns and turquoise glazed accents on both sides, wide empty sun-warmed stone courtyard floor straight down the center, giant ancient plane trees (Chinar) and stacked Faxrali carpets and clay wine jugs tucked strictly along the side curbs, grand vaulted red-brick iwan gateway dead-center at the back wall"
+          },
+          {
+            num: 20,
+            file: "room_ganja_02_copper_rasta_25d.jpg",
+            name: "Gəncə Misgərlər & Saxsı Çökək Rəstəsi",
+            conn: "Kərpic tağ ↔ Şah Abbas Karvansaray Həyəti",
+            walkNote: "Qırmızı kərpic günbəzli dəhlizdə parıldayan mis qazanlar, saxsı küplər və düz mərkəzi yol.",
+            corePrompt: "16th-century Ganja vaulted red-brick Coppersmith and Pottery bazaar gallery, ribbed baked-brick domes overhead with circular light shafts illuminating swirling warm dust, straight wide unobstructed stone floor down the center, hundreds of gleaming hand-hammered Ganja copper trays, samovars, long-necked aftafa ewers and glazed terracotta amphorae arranged on stepped brick ledges inside pointed side alcoves on both left and right, glowing hammered brass oil lanterns, sunlit courtyard arch at the far end"
+          },
+          {
+            num: 21,
+            file: "room_ganja_03_chokek_plaza_25d.jpg",
+            name: "Çökək Hamam & Qoşa Çinarlı Meydan Keçidi",
+            conn: "Arxa keçid ↔ Karvansaray | Ön saray qapısı → Cavad Xan Divanxanası",
+            walkNote: "Kərpic günbəzli Çökək Hamam və qoşa minarəli meydan arasından keçən geniş daş xiyaban.",
+            corePrompt: "16th-century Ganja historic Chokek Hamam and Juma square brick plaza, wide flat cobblestone promenade down the center flanked on the left by the distinctive low terracotta-brick domes and turquoise cupola of Chokek Bathhouse and on the right by towering autumn-gold Chinar plane trees and carved brick garden walls, ornate red-brick and carved oak palace portal dead-center at the far end leading to the Ganja Khanate Divan, warm late-afternoon amber light"
+          },
+          {
+            num: 22,
+            file: "room_ganja_04_javad_divan_25d.jpg",
+            name: "Gəncə Xanlığı · Bəylərbəyi & Cavad Xan Divanxanası",
+            conn: "Qapı keçidi ↔ Çökək Hamam Meydanı",
+            walkNote: "Qırmızı kərpic və şəbəkəli tağlar altında Gəncə xalçası üzərində taxta qədər düz hərəkət zolağı.",
+            corePrompt: "16th-to-18th-century Ganja Beylerbey and Khanate grand Divan audience hall, soaring pointed arches of patterned red brick and carved alabaster stucco with emerald and gold stained-glass transoms, long geometric Ganja-Faxrali runner rug centered on a wide polished stone floor leading up to low brick-and-marble steps and a noble carved walnut throne flanked by silk banners and ledger chests with wax seals at the far end, warm candle chandeliers along the side columns"
+          },
+          {
+            num: 23,
+            file: "room_ganja_05_nizami_mausoleum_25d.jpg",
+            name: "Şeyx Nizami Gəncəvi Türbə Xiyabanı",
+            conn: "Şəhər yolu ↔ Karvansaray | İrəli yol → Qədim Gəncə Darvazası",
+            walkNote: "Sərv və nar ağacları ilə əhatələnmiş daş xiyaban, mərkəzdə əzəmətli tarixi türbə.",
+            corePrompt: "16th-century poetic memorial avenue of Sheikh Nizami Ganjavi outside Ganja, wide serene sandstone walkway leading straight toward a majestic medieval octagonal red-brick and turquoise-tiled Seljuk-Arran mausoleum monument at the far center, flanked on both sides by tall cypresses, blooming pomegranate trees, low stone benches with illuminated manuscript chests and bronze oil braziers tucked off the path, warm sunset glow over the Kura plain"
+          },
+          {
+            num: 24,
+            file: "room_ganja_06_ancient_gates_25d.jpg",
+            name: "Qədim Gəncə Qala Divarları & Dəmir Darvaza Çıxışı",
+            conn: "Daxili yol ↔ Nizami Türbəsi | Böyük Darvaza → Qədim Xəritəyə Çıxış",
+            walkNote: "Nəhəng qırmızı kərpic və çay daşı qala bürcləri arasından keçən karvan çıxış yolu.",
+            corePrompt: "16th-century Ancient Ganja monumental fortress gatehouse, wide stone-paved caravan road in the center approaching massive twin bastions built of layered river boulders and red baked brick, legendary ornate cast-iron and bronze-studded arched city gates standing partially open dead-center at the far end revealing a golden steppe caravan trail toward the Lesser Caucasus mountains, flaming iron wall torches and stacked shield-and-crate supplies tucked along the left wall"
+          }
+        ]
+      },
+      {
+        id: "shusha",
+        title: "5. Şuşa — Qala Şəhəri, Xalça & Muğam Beşiyi (6 Əlaqəli Məkan)",
+        flow: "Qapı Zənciri: Şuşa Meydanı ↔ Rasta Xalça Bazarı ↔ Pənahəli Xan Divanı ↔ İsa Bulağı ↔ Cıdır Düzü ↔ Gəncə Qapısı Çıxışı",
+        scenes: [
+          {
+            num: 25,
+            file: "room_shusha_01_meydan_25d.jpg",
+            name: "Şuşa Meydanı & Yuxarı Gövhər Ağa Həyəti",
+            conn: "Sol tağ → Rasta Xalça Bazarı | Sağ tağ → Pənahəli Xan Divanı | Arxa keçid → İsa Bulağı & Cıdır Düzü",
+            walkNote: "Ağ-boz Şuşa qala daşı ilə döşənmiş geniş meydan, uzaqda qoşa naxışlı minarələr və dağ dumanı.",
+            corePrompt: "16th-to-18th-century Shusha fortress central stone Meydan plaza in the Karabakh highlands, wide clean wet-gleaming grey-white cut limestone pavement down the center, two-story Karabakh stone merchant houses with carved wooden chardag verandas on the left and right, folded Karabakh Chelebi carpets and copper samovars tucked neatly under the side stone arcades, twin geometric brick-and-stone minarets and pointed triple-arched facade rising majestically behind the central stone gateway amidst gentle silver mountain mist and golden sunlight"
+          },
+          {
+            num: 26,
+            file: "room_shusha_02_rasta_bazaar_25d.jpg",
+            name: "Şuşa Daş Rasta Bazar · Qarabağ Xalça Qalereyası",
+            conn: "Daş tağ ↔ Şuşa Meydanı",
+            walkNote: "İki tərəfdə Qarabağın Əjdahalı, Çələbi, Xanlıq xalçaları və tar/kamança vitrinləri, ortada düz daş küçə.",
+            corePrompt: "16th-to-18th-century Shusha historic stone-arched Rasta Bazaar street, sturdy pale Karabakh limestone colonnades and timber eaves on both sides, straight wide unobstructed cobblestone street down the center, magnificent large-scale Karabakh carpets (Chelebi, Khanlig and Dragon patterns) hung vertically inside stone archways on the left, handcrafted walnut tar and kamancha musical instruments, Karabakh horse saddles with silver inlays and copperware displayed on raised stone counters on the right, warm glowing lanterns, sunlit plaza archway at the far end"
+          },
+          {
+            num: 27,
+            file: "room_shusha_03_panahali_divan_25d.jpg",
+            name: "Pənahəli Xan Sarayı · Daş Tağlı Qarabağ Divanxanası",
+            conn: "Qala tipli saray qapısı ↔ Şuşa Meydanı",
+            walkNote: "Ağ daş tağlar altında Qarabağ xalçası üzərində xan taxtına gedən təntənəli mərkəzi yol.",
+            corePrompt: "16th-to-18th-century Shusha Karabakh Khanate castle Divan hall of Panahali Khan, noble vaulted white-limestone interior with deep pointed stone arches, colorful Karabakh shebeke clerestory windows pouring crisp highland sunbeams, wide crimson-and-navy Karabakh carpet runner centered on the flagstone floor stopping before stone steps and a dignified carved walnut Khan throne flanked by crossed ceremonial lances, round shields and brass braziers at the far end"
+          },
+          {
+            num: 28,
+            file: "room_shusha_04_isa_bulagi_25d.jpg",
+            name: "İsa Bulağı Meşə-Daş Bulaq Meydançası",
+            conn: "Daş cığır ↔ Şuşa Meydanı | Meşə çıxışı → Cıdır Düzü",
+            walkNote: "Sıx fıstıq-palıd meşəsi içində geniş daş döşənmiş açıqlıq və qarşıda oyma daş bulaq.",
+            corePrompt: "Historic Isa Bulagi mountain forest spring glade near Shusha in Karabakh, wide flat mossy flagstone clearing leading straight toward an ornate carved white-stone arched mountain spring spouting crystal-clear water into a stone trough at the far center, towering emerald beech and oak trees framing both sides with shafts of golden sunlight piercing cool highland mist, copper tea samovar and woven honey baskets tucked strictly on a side stone bench on the right, stone path curving toward Cidir Duzu cliffs beyond"
+          },
+          {
+            num: 29,
+            file: "room_shusha_05_cidir_duzu_25d.jpg",
+            name: "Cıdır Düzü Sıldırım Kənarı & Daşaltı Panoraması",
+            conn: "Meşə yolu ↔ İsa Bulağı | Qala səddi cığırı → Gəncə Qapısı",
+            walkNote: "Sol tərəfdə yaşıl yaylaq qayası, sağda dərin Daşaltı kanyonu səddi, ortada tam düz daş-çəmən cığır.",
+            corePrompt: "Breathtaking Cidir Duzu high plateau cliff-edge stone promenade in Shusha, wide flat walkable limestone-and-meadow trail running straight forward toward a stone watchtower beacon at the far center, lush emerald highland turf and wildflower boulders on the left, low historic stone safety parapet on the right overlooking the dramatic sheer vertical limestone cliffs of Dashalti Canyon and misty blue-gold Karabakh mountain ranges stretching to the horizon under soaring eagles and golden clouds"
+          },
+          {
+            num: 30,
+            file: "room_shusha_06_ganja_gate_25d.jpg",
+            name: "Şuşa Qalası · Tarixi Gəncə Qapısı Bürcləri",
+            conn: "Qala daxili yol ↔ Cıdır Düzü & Meydan | Gəncə Qapısı → Qədim Xəritəyə Çıxış",
+            walkNote: "Şuşanın məşhur dairəvi daş bürcləri və şahmatvari daş hörgülü Gəncə Qapısından çıxış.",
+            corePrompt: "16th-to-18th-century Shusha Fortress iconic Ganja Gate (Gence Qapisi), wide sloping cobblestone approach road in the center leading straight into the monumental arched stone gateway flanked by massive cylindrical crenellated white-limestone fortress towers with traditional Karabakh checkered stone masonry, iron-strapped wooden gates open to reveal a winding mountain caravan road descending through misty pine cliffs, warm glowing wall lanterns on both sides"
+          }
+        ]
+      },
+      {
+        id: "lankaran",
+        title: "6. Lənkəran — Talış Xanlığı, Subtropik Bağlar & Cənub Limanı (6 Əlaqəli Məkan)",
+        flow: "Qapı Zənciri: Dairəvi Qala ↔ Ədviyyat-Çay Karvansarayı ↔ Mirəhməd Xan Divanı ↔ Sitrus-Çay Bağları ↔ Hirkan Qalası ↔ Cənub Limanı",
+        scenes: [
+          {
+            num: 31,
+            file: "room_lankaran_01_round_fort_25d.jpg",
+            name: "Lənkəran Dairəvi Qala & Kirəmitli Meydan",
+            conn: "Sol tağ → Ədviyyat-Çay Karvansarayı | Sağ tağ → Mirəhməd Xan Divanı | Arxa darvaza → Bağlar & Sahil Limanı",
+            walkNote: "Qırmızı bişmiş kərpic və saxsı kirəmitli Talış memarlığı, subtropik ağaclar və geniş daş həyət.",
+            corePrompt: "16th-to-18th-century Lankaran historic Round Fortress (Dairevi Qala) plaza in southern Azerbaijan, warm red baked-brick walls crowned with sloped terracotta roof tiles and carved wooden eaves, wide clean stone-paved courtyard down the center, lush subtropical lemon trees, palms, baskets of pomegranates and brass samovars tucked neatly along the side arcades, iconic cylindrical red-brick Round Tower with tiled conical roof rising directly behind the central arched brick gateway under humid golden Caspian light"
+          },
+          {
+            num: 32,
+            file: "room_lankaran_02_spice_tea_25d.jpg",
+            name: "Talış Ədviyyat, Zəfəran & Samovar Karvansarayı",
+            conn: "Kərpic tağ ↔ Dairəvi Qala Meydanı",
+            walkNote: "Qırmızı kərpic və qoz ağacı dirəkli örtülü bazar; heç bir kisənin üstündə hərf/yazı YOXDUR!",
+            corePrompt: "16th-century Lankaran subtropical covered Spice, Saffron and Tea Caravanserai gallery, warm red-brick arches and dark ironwood (demiragac) ceiling beams hung with glowing amber glass lanterns, wide empty flagstone corridor straight down the center, plain unlabelled woven burlap sacks overflowing with golden saffron threads, dried barberry, green tea leaves, cinnamon bark and stacks of armudu pear-shaped tea glasses and brass samovars on raised wooden platforms along both sides, sunlit garden archway at the far end"
+          },
+          {
+            num: 33,
+            file: "room_lankaran_03_mirahmad_divan_25d.jpg",
+            name: "Talış Xanlığı · Mirəhməd Xan Şəbəkəli Divan Zalı",
+            conn: "Oyma qoz qapı ↔ Dairəvi Qala Meydanı",
+            walkNote: "Qırmızı kərpic, yaşıl-qızılı Talış şəbəkə pəncərələri və mərkəzi xalça boyu xan taxtına gedən yol.",
+            corePrompt: "16th-to-18th-century Lankaran Talysh Khanate Divan audience hall, elegant fusion of patterned red brick, dark carved ironwood columns and vibrant emerald-and-amber stained-glass lattice windows filtering lush garden sunlight, wide woven Talysh-Mughan runner carpet laid straight down the polished floor stopping cleanly before carved wooden dais steps and an ornate Khan throne at the far end, brass incense burners and sealed maritime trade scrolls on side stands"
+          },
+          {
+            num: 34,
+            file: "room_lankaran_04_citrus_orchard_25d.jpg",
+            name: "Lənkəran Limon, Nar & Yaşıl Çay Bağları Yolu",
+            conn: "Şəhər qapısı ↔ Dairəvi Qala | İrəli daş yol → Hirkan Keşik Qalası & Sahil",
+            walkNote: "İki tərəfdə qızılı limon/naringi ağacları və yaşıl çay cərgələri, ortada düz daş döşənmiş bağ yolu.",
+            corePrompt: "16th-century Lankaran sunlit subtropical citrus, pomegranate and terraced green tea plantation avenue, straight wide flat river-stone walkway down the center bordered by low mossy brick walls, lush emerald tea bushes and heavy-laden golden lemon, mandarin and ruby pomegranate trees arching gracefully on both left and right, wicker harvest baskets tucked neatly beside a brick archway dead-center at the far end with misty green Talysh mountains rising in the background"
+          },
+          {
+            num: 35,
+            file: "room_lankaran_05_hirkan_fort_25d.jpg",
+            name: "Hirkan Yaşıl Meşə-Dağ Sərhəd Keşik Qalası",
+            conn: "Bağ cığırı ↔ Sitrus Bağları | Sahil enişi → Cənub Xəzər Limanı",
+            walkNote: "Qədim Hirkan dəmirağac meşəsi içində mamırlı qırmızı kərpic keşik bürcü və daş keçid.",
+            corePrompt: "16th-century Hyrcanian (Hirkan) subtropical forest border watchpost in the Talysh mountains of Lankaran, wide mossy cut-stone rampart road leading straight toward an ancient red-brick and boulder watchtower archway with flickering iron torches at the far center, towering primeval ironwood (Parrotia persica) trees, ferns and misty golden sunbeams framing the left side, stone parapet on the right revealing a distant view of the shimmering southern Caspian coastline"
+          },
+          {
+            num: 36,
+            file: "room_lankaran_06_south_port_25d.jpg",
+            name: "Lənkəran Cənub Xəzər Limanı & Qamışlı Sahil Körpüsü",
+            conn: "Şəhər darvazası ↔ Dairəvi Qala | Uzaq Liman Qapısı → Qədim Xəritəyə Çıxış",
+            walkNote: "Solda kərpic gömrük anbarı, sağda qamışlı cənub Xəzər sahili və qayıqlar, ortada geniş daş-taxta körpü.",
+            corePrompt: "16th-century Lankaran southern Caspian Sea port and reed-lagoon stone quay at warm amber dusk, wide straight walkable stone-and-ironwood pier in the center, red-brick customs warehouse with tiled roof, coiled ropes, spice chests and warm oil lanterns tucked strictly along the left wall, swaying golden coastal reeds, calm turquoise-amber Caspian waters and wooden eastern trading dhows moored along the open right side, arched red-brick harbor gatehouse and beacon tower dead-center at the far end"
+          }
+        ]
+      },
+      {
+        id: "missions",
+        title: "7. Xəritədəki 4 Xüsusi Missiya Yeri (4 × 2 = 8 Əlaqəli Məkan)",
+        flow: "Şimal Quldur Körpüsü (2) · Cənub Qaçaqçı Körpüsü (2) · Şimal Dağ Tarlası (2) · Cənub Nar-Zəfəran Zəmiləri (2)",
+        scenes: [
+          {
+            num: 37,
+            file: "room_mission_bn_01_bridge_25d.jpg",
+            name: "Şimal Daş Körpüsü · Quldur Pusqusu Keçidi (Otaq 1/2)",
+            conn: "Yan qaya cığırı → Körpüaltı Quldur Düşərgəsi | Körpü sonu → Qədim Xəritəyə Qayıt",
+            walkNote: "Qədim təktağlı daş körpünün üstü; ortada açıq yol, kənarlarda quldurların qoyduğu arabalar/məşəllər.",
+            corePrompt: "16th-century medieval Azerbaijani arched stone caravan bridge spanning a rushing turquoise mountain gorge (North Stone Bridge ambush spot), straight wide weathered cobblestone roadway across the center of the bridge between low crenellated stone parapets, overturned wooden supply crate, iron war-braziers and spiked wooden roadblock pushed to the side leaving the center lane walkable, narrow stone stair opening on the left descending under the bridge, dramatic stormy amber mountain clouds and stone toll-arch at the far end"
+          },
+          {
+            num: 38,
+            file: "room_mission_bn_02_camp_25d.jpg",
+            name: "Şimal Körpüsü Altı · Gizli Quldur Düşərgəsi (Otaq 2/2)",
+            conn: "Daş pilləkən tağı ↔ Şimal Daş Körpüsü Üstü",
+            walkNote: "Körpünün nəhəng daş tağı altında qayalıq mağara-düşərgə, ortada düz daşlıq yer, yanlarda qənimət sandıqları.",
+            corePrompt: "16th-century hidden bandit camp nestled beneath the massive stone arch of an ancient river bridge in a rocky canyon, wide flat gravel-and-flagstone path down the center, glowing campfire ring, iron-bound stolen caravan chests, rolled carpets, shields and hanging oil lanterns arranged inside rocky recesses along the left wall, rushing moonlit-and-torchlit river water glimpsed past boulders on the right, stone steps and arched passage at the far end leading back up to the bridge"
+          },
+          {
+            num: 39,
+            file: "room_mission_bs_01_bridge_25d.jpg",
+            name: "Cənub Daş Körpüsü · Alatoran Qaçaqçı Rüsum Keçidi (Otaq 1/2)",
+            conn: "Sahil pilləkəni → Gizli Qaçaqçı Anbarı | Körpü darvazası → Qədim Xəritəyə Qayıt",
+            walkNote: "Çay-dəniz qovşağında dumanlı daş körpü, asılı gecə fənərləri və düz yaş daş yol.",
+            corePrompt: "16th-century atmospheric southern Azerbaijan multi-arch stone bridge over a misty river delta near the Caspian Sea at blue-gold twilight, wide straight wet cobblestone path down the center reflecting warm amber oil lanterns hung on iron poles along the stone parapets, mysterious roped silk bundles and brass toll lantern tucked by a side arch on the left leading down to a riverbank vault, misty reeds and moored skiff silhouettes on the right, fortified brick toll-arch dead-center at the far end"
+          },
+          {
+            num: 40,
+            file: "room_mission_bs_02_vault_25d.jpg",
+            name: "Cənub Körpüsü Yanı · Sahil Qaçaqçı Anbarı (Otaq 2/2)",
+            conn: "Kərpic tağ qapı ↔ Cənub Daş Körpüsü",
+            walkNote: "Yarı-su, yarı-daş gizli kərpic tağlı anbar; sol və ortada quru daş döşəmə, sağda qayıq kanalı.",
+            corePrompt: "16th-century secret smuggler vaulted brick-and-stone cavern warehouse beneath a southern river bridge, wide dry flagstone walkway down the center, contraband Venetian velvet chests, sealed clay jars, rolled Persian-Shirvan silks and flickering brass lanterns stacked along the left arched brick wall, narrow dark-turquoise underground boat channel with a moored wooden rowboat along the right curb, illuminated brick stairway arch dead-center at the far end"
+          },
+          {
+            num: 41,
+            file: "room_mission_fn_01_orchard_25d.jpg",
+            name: "Şimal Dağ Yamacı · Alma Bağları & Taxıl Terrasları (Otaq 1/2)",
+            conn: "Taxta-daş darvaza → Bağban Həyəti | Cığır sonu → Qədim Xəritəyə Qayıt",
+            walkNote: "Quba-Şəki dağ yamacında qırmızı almalı ağaclar arasından keçən geniş daş cığır.",
+            corePrompt: "16th-century northern Azerbaijan (Quba-Sheki foothills) sunlit mountain apple orchard and golden wheat terraces, wide clean packed-stone country caravan lane leading straight forward toward a rustic stone-and-timber farmstead gatehouse at the far center, lush orchard trees heavy with crisp red and golden apples and wicker harvest baskets lined neatly along low dry-stone walls on both sides, snow-capped Greater Caucasus peaks sparkling under clear morning sky"
+          },
+          {
+            num: 42,
+            file: "room_mission_fn_02_barn_yard_25d.jpg",
+            name: "Şimal Dağ Kəndi · Bağban Həyəti & Məhsul Çardağı (Otaq 2/2)",
+            conn: "Bağ darvazası ↔ Alma Bağları Cığırı",
+            walkNote: "Dağ bağbanının səliqəli daş həyəti; yanlarda alma səbətləri, bal pətəkləri və taxta araba.",
+            corePrompt: "16th-century Caucasian mountain farmer's stone courtyard and timber harvest barn, wide open swept flagstone yard down the center, carved wooden veranda barn filled with straw-lined baskets of red apples, pears, clay honey pots and wooden grain measures on the left, wooden ox-cart, copper cauldron and stacked firewood tucked neatly along the right stone wall, arched timber gate at the far center opening back out to sunlit mountain orchards"
+          },
+          {
+            num: 43,
+            file: "room_mission_fs_01_pomegranate_25d.jpg",
+            name: "Cənub Günəşli Nar Bağları & Zəfəran Ləkləri Yolu (Otaq 1/2)",
+            conn: "Kərpic tağ → Kəndxuda Tərəzi Meydançası | Bağ çıxışı → Qədim Xəritəyə Qayıt",
+            walkNote: "Göyçay-Qarabağ-Lənkəran ruhunda yaqut nar ağacları və bənövşəyi zəfəran cərgələri arasında düz daş yol.",
+            corePrompt: "16th-century southern Azerbaijan sun-drenched ruby pomegranate orchard and blooming purple-gold saffron beds, wide straight flat sandstone lane down the center, gnarled green trees heavy with split ripe ruby-red pomegranates on the left and neat stone-bordered rows of violet saffron crocus flowers and woven reed baskets on the right, traditional warm red-brick estate archway dead-center at the far end under golden harvest sunlight"
+          },
+          {
+            num: 44,
+            file: "room_mission_fs_02_harvest_25d.jpg",
+            name: "Cənub Zəmiləri · Kəndxuda Məhsul & Tərəzi Meydançası (Otaq 2/2)",
+            conn: "Bağ tağı ↔ Nar & Zəfəran Bağları Yolu",
+            walkNote: "Kəndxudanın məhsul təhvili həyəti; yanlarda böyük tərəzi, nar şirəsi küpləri və zəfəran sandıqları.",
+            corePrompt: "16th-century Azerbaijani harvest guild weighing courtyard inside a brick-and-timber country estate, wide unobstructed stone-paved center floor, large standing brass merchant balance scale, crates of ruby pomegranates, sealed clay narsharab jars and drying trays of red saffron threads arranged under shaded wooden arcades on the left and right, sunlit brick archway at the far center framing endless golden orchards"
+          }
+        ]
+      }
+    ];
+
+    const STORAGE_KEY = "karva_44_prompts_done_v1";
+    let doneMap = {};
+    try { doneMap = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch {}
+
+    let activeRegion = "all";
+    let searchQuery = "";
+    let allExpanded = false;
+
+    const tabsEl = document.getElementById("region-tabs");
+    const rootEl = document.getElementById("catalog-root");
+    const progTextEl = document.getElementById("prog-text");
+    const progFillEl = document.getElementById("prog-fill");
+    const chkMjEl = document.getElementById("chk-mj");
+    const toastEl = document.getElementById("toast");
+
+    function showToast(msg) {
+      toastEl.textContent = msg;
+      toastEl.classList.add("show");
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => toastEl.classList.remove("show"), 1900);
+    }
+
+    function buildFullPrompt(sc) {
+      const mj = chkMjEl.checked ? " --ar 16:9 --v 6.1 --style raw --q 2" : "";
+      return GLOBAL_SPEC_PREFIX + sc.corePrompt + GLOBAL_SPEC_SUFFIX + mj;
+    }
+
+    function updateProgress() {
+      let doneCount = 0;
+      GROUPS.forEach((g) => g.scenes.forEach((s) => { if (doneMap[s.num]) doneCount++; }));
+      progTextEl.textContent = `Hazır: ${doneCount} / 44`;
+      progFillEl.style.width = `${Math.round((doneCount / 44) * 100)}%`;
+    }
+
+    function renderTabs() {
+      const items = [
+        { id: "all", label: "Hamısı (44)" },
+        { id: "baku", label: "Bakı (6)" },
+        { id: "shamakhi", label: "Şamaxı (6)" },
+        { id: "sheki", label: "Şəki (6)" },
+        { id: "ganja", label: "Gəncə (6)" },
+        { id: "shusha", label: "Şuşa (6)" },
+        { id: "lankaran", label: "Lənkəran (6)" },
+        { id: "missions", label: "4 Missiya Yeri (8)" }
+      ];
+      tabsEl.innerHTML = items.map((t) =>
+        `<button class="tab-btn ${activeRegion === t.id ? "active" : ""}" data-id="${t.id}">${t.label}</button>`
+      ).join("");
+      tabsEl.querySelectorAll(".tab-btn").forEach((b) => {
+        b.addEventListener("click", () => {
+          activeRegion = b.dataset.id;
+          renderTabs();
+          renderCatalog();
+        });
+      });
+    }
+
+    function copyText(txt, label) {
+      const fallbackCopy = () => {
+        const ta = document.createElement("textarea");
+        ta.value = txt;
+        ta.setAttribute("readonly", "");
+        ta.style.cssText = "position:fixed;top:-9999px;left:-9999px;opacity:0;";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        ta.setSelectionRange(0, txt.length);
+        let ok = false;
+        try { ok = document.execCommand("copy"); } catch {}
+        document.body.removeChild(ta);
+        showToast(ok ? label : "Kopyalamaq üçün mətnin üstündən basıb saxlayın.");
+      };
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(txt).then(() => showToast(label)).catch(fallbackCopy);
+      } else {
+        fallbackCopy();
+      }
+    }
+
+    function renderCatalog() {
+      const q = searchQuery.trim().toLowerCase();
+      let html = "";
+
+      GROUPS.forEach((grp) => {
+        if (activeRegion !== "all" && activeRegion !== grp.id) return;
+        const filtered = grp.scenes.filter((s) =>
+          !q ||
+          s.name.toLowerCase().includes(q) ||
+          s.file.toLowerCase().includes(q) ||
+          s.conn.toLowerCase().includes(q) ||
+          String(s.num).padStart(2, "0").includes(q)
+        );
+        if (!filtered.length) return;
+
+        html += `
+          <section class="group-section">
+            <div class="group-header">
+              <div class="group-title">${grp.title}</div>
+              <div class="group-flow">${grp.flow}</div>
+            </div>
+            <div class="scene-list">
+              ${filtered.map((s) => {
+                const isDone = Boolean(doneMap[s.num]);
+                const numStr = "#" + String(s.num).padStart(2, "0");
+                const fullPrompt = buildFullPrompt(s);
+                return `
+                  <div class="scene-card ${isDone ? "done" : ""} ${allExpanded ? "open" : ""}" data-num="${s.num}">
+                    <div class="scene-head">
+                      <input type="checkbox" class="done-chk" data-chk="${s.num}" ${isDone ? "checked" : ""} title="Hazır kimi işarələ" />
+                      <span class="num-pill">${numStr}</span>
+                      <div class="scene-title-wrap">
+                        <div class="scene-title">${s.name}</div>
+                        <div class="scene-conn">🔗 ${s.conn}</div>
+                      </div>
+                      <span class="file-pill">${s.file}</span>
+                      <span class="chev">▼</span>
+                    </div>
+                    <div class="scene-drawer">
+                      <div class="meta-grid">
+                        <div class="meta-box">
+                          <b>🚪 Qapı & Məkan Əlaqəsi</b>
+                          ${s.conn}
+                        </div>
+                        <div class="meta-box">
+                          <b>🚶 3D Hərəkət Zolağı Tələbi</b>
+                          ${s.walkNote}
+                        </div>
+                        <div class="meta-box">
+                          <b>💾 Yadda Saxlanılacaq Fayl Adı</b>
+                          <code>public/images/${s.file}</code>
+                        </div>
+                      </div>
+
+                      <div class="prompt-label">✦ Ultra-Detallı İngiliscə Şəkil Promptu (16:9 · 2K/4K · Sıfır NPC)</div>
+                      <div class="prompt-box" id="pbox-${s.num}">${fullPrompt}</div>
+
+                      <div class="prompt-label" style="color:#e09383;">🚫 Negative Prompt (Lazım olarsa)</div>
+                      <div class="neg-box">${GLOBAL_NEGATIVE}</div>
+
+                      <div class="btn-row">
+                        <button class="act-btn" data-copy-prompt="${s.num}">📋 Promptu Kopyala</button>
+                        <button class="act-btn sec" data-copy-neg="${s.num}">🚫 Negative Kopyala</button>
+                        <button class="act-btn sec" data-copy-file="${s.file}">📁 Fayl Adını Kopyala (${s.file})</button>
+                      </div>
+                    </div>
+                  </div>
+                `;
+              }).join("")}
+            </div>
+          </section>
+        `;
+      });
+
+      rootEl.innerHTML = html || `<div style="padding:30px;text-align:center;color:var(--text-muted);">Uyğun məkan tapılmadı.</div>`;
+
+      rootEl.querySelectorAll(".scene-head").forEach((head) => {
+        head.addEventListener("click", (e) => {
+          if (e.target.classList.contains("done-chk")) return;
+          head.parentElement.classList.toggle("open");
+        });
+      });
+
+      rootEl.querySelectorAll(".done-chk").forEach((chk) => {
+        chk.addEventListener("change", (e) => {
+          const n = Number(e.target.dataset.chk);
+          doneMap[n] = e.target.checked;
+          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(doneMap)); } catch {}
+          e.target.closest(".scene-card").classList.toggle("done", e.target.checked);
+          updateProgress();
+        });
+      });
+
+      rootEl.querySelectorAll("[data-copy-prompt]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const n = Number(btn.dataset.copyPrompt);
+          let found = null;
+          GROUPS.forEach((g) => g.scenes.forEach((s) => { if (s.num === n) found = s; }));
+          if (found) copyText(buildFullPrompt(found), `#${String(n).padStart(2, "0")} Prompt kopyalandı!`);
+        });
+      });
+
+      rootEl.querySelectorAll("[data-copy-neg]").forEach((btn) => {
+        btn.addEventListener("click", () => copyText(GLOBAL_NEGATIVE, "Negative Prompt kopyalandı!"));
+      });
+
+      rootEl.querySelectorAll("[data-copy-file]").forEach((btn) => {
+        btn.addEventListener("click", () => copyText(btn.dataset.copyFile, `Fayl adı kopyalandı: ${btn.dataset.copyFile}`));
+      });
+    }
+
+    chkMjEl.addEventListener("change", () => renderCatalog());
+    document.getElementById("search-inp").addEventListener("input", (e) => {
+      searchQuery = e.target.value;
+      renderCatalog();
+    });
+    document.getElementById("btn-expand-all").addEventListener("click", () => {
+      allExpanded = !allExpanded;
+      renderCatalog();
+    });
+
+    renderTabs();
+    renderCatalog();
+    updateProgress();
+  </script>
+</body>
+</html>
