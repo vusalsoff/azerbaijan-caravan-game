@@ -217,10 +217,20 @@ export class UIManager {
                 <span>G.${state.gameDay}</span>
               </div>
               <span class="cinema-dock-div"></span>
-              <div class="cinema-angle-pills" title="Məkan bucaqları">
-                <button class="cinema-pill ${activeAngle === 'courtyard' ? 'active' : ''}" data-angle="courtyard">Həyət</button>
-                <button class="cinema-pill ${activeAngle === 'carpet_gallery' ? 'active' : ''}" data-angle="carpet_gallery">Pasaj</button>
-                <button class="cinema-pill ${activeAngle === 'palace_hall' ? 'active' : ''}" data-angle="palace_hall">Divan</button>
+              <div class="cinema-angle-pills" title="Şəhərin 5 Xüsusi Məkanı">
+                ${(state.bazaarRooms && state.bazaarRooms.length > 0
+                  ? state.bazaarRooms
+                  : [
+                      { id: 'courtyard', shortTitle: 'Həyət' },
+                      { id: 'carpet_gallery', shortTitle: 'Pasaj' },
+                      { id: 'palace_hall', shortTitle: 'Divan' },
+                    ]
+                )
+                  .map(
+                    (rm) =>
+                      `<button class="cinema-pill ${activeAngle === rm.id ? 'active' : ''}" data-angle="${rm.id}" title="${rm.title || rm.shortTitle}">${rm.shortTitle}</button>`
+                  )
+                  .join('')}
               </div>
               <span class="cinema-dock-div"></span>
               <button id="btn-inv-top" class="cinema-dock-btn" title="Karvan Heybəsi (I)">

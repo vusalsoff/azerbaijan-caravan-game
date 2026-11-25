@@ -3,42 +3,64 @@
     "intro": ["intro_narrator"],
     "cities": [
       "city_baku_welcome",
-      "city_quba_welcome",
+      "city_shamakhi_welcome",
       "city_sheki_welcome",
       "city_ganja_welcome",
       "city_shusha_welcome",
-      "city_nakhchivan_welcome"
+      "city_lankaran_welcome"
+    ],
+    "spots": [
+      "vo_evt_bridge_north_ambush",
+      "vo_evt_bridge_south_smuggler",
+      "vo_evt_field_north_harvest",
+      "vo_evt_field_south_orchard"
     ],
     "quests": [
-      "vo_quest_chain_1_baku_quba",
-      "vo_quest_chain_2_quba_sheki",
+      "vo_quest_chain_1_baku_shamakhi",
+      "vo_quest_chain_2_shamakhi_sheki",
       "vo_quest_chain_3_sheki_ganja",
       "vo_quest_chain_4_ganja_shusha",
-      "vo_quest_chain_5_shusha_nakhchivan",
-      "vo_quest_chain_6_nakhchivan_baku",
+      "vo_quest_chain_5_shusha_lankaran",
+      "vo_quest_chain_6_lankaran_baku",
       "vo_quest_padishah_silk",
       "vo_quest_farmer_pomegranate",
-      "vo_quest_quba_honey",
-      "vo_quest_sheki_pear_rush",
+      "vo_quest_shamakhi_honey",
+      "vo_quest_sheki_pear_shamakhi",
       "vo_quest_shusha_horse_gear",
       "vo_quest_baku_grape_shusha",
-      "vo_quest_nakhchivan_wheat"
+      "vo_quest_lankaran_salt"
     ],
-    "events": [
-      "vo_evt_gobustan_bce",
-      "vo_evt_gabala_6th_century",
-      "vo_evt_ganja_baku_12th_century",
-      "vo_evt_shamakhi_16th_carpet",
-      "vo_evt_quba_sheki_orchards",
-      "vo_evt_sheki_shebeke_18th",
-      "vo_evt_shusha_karabakh_horse",
-      "vo_evt_goychay_pomegranate_harvest",
-      "vo_evt_quba_khinalug_scroll",
-      "vo_evt_quba_chichi_carpet",
-      "vo_evt_ganja_nizami_lantern",
-      "vo_evt_ganja_shah_abbas_vault",
-      "vo_evt_nakhchivan_momine_khatun",
-      "vo_evt_nakhchivan_duzdag_seal"
+    "rooms": [
+      "vo_room_baku_courtyard",
+      "vo_room_baku_carpet_gallery",
+      "vo_room_baku_palace_hall",
+      "vo_room_baku_harbor",
+      "vo_room_baku_rampart",
+      "vo_room_shamakhi_courtyard",
+      "vo_room_shamakhi_carpet_gallery",
+      "vo_room_shamakhi_palace_hall",
+      "vo_room_shamakhi_mausoleum",
+      "vo_room_shamakhi_rampart",
+      "vo_room_sheki_courtyard",
+      "vo_room_sheki_carpet_gallery",
+      "vo_room_sheki_palace_hall",
+      "vo_room_sheki_mountain_pass",
+      "vo_room_sheki_rampart",
+      "vo_room_ganja_courtyard",
+      "vo_room_ganja_carpet_gallery",
+      "vo_room_ganja_palace_hall",
+      "vo_room_ganja_mausoleum",
+      "vo_room_ganja_rampart",
+      "vo_room_shusha_courtyard",
+      "vo_room_shusha_carpet_gallery",
+      "vo_room_shusha_palace_hall",
+      "vo_room_shusha_rampart",
+      "vo_room_shusha_mountain_pass",
+      "vo_room_lankaran_courtyard",
+      "vo_room_lankaran_carpet_gallery",
+      "vo_room_lankaran_palace_hall",
+      "vo_room_lankaran_harbor",
+      "vo_room_lankaran_rampart"
     ]
   },
   "city_welcomes": {
@@ -47,30 +69,74 @@
       "title": "Bakı · Şirvanşahlar Limanı",
       "narrator_line": "Xəzərin duzlu mehi Qız Qalasının daşlarına dəyir. Karvansaray qapıları arxasında Şirvan Divanının gizli möhürləri və ticarət sirləri səni gözləyir."
     },
-    "City_Quba": {
-      "vo_id": "city_quba_welcome",
-      "title": "Quba · Şahdağ Ətəkləri",
-      "narrator_line": "Qudyalçayın sərin nəfəsi və alma bağlarının ətri dağ keçidini bürüyüb. Burada Çiçi xalçaçılarının və Xınalıq əlyazmalarının izi gizlənib."
+    "City_Shamakhi": {
+      "vo_id": "city_shamakhi_welcome",
+      "title": "Şamaxı · Firuzəyi Karvansaray",
+      "narrator_line": "Firuzəyi günbəzlər altında Şirvan ipəkçilərinin və xalça ustalarının səsi ucalır. Burada hər möhürlü məktubun arxasında qədim Şirvanşah sirri yatır."
     },
     "City_Sheki": {
       "vo_id": "city_sheki_welcome",
-      "title": "Şəki · İpək Karvansarayı",
+      "title": "Şəki · Yuxarı Karvansaray",
       "narrator_line": "Kiş dərəsinin yaşıl sükutunda Yuxarı Karvansarayın tağları ucalır. Tut ağaclarının kölgəsində Şəki ipəyi və halvası qızıl qiymətinə satılır."
     },
     "City_Ganja": {
       "vo_id": "city_ganja_welcome",
-      "title": "Gəncə · Şah Abbas Meydanı",
+      "title": "Gəncə · Şah Abbas Karvansarayı",
       "narrator_line": "Qocaman çinarların altında Şah Abbas Karvansarayının qırmızı kərpic tağları parlayır. Dəftərdarların gizli dəftərlərində İpək Yolunun bütün yolları kəsişir."
     },
     "City_Shusha": {
       "vo_id": "city_shusha_welcome",
-      "title": "Şuşa · Qarabağ Qalası",
+      "title": "Şuşa · Qala Şəhəri",
       "narrator_line": "Sıldırım qayaların zirvəsində Cıdır Düzünün küləyi muğam sədalarını daşıyır. Burada Qarabağ xalçaları və köhlən atlar öz sahibini tanıyır."
     },
-    "City_Nakhchivan": {
-      "vo_id": "city_nakhchivan_welcome",
-      "title": "Naxçıvan · Atabəylər Yurdu",
-      "narrator_line": "Möminə Xatun türbəsinin firuzəyi kaşıları qızmar günəşdə yanır. Duzdağın kristal mağaralarından gələn karvanlar Qərb İpək Yolunun qapısını açır."
+    "City_Lankaran": {
+      "vo_id": "city_lankaran_welcome",
+      "title": "Lənkəran · Dairəvi Qala",
+      "narrator_line": "Cənub Xəzər sahilində Dairəvi Qalanın qırmızı kərpic bürcləri ucalır. Limon bağları və liman gəmiləri uzaq Şərq karvanlarını qarşılayır."
+    }
+  },
+  "rooms": {
+    "City_Baku": {
+      "courtyard": { "vo_id": "vo_room_baku_courtyard", "line": "Bakı Karvansarayının daş həyətində dəvə zəngləri və tacirlərin pıçıltısı eşidilir." },
+      "carpet_gallery": { "vo_id": "vo_room_baku_carpet_gallery", "line": "Xalça və İpək Pasajında Şirvan ustalarının nadir naxışları şam işığında parlayır." },
+      "palace_hall": { "vo_id": "vo_room_baku_palace_hall", "line": "Şirvanşahlar Divan Zalında Baş Vəzirin möhürlü fərmanları sükut içində saxlanılır." },
+      "harbor": { "vo_id": "vo_room_baku_harbor", "line": "Xəzər Limanında yelkənli gəmilər cənubdakı qaçaqmalçı körpüsündən xəbərlər gətirib." },
+      "rampart": { "vo_id": "vo_room_baku_rampart", "line": "Qız Qalası Bürclərindən həm dəniz üfüqü, həm də Şamaxı karvan yolu aydın görünür." }
+    },
+    "City_Shamakhi": {
+      "courtyard": { "vo_id": "vo_room_shamakhi_courtyard", "line": "Firuzəyi Karvansarayın həyətində Şirvan tacirləri ipək və neft taylarını yoxlayırlar." },
+      "carpet_gallery": { "vo_id": "vo_room_shamakhi_carpet_gallery", "line": "Şirvan Xalça Pasajında əl toxuması Bico və Mərəzə çeşniləri sərgilənib." },
+      "palace_hall": { "vo_id": "vo_room_shamakhi_palace_hall", "line": "Şamaxı Divan Zalında gizli Gildiya katibləri yol vergilərini qeyd edirlər." },
+      "mausoleum": { "vo_id": "vo_room_shamakhi_mausoleum", "line": "Yeddi Günbəz Meydanında daş yazıların altında əsrlərin sükutu və salnamə izləri yatır." },
+      "rampart": { "vo_id": "vo_room_shamakhi_rampart", "line": "Gülüstan Qalasının bürcündən Şimal Daş Körpüsündəki duman və quldur ocaqları seçilir." }
+    },
+    "City_Sheki": {
+      "courtyard": { "vo_id": "vo_room_sheki_courtyard", "line": "Yuxarı Karvansarayın sərin daş tağları altında dağ aşırımından enən karvanlar dincəlir." },
+      "carpet_gallery": { "vo_id": "vo_room_sheki_carpet_gallery", "line": "İpək və Halva Pasajını zəfəran şərbəti və təzə barama qoxusu bürüyüb." },
+      "palace_hall": { "vo_id": "vo_room_sheki_palace_hall", "line": "Şəki Xan Divanında rəngli şəbəkə şüşələrindən süzülən işıq gizli xəzinə xəritəsini aydınladır." },
+      "mountain_pass": { "vo_id": "vo_room_sheki_mountain_pass", "line": "Qafqaz Dağ Aşırımının aşağısındakı Şimal Yamac Tarlasından bağbanların səsi gəlir." },
+      "rampart": { "vo_id": "vo_room_sheki_rampart", "line": "Gələrsən-Görərsən Qalasının zirvəsindən bütün Qafqaz keçidləri ovuc içi kimi görünür." }
+    },
+    "City_Ganja": {
+      "courtyard": { "vo_id": "vo_room_ganja_courtyard", "line": "Şah Abbas Karvansarayının qırmızı kərpic həyətində Qərb karvanlarının izdihamı var." },
+      "carpet_gallery": { "vo_id": "vo_room_ganja_carpet_gallery", "line": "Sənətkarlar Pasajında Gəncə misgərləri və Faxralı xalçaçıları çalışır." },
+      "palace_hall": { "vo_id": "vo_room_ganja_palace_hall", "line": "Gəncə Bəylərbəyi Zalında Dəftərdar Əli altı şəhərin gizli ticarət dəftərini qoruyur." },
+      "mausoleum": { "vo_id": "vo_room_ganja_mausoleum", "line": "Nizami Türbə Meydanında çinarların altında səyyar hafizlər hikmətli beytlər oxuyur." },
+      "rampart": { "vo_id": "vo_room_ganja_rampart", "line": "Gəncə Qala Divarlarından Şuşa dağlarına və Kür vadisinə uzanan yollar görünür." }
+    },
+    "City_Shusha": {
+      "courtyard": { "vo_id": "vo_room_shusha_courtyard", "line": "Şuşa Qala Meydanında Qarabağ atlarının kişnərtisi və tar sədaları eşidilir." },
+      "carpet_gallery": { "vo_id": "vo_room_shusha_carpet_gallery", "line": "Qarabağ Xalça Pasajında Usta Bəhmən Çələbi və Xanlıq çeşnili xalçaları açır." },
+      "palace_hall": { "vo_id": "vo_room_shusha_palace_hall", "line": "Pənahəli Xan Divanında Qarabağ elçiləri Cənub körpüsündən gələn karvanı gözləyirlər." },
+      "rampart": { "vo_id": "vo_room_shusha_rampart", "line": "Cıdır Düzü Bürclərindən Daşaltı dərəsi və Cənub Nar Zəmiləri aydın görünür." },
+      "mountain_pass": { "vo_id": "vo_room_shusha_mountain_pass", "line": "Qarabağ Dağ Bazarında yaylaq balı, yaqut nar və köhlən at yəhərləri satılır." }
+    },
+    "City_Lankaran": {
+      "courtyard": { "vo_id": "vo_room_lankaran_courtyard", "line": "Dairəvi Qala Meydanında Cənub yolundan gələn ədviyyat və nar karvanları düzülüb." },
+      "carpet_gallery": { "vo_id": "vo_room_lankaran_carpet_gallery", "line": "Ədviyyat və İpək Pasajında uzaq Şərq ətirləri və zərif ipək parçalar parlayır." },
+      "palace_hall": { "vo_id": "vo_room_lankaran_palace_hall", "line": "Talış Xanı Divanında Cənub limanının gizli gömrük möhürləri təsdiqlənir." },
+      "harbor": { "vo_id": "vo_room_lankaran_harbor", "line": "Cənub Xəzər Limanında gəmilər Şirvanşahlar paytaxtı Bakıya yola düşməyə hazırdır." },
+      "rampart": { "vo_id": "vo_room_lankaran_rampart", "line": "Sərhəd Qala Bürclərindən Cənub Daş Körpüsündəki gecə fənərləri uzaqdan sayrışır." }
     }
   },
   "npcs": {
@@ -88,15 +154,15 @@
       "npc_role": "PadishahNPC",
       "vo_id": "vo_npc_bas_vezir",
       "greeting": "Saray əhli sənin karvanının sorağını alıb. Möhürlü Divan məktubunu yalnız etibarlı əllərə tapşırarıq.",
-      "story_line": "Quba, Şəki, Gəncə, Şuşa və Naxçıvan xətti üzrə bütün əmanətləri yerinə çatdır — onda Böyük Tacir fərmanı sənindir."
+      "story_line": "Şamaxı, Şəki, Gəncə, Şuşa və Lənkəran xətti üzrə bütün əmanətləri yerinə çatdır — onda Böyük Tacir fərmanı sənindir."
     },
     "bagban_murad": {
-      "npc_name": "Quba Bağbanı Murad",
-      "city_id": "City_Quba",
+      "npc_name": "Şirvan Bağbanı Murad",
+      "city_id": "City_Shamakhi",
       "npc_role": "NPC_Farmer",
       "vo_id": "vo_npc_bagban_murad",
-      "greeting": "Şahdağın şehli alması bu səhər dərib səbətə yığılıb! Saman döşənmiş səbət uzaq yola tab gətirər, amma tələsmək gərəkdir.",
-      "story_line": "Dağ keçidindən Şəkiyə gedən yolda Dumanlı Dərənin qədim daş körpüsünə diqqət et — orada salnamə izləri var."
+      "greeting": "Dağ yamacının şehli alması bu səhər dərilib səbətə yığılıb! Saman döşənmiş səbət uzaq yola tab gətirər, amma tələsmək gərəkdir.",
+      "story_line": "Şəkiyə gedən yolda Şimal Yamac Tarlasına və Şimal Daş Körpüsünə diqqət et — orada həm bərəkət, həm də təhlükə var."
     },
     "ipekci_qasim": {
       "npc_name": "İpəkçi Qasım",
@@ -136,14 +202,14 @@
       "npc_role": "PadishahNPC",
       "vo_id": "vo_npc_usta_behmen",
       "greeting": "Şuşa qalasının havası da, xalçası da əyilməzdir! Çələbi naxışlı bu xalçanın hər ilməsində Qarabağın ruhu toxunub.",
-      "story_line": "Atabəylər yurdu Naxçıvana gedən karvana bu nadir xalçanı əmanət edirəm — Möminə Xatun meydanında səni gözləyirlər."
+      "story_line": "Lənkəran Dairəvi Qalasına gedən karvana bu nadir xalçanı əmanət edirəm — Cənub Nar Zəmilərindən və Cənub körpüsündən keçərkən diqqətli ol."
     },
     "kendxuda_yusif": {
-      "npc_name": "Kəndxuda Yusif",
-      "city_id": "City_Nakhchivan",
+      "npc_name": "Lənkəran Sahil Kəndxudası",
+      "city_id": "City_Lankaran",
       "npc_role": "PadishahNPC",
       "vo_id": "vo_npc_kendxuda_yusif",
-      "greeting": "Duzdağın beş min illik bərəkəti karvanına qüvvət versin! Buradan Bakıya gedən duz yükü bütün dövrün əmanətidir.",
+      "greeting": "Cənub Xəzərinin bərəkəti karvanına qüvvət versin! Buradan Bakıya gedən nar yükü bütün dövrün əmanətidir.",
       "story_line": "Bakıya qayıdanda Şirvanşahlar Divanına mənim möhürümü göstər — yolun zəfərlə tamamlanacaq."
     }
   }

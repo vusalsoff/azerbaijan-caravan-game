@@ -25,101 +25,152 @@ export class WorldAzerbaijanScene {
     this.worldMinZ = -42;
     this.worldMaxZ = 42;
 
-    // 6 Tarixi Azərbaycan Şəhərinin Xəritə Koordinatları (dostunun yeni 6 şəhərlik xəritəsi gələndə u,v 10 saniyədə incə tənzimlənə bilər)
+    // Yeni İllüstrasiyalı Qədim Azərbaycan Xəritəsindəki 6 Abidənin Dəqiq Koordinatları:
     this.cityPositions = {
       City_Baku: {
-        x: this._uToWorldX(0.755),
-        z: this._vToWorldZ(0.485),
-        u: 0.755,
-        v: 0.485,
+        x: this._uToWorldX(0.835),
+        z: this._vToWorldZ(0.46),
+        u: 0.835,
+        v: 0.46,
         radius: 7.2,
         label: 'Bakı · İçərişəhər',
         short: 'Bakı',
       },
-      City_Quba: {
-        x: this._uToWorldX(0.625),
-        z: this._vToWorldZ(0.245),
-        u: 0.625,
-        v: 0.245,
+      City_Shamakhi: {
+        x: this._uToWorldX(0.572),
+        z: this._vToWorldZ(0.395),
+        u: 0.572,
+        v: 0.395,
         radius: 7.2,
-        label: 'Quba · Dağ Bazarı',
-        short: 'Quba',
+        label: 'Şamaxı · Şirvan Karvansarayı',
+        short: 'Şamaxı',
       },
       City_Sheki: {
-        x: this._uToWorldX(0.455),
-        z: this._vToWorldZ(0.275),
-        u: 0.455,
-        v: 0.275,
+        x: this._uToWorldX(0.422),
+        z: this._vToWorldZ(0.215),
+        u: 0.422,
+        v: 0.215,
         radius: 7.2,
         label: 'Şəki · Yuxarı Karvansaray',
         short: 'Şəki',
       },
       City_Ganja: {
-        x: this._uToWorldX(0.285),
-        z: this._vToWorldZ(0.365),
-        u: 0.285,
-        v: 0.365,
+        x: this._uToWorldX(0.212),
+        z: this._vToWorldZ(0.375),
+        u: 0.212,
+        v: 0.375,
         radius: 7.2,
         label: 'Gəncə · Şah Abbas',
         short: 'Gəncə',
       },
       City_Shusha: {
-        x: this._uToWorldX(0.165),
-        z: this._vToWorldZ(0.465),
-        u: 0.165,
-        v: 0.465,
+        x: this._uToWorldX(0.262),
+        z: this._vToWorldZ(0.58),
+        u: 0.262,
+        v: 0.58,
         radius: 7.2,
         label: 'Şuşa · Qala Şəhəri',
         short: 'Şuşa',
       },
-      City_Nakhchivan: {
-        x: this._uToWorldX(0.495),
-        z: this._vToWorldZ(0.755),
-        u: 0.495,
-        v: 0.755,
+      City_Lankaran: {
+        x: this._uToWorldX(0.648),
+        z: this._vToWorldZ(0.775),
+        u: 0.648,
+        v: 0.775,
         radius: 7.2,
-        label: 'Naxçıvan · Möminə Xatun',
-        short: 'Naxçıvan',
+        label: 'Lənkəran · Dairəvi Qala',
+        short: 'Lənkəran',
       },
     };
 
-    // Şəhərlərarası əsas karvan yolları (qalan cütlüklər üçün hamar əyri avtomatik qurulur)
+    // Xəritədəki 4 Xüsusi Yol & Kiçik Missiya Nöqtəsi (2 Quldur Körpüsü + 2 Tarla/Bağ zonası)
+    this.specialSpots = [
+      {
+        id: 'Bridge_North',
+        kind: 'bridge',
+        u: 0.395,
+        v: 0.468,
+        label: 'Şimal Daş Körpüsü',
+        subtitle: '⚠ Quldur Pusqusu / Rüsum Hadisəsi',
+      },
+      {
+        id: 'Bridge_South',
+        kind: 'bridge',
+        u: 0.54,
+        v: 0.602,
+        label: 'Cənub Daş Körpüsü',
+        subtitle: '⚠ Gecə Qaçaq Keçidi',
+      },
+      {
+        id: 'Field_North',
+        kind: 'field',
+        u: 0.415,
+        v: 0.318,
+        label: 'Şimal Yamac Tarlası',
+        subtitle: '🌾 Kiçik Bağban Missiyası',
+      },
+      {
+        id: 'Field_South',
+        kind: 'field',
+        u: 0.505,
+        v: 0.665,
+        label: 'Cənub Nar Zəmiləri',
+        subtitle: '🌾 Məhsul & Karvan Dəstəyi',
+      },
+    ];
+    this.hoveredSpotId = null;
+
+    // Yeni xəritədəki qırmızı nöqtəli karvan yolları və iki daş körpüdən keçən dəqiq marşrutlar
     this.uvRoutes = {
-      'City_Baku->City_Quba': [
-        [0.755, 0.485],
-        [0.71, 0.36],
-        [0.625, 0.245],
+      'City_Baku->City_Shamakhi': [
+        [0.835, 0.46],
+        [0.765, 0.485],
+        [0.685, 0.435],
+        [0.572, 0.395],
       ],
-      'City_Quba->City_Sheki': [
-        [0.625, 0.245],
-        [0.54, 0.255],
-        [0.455, 0.275],
-      ],
-      'City_Baku->City_Sheki': [
-        [0.755, 0.485],
-        [0.62, 0.41],
-        [0.53, 0.34],
-        [0.455, 0.275],
+      'City_Shamakhi->City_Sheki': [
+        [0.572, 0.395],
+        [0.495, 0.312],
+        [0.422, 0.215],
       ],
       'City_Sheki->City_Ganja': [
-        [0.455, 0.275],
-        [0.37, 0.315],
-        [0.285, 0.365],
+        [0.422, 0.215],
+        [0.335, 0.295],
+        [0.212, 0.375],
       ],
       'City_Ganja->City_Shusha': [
-        [0.285, 0.365],
-        [0.22, 0.415],
-        [0.165, 0.465],
+        [0.212, 0.375],
+        [0.238, 0.478],
+        [0.262, 0.58],
       ],
-      'City_Shusha->City_Nakhchivan': [
-        [0.165, 0.465],
-        [0.296, 0.685],
-        [0.495, 0.755],
+      'City_Shamakhi->City_Shusha': [
+        [0.572, 0.395],
+        [0.48, 0.428],
+        [0.395, 0.468], // Şimal Daş Körpüsü
+        [0.328, 0.528],
+        [0.262, 0.58],
       ],
-      'City_Baku->City_Nakhchivan': [
-        [0.755, 0.485],
-        [0.64, 0.62],
-        [0.495, 0.755],
+      'City_Baku->City_Shusha': [
+        [0.835, 0.46],
+        [0.765, 0.485],
+        [0.665, 0.555],
+        [0.54, 0.602], // Cənub Daş Körpüsü
+        [0.405, 0.642],
+        [0.262, 0.58],
+      ],
+      'City_Shusha->City_Lankaran': [
+        [0.262, 0.58],
+        [0.388, 0.642],
+        [0.505, 0.712],
+        [0.648, 0.775],
+      ],
+      'City_Baku->City_Lankaran': [
+        [0.835, 0.46],
+        [0.755, 0.515],
+        [0.655, 0.568],
+        [0.54, 0.602], // Cənub Daş Körpüsü
+        [0.585, 0.695],
+        [0.648, 0.775],
       ],
     };
 
@@ -314,6 +365,16 @@ export class WorldAzerbaijanScene {
     return null;
   }
 
+  _findSpecialSpotAtScreen(sx, sy) {
+    for (const spot of this.specialSpots || []) {
+      const p = this._worldToScreen(this._uToWorldX(spot.u), this._vToWorldZ(spot.v));
+      if (Math.hypot(sx - p.sx, sy - p.sy) <= 22) {
+        return spot;
+      }
+    }
+    return null;
+  }
+
   _getRouteWorldPoints(fromCityId, toCityId) {
     const directKey = `${fromCityId}->${toCityId}`;
     const revKey = `${toCityId}->${fromCityId}`;
@@ -422,8 +483,10 @@ export class WorldAzerbaijanScene {
     const sx = e.clientX - rect.left;
     const sy = e.clientY - rect.top;
     const hitCity = this._findCityAtScreen(sx, sy);
+    const hitSpot = hitCity ? null : this._findSpecialSpotAtScreen(sx, sy);
     this.hoveredCityId = hitCity;
-    this.canvas.style.cursor = hitCity ? 'pointer' : 'crosshair';
+    this.hoveredSpotId = hitSpot ? hitSpot.id : null;
+    this.canvas.style.cursor = hitCity || hitSpot ? 'pointer' : 'crosshair';
   }
 
   _handlePointerDown(e) {
@@ -436,6 +499,17 @@ export class WorldAzerbaijanScene {
     const hitCityId = this._findCityAtScreen(sx, sy);
     if (hitCityId) {
       this.startFastTravelToCity(hitCityId);
+      return;
+    }
+
+    // Körpü quldur pusqusu və ya Tarla kiçik missiya nöqtəsinə klikləndikdə hadisə başlat!
+    const hitSpot = this._findSpecialSpotAtScreen(sx, sy);
+    if (hitSpot) {
+      this.eventBus.emit('ui:toast', {
+        message: `${hitSpot.label}: ${hitSpot.subtitle}`,
+        type: hitSpot.kind === 'bridge' ? 'warn' : 'info',
+      });
+      this.eventBus.emit('world:trigger_event_now', { spotId: hitSpot.id, spotKind: hitSpot.kind });
       return;
     }
 
@@ -594,24 +668,24 @@ export class WorldAzerbaijanScene {
       ctx.strokeRect(-5.5, -5.5, 11, 11);
       ctx.restore();
 
-      // Şəhər adı və Sürətli Səfər ipucu
-      ctx.font = '700 14.5px "Cormorant Garamond", Georgia, serif';
-      const actionHint = isCurrent ? '3D Karvansaray' : 'Sürətli Səfər';
-      const labelText = `${c.label} · [${actionHint}]`;
+      // Şəhər adı: xəritəni örtməmək üçün normalda yığcam ad, hover/aktiv olduqda tam etiket
+      ctx.font = '700 13.5px "Cormorant Garamond", Georgia, serif';
+      const actionHint = isCurrent ? 'Karvansaray' : 'Səfər';
+      const labelText = isHovered || isCurrent ? `${c.short} · [${actionHint}]` : c.short;
       const tw = ctx.measureText(labelText).width;
-      const boxW = tw + 18;
-      const boxH = 23;
+      const boxW = tw + 16;
+      const boxH = 21;
 
-      ctx.fillStyle = 'rgba(18, 12, 8, 0.9)';
+      ctx.fillStyle = 'rgba(18, 12, 8, 0.88)';
       ctx.strokeStyle = isCurrent ? '#e0b35c' : 'rgba(207, 163, 85, 0.65)';
       ctx.lineWidth = 1.2;
-      ctx.fillRect(-boxW / 2, -41, boxW, boxH);
-      ctx.strokeRect(-boxW / 2, -41, boxW, boxH);
+      ctx.fillRect(-boxW / 2, -39, boxW, boxH);
+      ctx.strokeRect(-boxW / 2, -39, boxW, boxH);
 
       ctx.fillStyle = '#f6e8ce';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(labelText, 0, -29.5);
+      ctx.fillText(labelText, 0, -28.5);
 
       ctx.restore();
     }
@@ -722,8 +796,58 @@ export class WorldAzerbaijanScene {
 
     this._drawActiveRoute(ctx, this.gameManager.merchant);
     this._drawCitySeals(ctx);
+    this._drawSpecialSpots(ctx);
     this._drawCaravanToken(ctx);
     this._drawHoverRouteAndCityCard(ctx);
+  }
+
+  _drawSpecialSpots(ctx) {
+    for (const spot of this.specialSpots || []) {
+      const p = this._worldToScreen(this._uToWorldX(spot.u), this._vToWorldZ(spot.v));
+      const isHovered = this.hoveredSpotId === spot.id;
+      const isBridge = spot.kind === 'bridge';
+
+      ctx.save();
+      ctx.translate(p.sx, p.sy);
+
+      const pulse = 1 + Math.sin(this.elapsed * 3.0) * 0.08;
+      ctx.fillStyle = isBridge ? 'rgba(138, 34, 28, 0.9)' : 'rgba(34, 88, 46, 0.9)';
+      ctx.strokeStyle = isHovered ? '#ffe5a3' : isBridge ? '#e2965c' : '#96d488';
+      ctx.lineWidth = isHovered ? 2.2 : 1.5;
+
+      // Romb (qədim xəritə nişanı)
+      ctx.beginPath();
+      const r = (isHovered ? 12 : 9.5) * pulse;
+      ctx.moveTo(0, -r);
+      ctx.lineTo(r, 0);
+      ctx.lineTo(0, r);
+      ctx.lineTo(-r, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#fff5df';
+      ctx.font = '700 10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(isBridge ? '⚔' : '✦', 0, 0.5);
+
+      if (isHovered) {
+        ctx.font = '700 13px "Cormorant Garamond", Georgia, serif';
+        const txt = `${spot.label} · ${spot.subtitle}`;
+        const tw = ctx.measureText(txt).width;
+        const bw = tw + 16;
+        ctx.fillStyle = 'rgba(18, 12, 8, 0.94)';
+        ctx.strokeStyle = '#cfa355';
+        ctx.lineWidth = 1.1;
+        ctx.fillRect(-bw / 2, -36, bw, 22);
+        ctx.strokeRect(-bw / 2, -36, bw, 22);
+        ctx.fillStyle = '#f8e9ca';
+        ctx.fillText(txt, 0, -25);
+      }
+
+      ctx.restore();
+    }
   }
 
   _drawHoverRouteAndCityCard(ctx) {

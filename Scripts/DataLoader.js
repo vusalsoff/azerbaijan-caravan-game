@@ -69,7 +69,13 @@ export class DataLoader {
   }
 
   getCityById(cityId) {
-    return this.cityMap.get(cityId) || null;
+    // Köhnə save-lər və ya paralel komanda branch-ları üçün təhlükəsiz ID uyğunlaşdırması
+    const aliases = {
+      City_Quba: 'City_Shamakhi',
+      City_Nakhchivan: 'City_Lankaran',
+    };
+    const resolved = aliases[cityId] || cityId;
+    return this.cityMap.get(resolved) || null;
   }
 
   getItemMeta(itemId) {

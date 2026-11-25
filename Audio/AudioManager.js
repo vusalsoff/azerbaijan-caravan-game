@@ -54,6 +54,22 @@ const TRACK_CONFIGS = {
     tempoMs: 650,
     timbre: 'kamancha',
   },
+  // Şamaxı / Şur-Şirvan Firuzəyi Karvansaray motivi
+  audio_shamakhi_shirvan: {
+    droneFreq: 138.59, // C#3
+    scale: [277.18, 293.66, 329.63, 369.99, 415.3, 440.0, 493.88, 554.37],
+    pattern: [0, 2, 3, 4, 2, 1, 3, 2, 4, 5, 4, 3, 1, 0, 2, 1],
+    tempoMs: 575,
+    timbre: 'tar',
+  },
+  // Lənkəran / Cənub Xəzər Sahili motivi
+  audio_lankaran_caspian: {
+    droneFreq: 146.83, // D3
+    scale: [293.66, 311.13, 369.99, 392.0, 440.0, 466.16, 554.37, 587.33],
+    pattern: [0, 1, 3, 4, 5, 4, 3, 1, 4, 6, 5, 3, 2, 1, 0, 2],
+    tempoMs: 600,
+    timbre: 'oud',
+  },
 };
 
 const AUDIO_SETTINGS_KEY = 'karva_audio_settings_v1';
