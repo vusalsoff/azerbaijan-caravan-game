@@ -210,6 +210,50 @@ export class StoryIntroScene {
   }
 
   render() {
+    if (!this.showSlides) {
+      this.root.innerHTML = `
+        <div style="
+          position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+          background:radial-gradient(circle at 50% 34%, rgba(110, 74, 32, 0.34), #0b0806 78%);
+          padding:24px;overflow-y:auto;
+        ">
+          <canvas id="story-ambient-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;"></canvas>
+
+          <div style="position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;text-align:center;max-width:540px;width:100%;">
+            <img src="./images/karva_logo.png" alt="KARVA" style="width:min(420px, 86vw);height:auto;filter:drop-shadow(0 12px 32px rgba(0,0,0,0.85));margin-bottom:8px;" />
+            <div style="font-family:var(--font-display);font-size:15px;letter-spacing:0.16em;text-transform:uppercase;color:#d6b880;margin-bottom:26px;">
+              XVI Əsr Azərbaycan Karvan Ticarəti
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:12px;width:min(280px, 80vw);">
+              <button id="title-play-btn" class="btn-primary" style="font-size:17px;padding:12px 24px;justify-content:center;letter-spacing:0.06em;">
+                ▶ Oyna
+              </button>
+              <button id="title-settings-btn" class="btn-secondary" style="font-size:15px;padding:10px 22px;justify-content:center;">
+                ⚙ Ayarlar (Səs və Qrafika)
+              </button>
+              <button id="title-story-btn" class="btn-ghost" style="font-size:13px;padding:8px 16px;justify-content:center;color:#cbb893;">
+                📜 Tarixi Salnamə (Giriş Hekayəsi)
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      this.root.querySelector('#title-play-btn')?.addEventListener('click', () => {
+        this.eventBus.emit('story:complete');
+      });
+      this.root.querySelector('#title-settings-btn')?.addEventListener('click', () => {
+        this.eventBus.emit('ui:open_settings');
+      });
+      this.root.querySelector('#title-story-btn')?.addEventListener('click', () => {
+        this.showSlides = true;
+        this.render();
+      });
+      this._startAmbientCanvas();
+      return;
+    }
+
     const slide = SLIDES[this.slideIndex];
     const isLast = this.slideIndex === SLIDES.length - 1;
 

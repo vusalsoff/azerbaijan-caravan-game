@@ -50,6 +50,32 @@ export class GameManager {
     this.lastTime = performance.now();
 
     this._bindEvents();
+    const unlockAudio = () => {
+      this.audio.init();
+    };
+    window.addEventListener('pointerdown', unlockAudio, { once: true });
+    window.addEventListener('keydown', unlockAudio, { once: true });
+  }
+
+  _handlePalaceAudience() {
+    const cityId = this.tradeManager.currentCityId || this.bazaarCityId;
+    const greetings = {
+      City_Baku: 'Şirvanşah Hüzuru: "Xoş gəldin, tacir! Bakı limanı və karvansaray yolları sənə açıqdır."',
+      City_Sheki: 'Şəki Xanı Hüzuru: "Şəki ipəyi və halvası uzaq ellərə şöhrət gətirsin!"',
+      City_Shusha: 'Qarabağ Xanı Hüzuru: "Şuşa qalası və xalçaları sənin karvanınla daha da güclənsin!"',
+    };
+    this._palaceVisited = this._palaceVisited || {};
+    if (!this._palaceVisited[cityId]) {
+      this._palaceVisited[cityId] = true;
+      this.tradeManager.gold += 15;
+      this.tradeManager.charisma = (this.tradeManager.charisma || 0) + 1;
+      this.tradeManager.saveToStorage();
+      this.eventBus.emit('state:changed', this.tradeManager.getSnapshot());
+      this.ui.showToast(`${greetings[cityId] || 'Saray Qəbulu'} (+15 qızıl ənam, +1 Nüfuz!)`, 'success');
+    } else {
+      this.ui.showToast(greetings[cityId] || 'Hökmdar karvanınıza xeyir-dua verir.', 'info');
+    }
+    this.audio.playSFX('coin');
   }
 
   _getUIState(snapshot) {
@@ -76,9 +102,50 @@ export class GameManager {
       this.loadWorldScene(this.bazaarCityId);
     });
 
+    this.eventBus.on('fayton:open', () => {
+      if (this.currentSceneName !== 'Caravanserai_Bazaar' || !this.bazaarScene) return;
+      const fareByCity = { City_Baku: 25, City_Sheki: 25, City_Shusha: 35 };
+      this.ui.showFaytonModal(
+        this.bazaarCityId,
+        this.data.cities,
+        this.tradeManager.gold,
+        fareByCity,
+        (targetCityId, travelMode = 'normal', fare = 25) => {
+          if (!targetCityId || targetCityId === this.bazaarCityId) return;
+          const extra = travelMode === 'guarded' ? 12 : travelMode === 'rushed' ? 10 : 0;
+          const totalFare = fare + extra;
+          if (this.tradeManager.gold < totalFare) {
+            this.ui.showToast(`Faytonçu: «Bu səfər üçün ${totalFare} qızıl lazımdır.»`, 'warn');
+            return;
+          }
+          this.tradeManager.gold -= totalFare;
+          this.tradeManager.emitState();
+          const cityMeta = this.data.getCityById(targetCityId);
+          this.ui.showToast(`Faytonçuya ${totalFare} qızıl ödənildi — ${cityMeta?.short_name || targetCityId} yoluna çıxılır...`, 'info');
+          this.bazaarScene.startFaytonDeparture(() => {
+            this.tradeManager.completeFastTravel(this.bazaarCityId, targetCityId, 1.4, travelMode);
+            this.loadBazaarScene(targetCityId);
+          });
+        },
+        () => this.loadWorldScene(this.bazaarCityId)
+      );
+    });
+
+    this.eventBus.on('horse:toggle_mount', () => {
+      if (this.currentSceneName === 'Caravanserai_Bazaar' && this.bazaarScene) {
+        this.bazaarScene.toggleMountHorse();
+      }
+    });
+
     this.eventBus.on('bazaar:proximity', (item) => {
       this.bazaarProximity = item;
       this.ui.updateHUD(this._getUIState(this.tradeManager.getSnapshot()));
+    });
+
+    this.eventBus.on('bazaar:set_waypoint', (wp) => {
+      if (this.currentSceneName === 'Caravanserai_Bazaar' && this.bazaarScene) {
+        this.bazaarScene.setCityWaypoint(wp);
+      }
     });
 
     this.eventBus.on('state:updated', (snapshot) => {
@@ -129,6 +196,36 @@ export class GameManager {
     this.eventBus.on('audio:toggle_mute', () => {
       const muted = this.audio.toggleMute();
       this.ui.setMuted(muted);
+    });
+    this.eventBus.on('palace:audience', () => this._handlePalaceAudience());
+
+    this.eventBus.on('ui:open_settings', () => {
+      this.audio.init();
+      const perfMode = localStorage.getItem('karva_perf_mode') || 'fast';
+      this.ui.showSettingsModal(this.audio.getSettings(), perfMode, {
+        onMusicVolume: (v) => this.audio.setMusicVolume(v),
+        onSfxVolume: (v) => this.audio.setSfxVolume(v),
+        onMusicMute: (b) => {
+          this.audio.setMusicMuted(b);
+          this.ui.setMuted(this.audio.muted);
+        },
+        onSfxMute: (b) => {
+          this.audio.setSfxMuted(b);
+          this.ui.setMuted(this.audio.muted);
+        },
+        onPerfMode: (mode) => {
+          localStorage.setItem('karva_perf_mode', mode);
+          this.bazaarScene?.applyPerformanceMode?.(mode);
+          this.ui.showToast(
+            mode === 'fast' ? 'Performans rejimi: Sürətli (Donmasız).' : 'Performans rejimi: Yüksək Keyfiyyət.',
+            'info'
+          );
+        },
+      });
+    });
+
+    this.eventBus.on('inventory:upgrade', () => {
+      this.tradeManager.upgradeInventoryCapacity();
     });
 
     this.eventBus.on('market:open', (opts = {}) => {
@@ -188,8 +285,8 @@ export class GameManager {
       this.tradeManager.discardItem(itemId, qty);
     });
 
-    this.eventBus.on('trade:haggle', ({ cityId, itemId }) => {
-      this.tradeManager.haggleItem(cityId, itemId);
+    this.eventBus.on('trade:haggle', ({ cityId, itemId, approach }) => {
+      this.tradeManager.haggleItem(cityId, itemId, approach || 'reasoned');
     });
 
     this.eventBus.on('game:reset', () => {
@@ -316,11 +413,19 @@ export class GameManager {
             this.eventBus.emit('market:close');
           } else if (this.bazaarProximity?.type === 'exit_to_map') {
             this.eventBus.emit('scene:exit_to_world');
+          } else if (this.bazaarProximity?.type === 'horse_mount') {
+            this.bazaarScene?.toggleMountHorse?.();
+          } else if (this.bazaarProximity?.type === 'fayton') {
+            this.eventBus.emit('fayton:open');
+          } else if (this.bazaarProximity?.type === 'palace_audience') {
+            this._handlePalaceAudience();
           } else if (this.bazaarProximity?.type === 'market') {
             this.eventBus.emit('market:open', { interactable: this.bazaarProximity });
           } else {
             this.ui.showToast('Sövdələşmək üçün tacir və ya bağban piştaxtasına yaxınlaşın.', 'info');
           }
+        } else if (e.code === 'KeyR' && this.bazaarScene?.player?.mountedHorse) {
+          this.bazaarScene.toggleMountHorse();
         } else if (e.code === 'KeyI' || e.code === 'Tab') {
           if (e.code === 'Tab') e.preventDefault();
           this.eventBus.emit('ui:toggle_inventory');
@@ -448,7 +553,7 @@ export class GameManager {
       this.lastTime = now;
 
       if (this.currentSceneName === 'Caravanserai_Bazaar' && this.bazaarScene) {
-        if (!this.paused) {
+        if (!this.paused && !this.ui.isAnyModalOpen()) {
           this.tradeManager.update(dt * 0.35);
         }
         this.bazaarScene.update(dt);

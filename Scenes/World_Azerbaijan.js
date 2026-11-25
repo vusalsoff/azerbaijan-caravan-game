@@ -423,6 +423,59 @@ export class WorldAzerbaijanScene {
   }
 
   _drawActiveRoute(ctx, merchant) {
+    const currentCityId = this.gameManager.tradeManager.currentCityId;
+    const visited = this.gameManager.tradeManager.visitedCityIds;
+
+    // Bütün əsas karvan yollarını vəziyyətinə görə fərqli xətt forması ilə çək
+    for (const [key, uvList] of Object.entries(this.uvRoutes)) {
+      const [aId, bId] = key.split('->');
+      const isHoveredEdge =
+        this.hoveredCityId &&
+        currentCityId &&
+        ((aId === currentCityId && bId === this.hoveredCityId) ||
+          (bId === currentCityId && aId === this.hoveredCityId));
+      const isBothKnown = visited.has(aId) && visited.has(bId);
+      const pts = uvList.map(([u, v]) => this._worldToScreen(this._uToWorldX(u), this._vToWorldZ(v)));
+
+      ctx.save();
+      if (isHoveredEdge) {
+        ctx.strokeStyle = '#f3cf70';
+        ctx.lineWidth = 3.6;
+        ctx.setLineDash([]);
+      } else if (isBothKnown) {
+        ctx.strokeStyle = 'rgba(184, 134, 52, 0.55)';
+        ctx.lineWidth = 2.0;
+        ctx.setLineDash([5, 5]);
+      } else {
+        // Bilinməyən yol — natamam cızıq
+        ctx.strokeStyle = 'rgba(120, 96, 66, 0.42)';
+        ctx.lineWidth = 1.6;
+        ctx.setLineDash([2, 6]);
+      }
+      ctx.beginPath();
+      pts.forEach((p, idx) => (idx === 0 ? ctx.moveTo(p.sx, p.sy) : ctx.lineTo(p.sx, p.sy)));
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Təhlükəli dağ/körpü keçidi xəbərdarlıq nişanı
+      if (pts.length >= 3) {
+        const mid = pts[Math.floor(pts.length / 2)];
+        ctx.fillStyle = isHoveredEdge ? '#c97a2b' : 'rgba(130, 82, 34, 0.75)';
+        ctx.beginPath();
+        ctx.moveTo(mid.sx, mid.sy - 7);
+        ctx.lineTo(mid.sx + 6, mid.sy + 4);
+        ctx.lineTo(mid.sx - 6, mid.sy + 4);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#fff5dc';
+        ctx.font = 'bold 8px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('!', mid.sx, mid.sy);
+      }
+      ctx.restore();
+    }
+
     if (this.fastTravel) {
       const screenPts = this.fastTravel.pathWorld.map((p) => this._worldToScreen(p.x, p.z));
       ctx.save();
@@ -631,6 +684,89 @@ export class WorldAzerbaijanScene {
     this._drawActiveRoute(ctx, this.gameManager.merchant);
     this._drawCitySeals(ctx);
     this._drawCaravanToken(ctx);
+    this._drawHoverRouteAndCityCard(ctx);
+  }
+
+  _drawHoverRouteAndCityCard(ctx) {
+    if (!this.hoveredCityId || this.fastTravel) return;
+    const tm = this.gameManager.tradeManager;
+    const city = this.data.getCityById(this.hoveredCityId);
+    const posInfo = this.cityPositions[this.hoveredCityId];
+    if (!city || !posInfo) return;
+
+    const currentCityId = tm.currentCityId;
+    const isCurrent = currentCityId === this.hoveredCityId;
+    const visited = tm.visitedCityIds.has(this.hoveredCityId);
+    const intel = tm.cityPriceIntel?.[this.hoveredCityId];
+    const ageDays = intel ? Math.max(0, tm.gameDay - intel.day) : null;
+
+    // Aktiv sifarişlər
+    const questsForCity = (tm.activeQuests || []).filter((q) => q.target_city === this.hoveredCityId);
+
+    // Sağ üst küncdə Səfər və Şəhər Məlumat Kartı
+    const cardW = 290;
+    const cardH = isCurrent ? 185 : 235;
+    const cx = Math.min((this.rootEl.clientWidth || 1200) - cardW - 18, this.mapRect.x + this.mapRect.w - cardW - 12);
+    const cy = this.mapRect.y + 12;
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(22, 16, 10, 0.94)';
+    ctx.strokeStyle = '#cfa355';
+    ctx.lineWidth = 1.6;
+    ctx.fillRect(cx, cy, cardW, cardH);
+    ctx.strokeRect(cx, cy, cardW, cardH);
+
+    ctx.fillStyle = '#f3cf70';
+    ctx.font = '700 16px "Cormorant Garamond", Georgia, serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(isCurrent ? `${city.short_name} (Hazırki Şəhər)` : `${city.short_name} · Səfər Planı`, cx + 14, cy + 12);
+
+    ctx.fillStyle = '#e8dac0';
+    ctx.font = '12.5px "Spectral", Georgia, serif';
+    let ly = cy + 38;
+    const line = (txt, color = '#e8dac0') => {
+      ctx.fillStyle = color;
+      ctx.fillText(txt, cx + 14, ly);
+      ly += 19;
+    };
+
+    line(`Yerli nüfuz: ${tm.charisma} · Aktiv sifariş: ${questsForCity.length}`);
+    if (!visited) {
+      line('Qiymət məlumatı: Naməlum (səfər edin)', '#d4a442');
+    } else if (ageDays === 0) {
+      line('Qiymət məlumatı: Bugün yenilənib', '#7ec97e');
+    } else {
+      line(`Qiymət məlumatı: ${ageDays ?? '?'} gün əvvəl`, '#d4a442');
+    }
+
+    const topGoods = city.goods?.slice(0, 2).map((g) => g.name).join(', ') || '—';
+    line(`Əsas mallar: ${topGoods}`);
+
+    if (!isCurrent) {
+      const pts = currentCityId ? this._getRouteWorldPoints(currentCityId, this.hoveredCityId) : [];
+      let dist = 0;
+      for (let i = 0; i < pts.length - 1; i++) {
+        dist += Math.hypot(pts[i + 1].x - pts[i].x, pts[i + 1].z - pts[i].z);
+      }
+      const estDays = Math.max(1.0, Math.min(2.4, dist / 42)).toFixed(1);
+      const minCost = Math.round(Number(estDays) * 8);
+      const maxCost = minCost + 6;
+
+      ly += 4;
+      line(`Təxmini müddət: ${estDays} gün`, '#f5e6c8');
+      line(`Yol xərci: ${minCost}–${maxCost} qızıl · Səth: Torpaq/Daş`);
+      line(`Təhlükə: Orta · Dayanacaq: 1 karvansaray`);
+
+      // Təzəlik xəbərdarlığı
+      const perishableRisk = Object.entries(tm.inventoryBatches || {}).some(([, arr]) =>
+        arr.some((b) => b.daysLeft !== null && b.daysLeft <= Number(estDays) + 0.5)
+      );
+      if (perishableRisk) {
+        line('⚠ Tez xarab olan yük yolda tükənə bilər!', '#e06c5c');
+      }
+    }
+    ctx.restore();
   }
 
   unmount() {

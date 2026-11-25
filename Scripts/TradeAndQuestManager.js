@@ -1,11 +1,14 @@
-const SAVE_KEY = 'irs_tacirin_yolu_save_v1';
-const SECONDS_PER_GAME_DAY = 48;
+const SAVE_KEY = 'karva_save_v2';
+const LEGACY_SAVE_KEY = 'irs_tacirin_yolu_save_v1';
+const BACKUP_SAVE_KEY = 'karva_save_v2_backup';
+const SAVE_VERSION = 2;
+const SECONDS_PER_GAME_DAY = 90;
 
 /**
- * TradeAndQuestManager — "İRS — Tacirin Yolu" iqtisadiyyatı və Karvan Heybəsi:
- * - FIFO Partiyalı İnventar (`inventoryBatches`): hər alış partiyasının öz möhləti, alış qiyməti və mənşə şəhəri qorunur
- * - Ədalətli İpək Yolu İdxal Qiymətləri (`getCityImportSellPrice`): malın tapılmadığı şəhərlərdə nadirlik qazancı hesablanır
- * - Bazarlıq (`haggleState`) yaddaşı, Çanta Təftişi, Yük Boşaltma (`discardItem`), Tapşırıq və Salnamə sistemi
+ * TradeAndQuestManager — "KARVA" iqtisadiyyatı, Karvan, Bacarıqlar və Yaddaş Sistemi:
+ * - Köhnə `irs_tacirin_yolu_save_v1` yaddaşından itkisiz miqrasiya + ehtiyat nüsxə (`karva_save_v2_backup`)
+ * - FIFO Partiyalı İnventar (`inventoryBatches`) + Çəki/Tutum + 4-mərhələli Təzəlik
+ * - Şəhər qiymət kəşfiyyatı (`cityPriceIntel`), Tələb-Təklif (`marketSupply`), Bacarıqlar (`skills`) və Karvan avadanlığı
  */
 export class TradeAndQuestManager {
   constructor(dataLoader, eventBus) {
@@ -25,6 +28,26 @@ export class TradeAndQuestManager {
     this.intelligence = 9;
     this.gameDay = 1;
     this.dayElapsedSec = 0;
+    this.worldSeed = 157801;
+
+    this.skills = {
+      carpetLore: 0,
+      foodLore: 0,
+      roadExp: 0,
+    };
+
+    this.caravan = {
+      maxWeight: 60,
+      horseCondition: 100,
+      wagonCondition: 100,
+      feed: 4,
+      guardLevel: 0,
+      equippedHorseGear: false,
+    };
+
+    this.npcRelations = {};
+    this.cityPriceIntel = {};
+    this.marketSupply = {};
 
     this.inventory = {
       salt: 0,
@@ -124,11 +147,24 @@ export class TradeAndQuestManager {
 
   saveToStorage() {
     try {
+      const prevRaw = localStorage.getItem(SAVE_KEY);
+      if (prevRaw) {
+        localStorage.setItem(BACKUP_SAVE_KEY, prevRaw);
+      }
       const payload = {
+        saveVersion: SAVE_VERSION,
+        worldSeed: this.worldSeed,
         gold: this.gold,
         charisma: this.charisma,
         intelligence: this.intelligence,
         gameDay: this.gameDay,
+        dayElapsedSec: this.dayElapsedSec,
+        currentCityId: this.currentCityId,
+        skills: this.skills,
+        caravan: this.caravan,
+        npcRelations: this.npcRelations,
+        cityPriceIntel: this.cityPriceIntel,
+        marketSupply: this.marketSupply,
         inventory: this.inventory,
         inventoryBatches: this.inventoryBatches,
         itemFreshness: this.itemFreshness,
@@ -143,21 +179,50 @@ export class TradeAndQuestManager {
         stats: this.stats,
       };
       localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
-    } catch {
-      // Storage unavailable
+    } catch (err) {
+      this.eventBus?.emit?.('ui:toast', {
+        message: 'Brauzer yaddaşı doludur — irəliləyiş saxlanmaya bilər.',
+        type: 'warning',
+      });
     }
   }
 
   loadFromStorage() {
     try {
-      const raw = localStorage.getItem(SAVE_KEY);
+      let raw = localStorage.getItem(SAVE_KEY);
+      let migratedFromLegacy = false;
+      if (!raw) {
+        const legacyRaw = localStorage.getItem(LEGACY_SAVE_KEY);
+        if (legacyRaw) {
+          raw = legacyRaw;
+          migratedFromLegacy = true;
+        }
+      }
       if (!raw) return false;
       const saved = JSON.parse(raw);
 
+      if (typeof saved.worldSeed === 'number') this.worldSeed = saved.worldSeed;
       if (typeof saved.gold === 'number') this.gold = saved.gold;
       if (typeof saved.charisma === 'number') this.charisma = saved.charisma;
       if (typeof saved.intelligence === 'number') this.intelligence = saved.intelligence;
       if (typeof saved.gameDay === 'number') this.gameDay = saved.gameDay;
+      if (typeof saved.dayElapsedSec === 'number') this.dayElapsedSec = saved.dayElapsedSec;
+      if (typeof saved.currentCityId === 'string') this.currentCityId = saved.currentCityId;
+      if (saved.skills && typeof saved.skills === 'object') {
+        this.skills = { ...this.skills, ...saved.skills };
+      }
+      if (saved.caravan && typeof saved.caravan === 'object') {
+        this.caravan = { ...this.caravan, ...saved.caravan };
+      }
+      if (saved.npcRelations && typeof saved.npcRelations === 'object') {
+        this.npcRelations = { ...saved.npcRelations };
+      }
+      if (saved.cityPriceIntel && typeof saved.cityPriceIntel === 'object') {
+        this.cityPriceIntel = { ...saved.cityPriceIntel };
+      }
+      if (saved.marketSupply && typeof saved.marketSupply === 'object') {
+        this.marketSupply = { ...saved.marketSupply };
+      }
 
       if (saved.haggleState && typeof saved.haggleState === 'object') {
         this.haggleState = { ...saved.haggleState };
@@ -220,9 +285,39 @@ export class TradeAndQuestManager {
       if (typeof saved.victoryReached === 'boolean') this.victoryReached = saved.victoryReached;
       if (typeof saved.victoryDismissed === 'boolean') this.victoryDismissed = saved.victoryDismissed;
       if (saved.stats) this.stats = { ...this.stats, ...saved.stats };
+      if (migratedFromLegacy) {
+        this.saveToStorage();
+      }
       return true;
     } catch {
+      // Pozulmuş yaddaşda ehtiyat nüsxədən bərpa etməyə çalış
+      try {
+        const backupRaw = localStorage.getItem(BACKUP_SAVE_KEY);
+        if (backupRaw) {
+          localStorage.setItem(SAVE_KEY, backupRaw);
+        }
+      } catch {
+        // ignore
+      }
       return false;
+    }
+  }
+
+  exportSaveJSON() {
+    return localStorage.getItem(SAVE_KEY) || '';
+  }
+
+  importSaveJSON(jsonStr) {
+    try {
+      const parsed = JSON.parse(jsonStr);
+      if (!parsed || typeof parsed.gold !== 'number') return { ok: false, error: 'Yaddaş faylı düzgün formatda deyil.' };
+      localStorage.setItem(SAVE_KEY, JSON.stringify(parsed));
+      this._initDefaults();
+      this.loadFromStorage();
+      this.emitState();
+      return { ok: true };
+    } catch {
+      return { ok: false, error: 'JSON oxuna bilmədi — fayl zədələnib.' };
     }
   }
 
@@ -247,7 +342,7 @@ export class TradeAndQuestManager {
     this.lastHaggleCityId = city;
     if (city) this.visitedCityIds.add(city);
     this.eventBus.emit('ui:toast', {
-      message: 'Yeni səfər dəftəri açıldı — İRS: Tacirin Yolu.',
+      message: 'Yeni səfər dəftəri açıldı — KARVA.',
       type: 'info',
     });
     this.emitState();
@@ -257,8 +352,74 @@ export class TradeAndQuestManager {
     return Object.values(this.inventory).reduce((sum, n) => sum + n, 0);
   }
 
+  getItemWeight(itemId) {
+    const weights = {
+      carpet: 8,
+      horse_gear: 7,
+      salt: 5,
+      oil: 5,
+      wheat: 5,
+      silk: 3,
+      honey: 3,
+      pomegranate: 3,
+      apple: 2,
+      pear: 2,
+      grape: 2,
+      halva: 2,
+    };
+    return weights[itemId] ?? 3;
+  }
+
+  getTotalWeight() {
+    return Object.entries(this.inventory).reduce(
+      (sum, [itemId, qty]) => sum + (qty || 0) * this.getItemWeight(itemId),
+      0
+    );
+  }
+
+  getSupplyMultiplier(cityId, itemId) {
+    const key = `${cityId}_${itemId}`;
+    const val = this.marketSupply[key];
+    return typeof val === 'number' ? Math.max(0.75, Math.min(1.3, val)) : 1.0;
+  }
+
+  _adjustSupply(cityId, itemId, delta) {
+    const key = `${cityId}_${itemId}`;
+    const cur = this.getSupplyMultiplier(cityId, itemId);
+    this.marketSupply[key] = Number(Math.max(0.75, Math.min(1.3, cur + delta)).toFixed(3));
+  }
+
   hasHorseBonus() {
-    return (this.inventory.horse_gear || 0) > 0;
+    return Boolean(this.caravan?.equippedHorseGear && (this.inventory.horse_gear || 0) > 0);
+  }
+
+  equipHorseGear(equip = true) {
+    if (equip && (this.inventory.horse_gear || 0) <= 0) return false;
+    this.caravan.equippedHorseGear = Boolean(equip);
+    this.emitState();
+    return true;
+  }
+
+  upgradeInventoryCapacity() {
+    if (this.maxInventory >= 24) {
+      this.eventBus.emit('ui:toast', { message: 'Heybə artıq maksimum tutumdadır (24 göz).', type: 'info' });
+      return false;
+    }
+    const cost = this.maxInventory === 12 ? 65 : 120;
+    if (this.gold < cost) {
+      this.eventBus.emit('ui:toast', { message: `Heybəni böyütmək üçün ${cost} qızıl lazımdır.`, type: 'warn' });
+      return false;
+    }
+    this.gold -= cost;
+    this.maxInventory += 6;
+    this.caravan.maxWeight = (this.caravan.maxWeight || 60) + 30;
+    this.eventBus.emit('audio:sfx', 'trade');
+    this.eventBus.emit('ui:toast', {
+      message: `Karvan heybəsi böyüdüldü: ${this.maxInventory} göz / ${this.caravan.maxWeight} kq (-${cost} qızıl).`,
+      type: 'success',
+    });
+    this.emitState();
+    return true;
   }
 
   getSpeedMultiplier() {
@@ -269,11 +430,12 @@ export class TradeAndQuestManager {
   }
 
   getGuardBoostActive() {
-    return this.guardBoostTimer > 0;
+    return this.guardBoostTimer > 0 || (this.caravan?.guardLevel || 0) > 0;
   }
 
   getForecastTrustPercent() {
-    return Math.min(96, Math.max(40, Math.round(47 + this.intelligence * 2)));
+    const loreBonus = Math.min(12, (this.skills?.carpetLore || 0) + (this.skills?.foodLore || 0));
+    return Math.min(96, Math.max(40, Math.round(47 + this.intelligence * 2 + loreBonus)));
   }
 
   /**
@@ -338,12 +500,19 @@ export class TradeAndQuestManager {
       status: 'none',
     };
 
+    const supplyMult = this.getSupplyMultiplier(cityId, itemId);
+    const relBonus = 1 + Math.max(-0.08, Math.min(0.12, (this.npcRelations[cityId] || 0) * 0.015));
+
     const baseBuy = localGood ? localGood.buy_price : null;
     const baseSell = localGood ? localGood.sell_price : this.getCityImportSellPrice(cityId, itemId);
 
-    const effectiveBuy = baseBuy != null ? Math.max(5, Math.round(baseBuy * haggle.buyFactor)) : null;
+    const effectiveBuy =
+      baseBuy != null ? Math.max(5, Math.round(baseBuy * haggle.buyFactor * (2 - relBonus))) : null;
     const freshMult = this.getFreshnessPriceMultiplier(itemId);
-    const effectiveSell = Math.max(4, Math.round(baseSell * haggle.sellFactor * freshMult));
+    const effectiveSell = Math.max(
+      4,
+      Math.round(baseSell * haggle.sellFactor * freshMult * supplyMult * relBonus)
+    );
 
     // Digər şəhərlərdəki (həm yerli bazar, həm idxal tələbi) satış qiymətlərindən ən sərfəlisini tap
     const otherPrices = [];
@@ -533,72 +702,104 @@ export class TradeAndQuestManager {
       const meta = this.data.getItemMeta(itemId);
       if (!meta.max_freshness_days || !batches) continue;
       for (const b of batches) {
-        b.daysLeft = meta.max_freshness_days;
-        b.maxDays = meta.max_freshness_days;
+        if (b.daysLeft != null) {
+          b.daysLeft = Math.min(meta.max_freshness_days, b.daysLeft + 1.2);
+        }
       }
       refreshed++;
     }
     this._syncInventoryFromBatches();
     if (refreshed > 0) {
       this.eventBus.emit('ui:toast', {
-        message: 'Bütün bağ məhsulları sərin bulaq suyunda təzələndi (100% Möhlət).',
+        message: 'Sərin qablaşdırma və saman tədarükü məhsulların ömrünü +1.2 gün uzatdı.',
         type: 'success',
       });
     }
   }
 
-  haggleItem(cityId, itemId) {
+  haggleItem(cityId, itemId, approach = 'reasoned') {
     const city = this.data.getCityById(cityId);
     if (!city) return { ok: false, message: 'Şəhər tapılmadı.' };
     const good = city.goods.find((g) => g.item_id === itemId);
-    const itemName = good ? good.name : this.data.getItemName(itemId);
+    const meta = this.data.getItemMeta(itemId);
+    const itemName = good ? good.name : meta.name || itemId;
 
     const hKey = `${cityId}_${itemId}`;
     if (this.haggleState[hKey]?.attempted) {
       this.eventBus.emit('ui:toast', {
-        message: `${itemName} üçün bu bazar növbəsində artıq sövdələşmisiniz.`,
+        message: `${itemName} üçün bu satıcı ilə artıq sövdələşmisiniz.`,
         type: 'info',
       });
       return { ok: false, message: 'Artıq cəhd edilib.' };
     }
 
-    const winChance = Math.min(0.88, 0.44 + (this.charisma - 8) * 0.045);
+    const rel = this.npcRelations[cityId] || 0;
+    let baseChance = 0.52;
+    let discountBase = 0.12;
+    let sellBonus = 1.1;
+
+    if (approach === 'gentle') {
+      baseChance = 0.72 + (this.charisma - 10) * 0.03 + rel * 0.02;
+      discountBase = 0.08 + Math.min(0.06, (this.charisma - 10) * 0.008);
+      sellBonus = 1.07;
+    } else if (approach === 'firm') {
+      baseChance = 0.34 + (this.charisma - 10) * 0.04 + rel * 0.015;
+      discountBase = 0.20 + Math.min(0.10, (this.charisma - 10) * 0.012);
+      sellBonus = 1.18;
+    } else {
+      // 'reasoned': Zəka və ixtisaslaşma (Xalça / Ərzaq biliciliyi) təsir edir
+      const lore =
+        itemId === 'carpet' || itemId === 'silk'
+          ? this.skills.carpetLore || 0
+          : meta.max_freshness_days
+            ? this.skills.foodLore || 0
+            : 0;
+      baseChance = 0.48 + (this.intelligence - 8) * 0.035 + lore * 0.03 + rel * 0.02;
+      discountBase = 0.14 + Math.min(0.08, (this.intelligence - 8) * 0.01);
+      sellBonus = 1.13;
+    }
+
+    const winChance = Math.max(0.15, Math.min(0.92, baseChance));
     const won = Math.random() < winChance;
 
     if (won) {
-      const discount = 0.14 + Math.min(0.1, (this.charisma - 10) * 0.012);
       this.haggleState[hKey] = {
-        buyFactor: 1 - discount,
-        sellFactor: 1.12,
+        buyFactor: 1 - discountBase,
+        sellFactor: sellBonus,
         attempted: true,
         status: 'won',
+        approach,
         day: this.gameDay,
       };
+      this.npcRelations[cityId] = Math.min(10, rel + 1);
       this.stats.hagglesWon += 1;
       if (this.stats.hagglesWon % 3 === 0) {
         this.charisma += 1;
-        this.eventBus.emit('ui:toast', {
-          message: `Tacir nüfuzunuz yüksəldi: +1 Xarizma (${this.charisma}).`,
-          type: 'success',
-        });
       }
-      const pct = Math.round(discount * 100);
+      const pct = Math.round(discountBase * 100);
       this.eventBus.emit('audio:sfx', 'haggle_ok');
       this.eventBus.emit('ui:toast', {
-        message: `Sövdələşmə tutdu: ${itemName} alışda -${pct}%, satışda +12% sərfəli oldu.`,
+        message: `Tacir: «Bu şərtlərlə razıyam» — ${itemName} alışda -${pct}%, satışda +${Math.round((sellBonus - 1) * 100)}%.`,
         type: 'success',
       });
     } else {
+      if (approach === 'firm') {
+        this.npcRelations[cityId] = Math.max(-5, rel - 1);
+      }
       this.haggleState[hKey] = {
-        buyFactor: 1.05,
-        sellFactor: 0.96,
+        buyFactor: approach === 'firm' ? 1.08 : 1.03,
+        sellFactor: approach === 'firm' ? 0.94 : 0.98,
         attempted: true,
         status: 'lost',
+        approach,
         day: this.gameDay,
       };
       this.eventBus.emit('audio:sfx', 'haggle_fail');
       this.eventBus.emit('ui:toast', {
-        message: `Tacir geri çəkilmədi — ${itemName} üçün şərtlər sərtləşdi.`,
+        message:
+          approach === 'firm'
+            ? `Tacir: «Bu qiymətə verə bilmərəm!» (Münasibət -1).`
+            : `Tacir geri çəkilmədi — ${itemName} üçün endirim alınmadı.`,
         type: 'warn',
       });
     }
@@ -693,6 +894,7 @@ export class TradeAndQuestManager {
 
       const firstVisit = !this.visitedCityIds.has(cityId);
       this.visitedCityIds.add(cityId);
+      this.cityPriceIntel[cityId] = { day: this.gameDay };
       const city = this.data.getCityById(cityId);
 
       if (city) {
@@ -718,7 +920,14 @@ export class TradeAndQuestManager {
     }
 
     if (this.getTotalItems() + qty > this.maxInventory) {
-      const msg = `Karvan heybəsi doludur (${this.maxInventory}/${this.maxInventory}).`;
+      const msg = `Heybədə yer çatmır (${this.maxInventory}/${this.maxInventory}).`;
+      this.eventBus.emit('ui:toast', { message: msg, type: 'warn' });
+      return { ok: false, message: msg };
+    }
+
+    const addWeight = this.getItemWeight(itemId) * qty;
+    if (this.getTotalWeight() + addWeight > this.caravan.maxWeight) {
+      const msg = `Karvanın çəki limiti doludur (${this.getTotalWeight()}/${this.caravan.maxWeight} kq).`;
       this.eventBus.emit('ui:toast', { message: msg, type: 'warn' });
       return { ok: false, message: msg };
     }
@@ -758,6 +967,14 @@ export class TradeAndQuestManager {
     }
 
     this._syncInventoryFromBatches();
+    this._adjustSupply(cityId, itemId, 0.04 * qty);
+
+    // İxtisaslaşma bacarıqları (ucuz təkrar istismarı məhdudlaşdırmaq üçün alışda +1 limitli)
+    if ((itemId === 'carpet' || itemId === 'silk') && this.skills.carpetLore < 10) {
+      this.skills.carpetLore = Math.min(10, this.skills.carpetLore + 1);
+    } else if (analysis.good.max_freshness_days && this.skills.foodLore < 10) {
+      this.skills.foodLore = Math.min(10, this.skills.foodLore + 1);
+    }
 
     this.eventBus.emit('audio:sfx', 'trade');
     this.eventBus.emit('ui:toast', {
@@ -765,9 +982,10 @@ export class TradeAndQuestManager {
       type: 'success',
     });
 
-    if (itemId === 'horse_gear') {
+    if (itemId === 'horse_gear' && !this.caravan.equippedHorseGear) {
+      this.caravan.equippedHorseGear = true;
       this.eventBus.emit('ui:toast', {
-        message: 'Qarabağ Atı ləvazimatı qoşuldu (+35% karvan sürəti).',
+        message: 'Qarabağ Atı ləvazimatı karvana qoşuldu (+35% sürət).',
         type: 'info',
       });
     }
@@ -975,17 +1193,27 @@ export class TradeAndQuestManager {
    * Gün irəliləyir, yol azuqə xərci çıxılır, bağ nemətlərinin möhləti azalır,
    * yol hadisəsi (keşikçi uğuru / sakit keçid / quldur həmləsi) hesablanır və qısa hesabat qaytarılır.
    */
-  completeFastTravel(fromCityId, toCityId, daysElapsed = 1.4) {
+  completeFastTravel(fromCityId, toCityId, daysElapsed = 1.4, travelMode = 'normal') {
     const fromCity = fromCityId ? this.data.getCityById(fromCityId) : null;
     const toCity = this.data.getCityById(toCityId);
     if (!toCity) return null;
 
-    const effectiveDays = this.hasHorseBonus()
-      ? Number((daysElapsed * 0.72).toFixed(1))
-      : Number(daysElapsed.toFixed(1));
+    let timeMult = this.hasHorseBonus() ? 0.72 : 1.0;
+    let extraCost = 0;
+    if (travelMode === 'rushed') {
+      timeMult *= 0.72;
+      extraCost = 10;
+      this.caravan.wagonCondition = Math.max(40, (this.caravan.wagonCondition ?? 100) - 8);
+      this.caravan.horseCondition = Math.max(40, (this.caravan.horseCondition ?? 100) - 6);
+    } else if (travelMode === 'guarded') {
+      extraCost = 12;
+      this.guardBoostTimer = Math.max(this.guardBoostTimer, 20);
+    }
 
+    const effectiveDays = Number(Math.max(0.5, daysElapsed * timeMult).toFixed(1));
     const wholeDays = Math.max(1, Math.round(effectiveDays));
     this.gameDay += wholeDays;
+    this.skills.roadExp = Math.min(10, (this.skills.roadExp || 0) + 1);
 
     // Yeni günə görə köhnə bazarlıq qıfıllarını təmizlə
     for (const [k, v] of Object.entries(this.haggleState)) {
@@ -994,9 +1222,9 @@ export class TradeAndQuestManager {
       }
     }
 
-    // Karvan yol azuqəsi xərci (yükə görə yüngül xərc)
+    // Karvan yol azuqəsi və seçilmiş səfər üsulu xərci
     const cargoCount = this.getTotalItems();
-    const roadCost = Math.min(this.gold, 4 + Math.round(cargoCount * 0.8));
+    const roadCost = Math.min(this.gold, 4 + Math.round(cargoCount * 0.8) + extraCost);
     this.gold -= roadCost;
 
     // Bağ nemətlərinin möhlət azalması
@@ -1073,6 +1301,11 @@ export class TradeAndQuestManager {
       gameDay: this.gameDay,
       maxInventory: this.maxInventory,
       totalItems: this.getTotalItems(),
+      totalWeight: this.getTotalWeight(),
+      maxWeight: this.caravan.maxWeight,
+      caravan: { ...this.caravan },
+      skills: { ...this.skills },
+      npcRelations: { ...this.npcRelations },
       inventory: { ...this.inventory },
       detailedInventory: this.getDetailedInventory(this.currentCityId),
       perishables: this.getHeldPerishables(),

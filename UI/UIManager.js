@@ -138,11 +138,29 @@ export class UIManager {
             <span class="key-cap">E</span>
             <span>Qədim Xəritəyə Çıx</span>
           </button>`
-        : `<button id="btn-open-market" class="btn-primary">
-            <span class="key-cap">E</span>
-            <span>${prox?.label || 'Tacirlə Sövdələş'}</span>
-          </button>
-          <span style="color:#b8a484;font-size:12.5px;">WASD: Gəz · Siçan: Baxış · <span class="key-cap">I</span> Heybə</span>`
+        : prox?.type === 'horse_mount'
+          ? `<button id="btn-mount-horse" class="btn-primary">
+              <span class="key-cap">E</span>
+              <span>${prox.label}</span>
+            </button>
+            <span style="color:#b8a484;font-size:12.5px;">Atdan enmək üçün: <span class="key-cap">R</span></span>`
+          : prox?.type === 'fayton'
+          ? `<button id="btn-board-fayton" class="btn-primary">
+              <span class="key-cap">E</span>
+              <span>${prox.label}</span>
+            </button>
+            <span style="color:#b8a484;font-size:12.5px;">Faytonla Bakı · Şəki · Şuşa səfəri</span>`
+          : prox?.type === 'palace_audience'
+          ? `<button id="btn-palace-audience" class="btn-primary">
+              <span class="key-cap">E</span>
+              <span>${prox.label}</span>
+            </button>
+            <span style="color:#b8a484;font-size:12.5px;">${prox.palaceTitle || 'Saray Qəbulu'}</span>`
+          : `<button id="btn-open-market" class="btn-primary">
+              <span class="key-cap">E</span>
+              <span>${prox?.label || 'Tacirlə Sövdələş'}</span>
+            </button>
+            <span style="color:#b8a484;font-size:12.5px;">WASD: Gəz · Siçan: Baxış · <span class="key-cap">I</span> Heybə</span>`
       : state.currentCity
       ? `<button id="btn-enter-bazaar" class="btn-emerald">
            ${renderSigil('gate', 15)}
@@ -159,8 +177,8 @@ export class UIManager {
         <div class="hud-top-row">
           <div class="irs-brand-box lotm-plate">
             <div class="irs-logo">
-              <span class="irs-logo-main">İRS</span>
-              <span class="irs-logo-sub">Tacirin Yolu</span>
+              <span class="irs-logo-main">KARVA</span>
+              <span class="irs-logo-sub">Karvan Yolu</span>
             </div>
             <div class="hud-pill" title="Xəzinə və Hədəf">
               ${renderSigil('coin', 15)}
@@ -198,6 +216,7 @@ export class UIManager {
               <span>Rəvayət</span>
             </button>
             <button id="btn-mute" class="btn-secondary" title="Səs">${this.muted ? 'Səssiz' : 'Səs'}</button>
+            <button id="btn-settings" class="btn-secondary" title="Ayarlar">⚙ Ayarlar</button>
             <button id="btn-reset" class="btn-secondary" title="Səfəri Yenidən Başlat">↺</button>
           </div>
         </div>
@@ -237,6 +256,18 @@ export class UIManager {
 
         <div class="hud-bottom-grid">
           <div class="irs-stats-stack">
+            <div class="gta-minimap-wrap${this.minimapExpanded ? ' is-expanded' : ''}" id="gta-minimap-wrap" title="Şəhər xəritəsini açmaq / bağlamaq üçün klikləyin" style="display:${isBazaar ? 'block' : 'none'};">
+              <div class="gta-minimap-controls">
+                <button type="button" class="gta-minimap-btn" id="btn-minimap-rot">${this.minimapRotate ? 'Yön: Oyunçu' : 'Yön: Şimal ↑'}</button>
+                <button type="button" class="gta-minimap-btn" id="btn-minimap-clear-wp">Hədəfi Sil</button>
+                <button type="button" class="gta-minimap-btn" id="btn-minimap-close">Bağla</button>
+              </div>
+              <canvas class="gta-minimap-canvas" id="gta-minimap" width="172" height="148"></canvas>
+              <div class="gta-minimap-label">
+                <span id="gta-minimap-zone">Karvansara Həyəti</span>
+                <span id="gta-minimap-compass">${this.minimapExpanded ? 'Xəritədə hədəf seç · Ş ↑' : 'Ş ↑'}</span>
+              </div>
+            </div>
             <div class="irs-stat-badge lotm-plate">
               <span style="display:inline-flex;align-items:center;gap:6px;">${renderSigil('charisma', 15)} Nüfuz (Xarizma)</span>
               <strong>${state.charisma}</strong>
@@ -258,6 +289,44 @@ export class UIManager {
       </div>
     `;
 
+    this.hudEl.querySelector('#btn-minimap-rot')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.minimapRotate = !this.minimapRotate;
+      e.currentTarget.textContent = this.minimapRotate ? 'Yön: Oyunçu' : 'Yön: Şimal ↑';
+    });
+    this.hudEl.querySelector('#btn-minimap-clear-wp')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.cityWaypoint = null;
+      this.eventBus.emit('bazaar:set_waypoint', null);
+    });
+    this.hudEl.querySelector('#btn-minimap-close')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.minimapExpanded = false;
+      this.hudEl.querySelector('#gta-minimap-wrap')?.classList.remove('is-expanded');
+    });
+    this.hudEl.querySelector('#gta-minimap-wrap')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!this.minimapExpanded) {
+        this.minimapExpanded = true;
+        const wrap = this.hudEl.querySelector('#gta-minimap-wrap');
+        if (wrap) wrap.classList.add('is-expanded');
+        const comp = this.hudEl.querySelector('#gta-minimap-compass');
+        if (comp) comp.textContent = 'Xəritədə hədəf seç · Ş ↑';
+        return;
+      }
+      // Böyüdülmüş xəritədə kliklədikdə dünya koordinatında hədəf qoy
+      const canvas = this.hudEl.querySelector('#gta-minimap');
+      if (canvas) {
+        const rect = canvas.getBoundingClientRect();
+        const u = (e.clientX - rect.left) / Math.max(1, rect.width);
+        const v = (e.clientY - rect.top) / Math.max(1, rect.height);
+        // bazaar_satellite_map.png koordinatları: u = 0.50 + x/100, v = 0.25 + z/100
+        const wx = (u - 0.5) * 100;
+        const wz = (v - 0.25) * 100;
+        this.cityWaypoint = { x: wx, z: wz };
+        this.eventBus.emit('bazaar:set_waypoint', this.cityWaypoint);
+      }
+    });
     this.hudEl.querySelector('#btn-cam-mode')?.addEventListener('click', () => {
       this.eventBus.emit('camera:toggle_mode');
     });
@@ -273,6 +342,15 @@ export class UIManager {
     this.hudEl.querySelector('#btn-open-market')?.addEventListener('click', () => {
       this.eventBus.emit('market:open');
     });
+    this.hudEl.querySelector('#btn-board-fayton')?.addEventListener('click', () => {
+      this.eventBus.emit('fayton:open');
+    });
+    this.hudEl.querySelector('#btn-palace-audience')?.addEventListener('click', () => {
+      this.eventBus.emit('palace:audience');
+    });
+    this.hudEl.querySelector('#btn-mount-horse')?.addEventListener('click', () => {
+      this.eventBus.emit('horse:toggle_mount');
+    });
     this.hudEl.querySelector('#btn-hud-inventory')?.addEventListener('click', () => {
       this.eventBus.emit('ui:toggle_inventory');
     });
@@ -287,6 +365,9 @@ export class UIManager {
     });
     this.hudEl.querySelector('#btn-mute')?.addEventListener('click', () => {
       this.eventBus.emit('audio:toggle_mute');
+    });
+    this.hudEl.querySelector('#btn-settings')?.addEventListener('click', () => {
+      this.eventBus.emit('ui:open_settings');
     });
     this.hudEl.querySelector('#btn-reset')?.addEventListener('click', () => {
       if (window.confirm('Bütün səfər dəftəri və yaddaş sıfırlansın?')) {
@@ -354,7 +435,8 @@ export class UIManager {
       `);
     }
 
-    const emptyCount = Math.max(0, 12 - slotsHtml.length);
+    const invCap = state.maxInventory || 12;
+    const emptyCount = Math.max(0, Math.min(24, invCap) - slotsHtml.length);
     for (let i = 0; i < emptyCount; i++) {
       slotsHtml.push(`
         <div class="lotm-slot empty">
@@ -365,6 +447,8 @@ export class UIManager {
     }
 
     const cityShort = state.currentCity?.short_name || null;
+    const upgradeCost = invCap < 18 ? 65 : 120;
+    const canUpgradeInv = invCap < 24;
 
     this.modalEl.innerHTML = `
       <div id="InventoryModal" class="modal-backdrop">
@@ -379,7 +463,16 @@ export class UIManager {
                 Karvan Sürəti: <strong>${state.hasHorseBonus ? '+35% (Köhlən)' : 'Adi gediş'}</strong>
               </div>
             </div>
-            <button id="inv-close" class="btn-secondary">✕ Bağla (I / Esc)</button>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
+              ${
+                canUpgradeInv
+                  ? `<button id="btn-upgrade-inv" class="btn-primary" style="padding:7px 12px;font-size:12.5px;">
+                       +6 Göz Böyüt (${upgradeCost} q.)
+                     </button>`
+                  : `<span class="wax-seal-tag" style="background:rgba(50,110,60,0.35);">Maks. Heybə (24)</span>`
+              }
+              <button id="inv-close" class="btn-secondary">✕ Bağla (I / Esc)</button>
+            </div>
           </div>
 
           ${renderSeljukStarDivider()}
@@ -501,6 +594,10 @@ export class UIManager {
 
     this.modalEl.querySelector('#inv-close')?.addEventListener('click', () => {
       this.eventBus.emit('ui:toggle_inventory');
+    });
+
+    this.modalEl.querySelector('#btn-upgrade-inv')?.addEventListener('click', () => {
+      this.eventBus.emit('inventory:upgrade');
     });
 
     this.modalEl.querySelectorAll('.lotm-slot[data-vault-item]').forEach((el) => {
@@ -631,11 +728,12 @@ export class UIManager {
           }
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <button id="btn-haggle-sel" class="btn-secondary" ${analysis.haggle.attempted ? 'disabled' : ''}>
-            ${renderSigil('scale', 14)}
-            <span>Bazarlıq Et</span>
-          </button>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px;">
+          <button class="btn-secondary btn-haggle-approach" data-approach="gentle" style="font-size:11.5px;padding:6px 4px;" ${analysis.haggle.attempted ? 'disabled' : ''}>Mülayim</button>
+          <button class="btn-secondary btn-haggle-approach" data-approach="reasoned" style="font-size:11.5px;padding:6px 4px;" ${analysis.haggle.attempted ? 'disabled' : ''}>Əsaslı</button>
+          <button class="btn-secondary btn-haggle-approach" data-approach="firm" style="font-size:11.5px;padding:6px 4px;" ${analysis.haggle.attempted ? 'disabled' : ''}>Sərt</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr;gap:8px;">
           <button id="btn-buy-sel" class="btn-emerald">
             <span>1× Tədarük Al (${analysis.effectiveBuy} q.)</span>
           </button>
@@ -762,10 +860,13 @@ export class UIManager {
         });
       });
 
-      this.modalEl.querySelector('#btn-haggle-sel')?.addEventListener('click', () => {
-        this.eventBus.emit('trade:haggle', {
-          cityId: city.city_id,
-          itemId: this.selectedMarketItemId,
+      this.modalEl.querySelectorAll('.btn-haggle-approach').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          this.eventBus.emit('trade:haggle', {
+            cityId: city.city_id,
+            itemId: this.selectedMarketItemId,
+            approach: btn.getAttribute('data-approach'),
+          });
         });
       });
 
@@ -959,11 +1060,12 @@ export class UIManager {
                       </span>
                     </div>
 
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px;">
-                      <button id="btn-haggle-sel" class="btn-secondary" ${analysis.haggle.attempted ? 'disabled' : ''}>
-                        ${renderSigil('scale', 14)}
-                        <span>Bazarlıq Et</span>
-                      </button>
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:6px 0;">
+                      <button class="btn-secondary btn-haggle-approach" data-approach="gentle" style="font-size:11.5px;padding:6px 4px;" ${analysis.haggle.attempted ? 'disabled' : ''}>Mülayim</button>
+                      <button class="btn-secondary btn-haggle-approach" data-approach="reasoned" style="font-size:11.5px;padding:6px 4px;" ${analysis.haggle.attempted ? 'disabled' : ''}>Əsaslı</button>
+                      <button class="btn-secondary btn-haggle-approach" data-approach="firm" style="font-size:11.5px;padding:6px 4px;" ${analysis.haggle.attempted ? 'disabled' : ''}>Sərt</button>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr;gap:8px;margin-top:4px;">
                       <button id="btn-buy-sel" class="btn-emerald">1× Al (${analysis.effectiveBuy} q.)</button>
                     </div>
 
@@ -1007,10 +1109,13 @@ export class UIManager {
       });
     });
 
-    this.modalEl.querySelector('#btn-haggle-sel')?.addEventListener('click', () => {
-      this.eventBus.emit('trade:haggle', {
-        cityId: city.city_id,
-        itemId: this.selectedMarketItemId,
+    this.modalEl.querySelectorAll('.btn-haggle-approach').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        this.eventBus.emit('trade:haggle', {
+          cityId: city.city_id,
+          itemId: this.selectedMarketItemId,
+          approach: btn.getAttribute('data-approach'),
+        });
       });
     });
 
@@ -1154,46 +1259,62 @@ export class UIManager {
     this.marketOpen = false;
     this.inventoryOpen = false;
 
-    const toSvg = (x, z) => ({
-      sx: ((x + 62) / 124) * 520 + 20,
-      sy: ((z + 42) / 84) * 240 + 20,
+    const toPct = (x, z) => ({
+      px: Math.max(5, Math.min(93, ((x + 62) / 124) * 86 + 6)),
+      py: Math.max(8, Math.min(90, ((z + 42) / 84) * 82 + 8)),
     });
 
-    const mSvg = merchantPos ? toSvg(merchantPos.x, merchantPos.z) : { sx: 280, sy: 140 };
-    const cities = cityPositions || {};
+    const uvByCity = {
+      City_Baku: { px: 75.5, py: 48.5, label: 'Bakı · İçərişəhər' },
+      City_Sheki: { px: 46.5, py: 27.5, label: 'Şəki · Karvansaray' },
+      City_Shusha: { px: 15.5, py: 44.5, label: 'Şuşa · Qala Şəhəri' },
+    };
+
+    const mPct = state.currentCityId && uvByCity[state.currentCityId]
+      ? uvByCity[state.currentCityId]
+      : merchantPos
+        ? toPct(merchantPos.x, merchantPos.z)
+        : { px: 75.5, py: 48.5 };
+    let cities = cityPositions || {};
+    if (Object.keys(cities).length === 0) {
+      cities = uvByCity;
+    }
 
     this.modalEl.innerHTML = `
       <div id="MapChroniclePanel" class="modal-backdrop">
-        <div class="modal-card">
+        <div class="modal-card" style="max-width:1120px;width:95vw;max-height:92vh;overflow-y:auto;">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
             <div>
-              <div class="wax-seal-tag">${renderSigil('scroll', 12)} Karvan Salnaməsi</div>
-              <h2 style="margin-top:5px;">Mənzil Xəritəsi və Dövr Salnaməsi</h2>
-              <div style="font-size:12.5px;color:var(--text-muted);">Səfər marşrutu qurmaq üçün istənilən şəhər möhürünə klikləyin.</div>
+              <div class="wax-seal-tag">${renderSigil('compass', 12)} XVI Əsr Tarixi Karvan Xəritəsi</div>
+              <h2 style="margin-top:5px;">Azərbaycan Karvan Xəritəsi · Sizin Yeriniz və Şəhərlər</h2>
+              <div style="font-size:12.5px;color:var(--text-muted);">İstənilən şəhər nişanına klikləyərək birbaşa səfərə çıxın.</div>
             </div>
-            <button id="map-close" class="btn-secondary">✕ Bağla (M)</button>
+            <button id="map-close" class="btn-secondary">✕ Bağla (X / M)</button>
           </div>
 
           ${renderSeljukStarDivider()}
 
-          <svg viewBox="0 0 560 260" style="width:100%;height:auto;background:radial-gradient(circle at 42% 50%, #2b2015, #16100a);border:1px solid rgba(207,163,85,0.45);margin:10px 0 14px;">
-            <rect x="415" y="0" width="145" height="260" fill="#132936" opacity="0.85" />
-            <text x="486" y="135" text-anchor="middle" fill="#9ab8c7" font-size="13" font-family="Georgia, serif" font-style="italic">Xəzər Dənizi</text>
+          <div style="position:relative;width:100%;aspect-ratio:16/9;border-radius:10px;overflow:hidden;border:2px solid rgba(212,175,55,0.65);box-shadow:0 12px 36px rgba(0,0,0,0.75);margin:10px 0 16px;background:#1b120a;">
+            <img src="./images/ancient_azerbaijan_map.jpg" alt="Qədim Azərbaycan Karvan Xəritəsi" style="width:100%;height:100%;object-fit:cover;display:block;" />
+            <div style="position:absolute;inset:0;background:radial-gradient(circle at center, transparent 68%, rgba(10,10,8,0.32) 100%);pointer-events:none;"></div>
             ${Object.entries(cities)
               .map(([id, c]) => {
-                const p = toSvg(c.x, c.z);
+                const p = uvByCity[id] || toPct(c.x, c.z);
                 const visited = state.visitedCityIds.includes(id);
+                const isCurrent = state.currentCityId === id;
                 return `
-                  <g class="svg-city-target" data-city="${id}" style="cursor:pointer;">
-                    <circle cx="${p.sx}" cy="${p.sy}" r="12" fill="${visited ? '#7e2323' : '#3d2c1a'}" stroke="#cfa355" stroke-width="2" />
-                    <text x="${p.sx}" y="${p.sy - 17}" text-anchor="middle" fill="#eadcc3" font-weight="bold" font-size="12" font-family="Georgia, serif">${c.label}</text>
-                  </g>
+                  <button class="svg-city-target" data-city="${id}" style="position:absolute;left:${p.px}%;top:${p.py}%;transform:translate(-50%,-50%);background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;padding:0;">
+                    <span style="width:${isCurrent ? 18 : 14}px;height:${isCurrent ? 18 : 14}px;border-radius:50%;background:${isCurrent ? '#f5d26b' : visited ? '#b83232' : '#2b2015'};border:2.5px solid #fff3d6;box-shadow:0 0 12px rgba(0,0,0,0.9);display:block;"></span>
+                    <span style="background:rgba(16,13,10,0.88);color:#f5e6c8;border:1px solid rgba(212,175,55,0.55);padding:2px 7px;border-radius:4px;font-size:11.5px;font-weight:700;white-space:nowrap;text-shadow:0 1px 2px #000;">${c.label || uvByCity[id]?.label || id}${isCurrent ? ' ★' : ''}</span>
+                  </button>
                 `;
               })
               .join('')}
-            <circle cx="${mSvg.sx}" cy="${mSvg.sy}" r="6.5" fill="#cfa355" stroke="#fff3d6" stroke-width="2" />
-            <text x="${mSvg.sx}" y="${mSvg.sy + 18}" text-anchor="middle" fill="#e4be74" font-size="11">Karvan</text>
-          </svg>
+            <div style="position:absolute;left:${mPct.px}%;top:${mPct.py}%;transform:translate(-50%,16px);pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:2px;">
+              <span style="width:14px;height:14px;background:#ffffff;border:2.5px solid #e0a838;border-radius:50%;box-shadow:0 0 14px #f5d26b, 0 0 4px #000;"></span>
+              <span style="background:rgba(212,175,55,0.95);color:#140e08;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:800;white-space:nowrap;">Sizin Yeriniz</span>
+            </div>
+          </div>
 
           <h3 style="font-family:var(--font-display);color:var(--gold-bright);font-size:18px;margin-bottom:8px;">
             Açılmış Tarixi Vərəqlər (${state.discoveredEvents.length}/${state.totalEventsCount})
@@ -1235,7 +1356,7 @@ export class UIManager {
       <div class="modal-backdrop">
         <div class="modal-card" style="text-align:center;max-width:560px;">
           <div class="wax-seal-tag">${renderSigil('seal', 12)} Baş Tacir Mərtəbəsi</div>
-          <h2 style="margin-top:10px;font-size:28px;">İRS — Böyük Karvanbaşı!</h2>
+          <h2 style="margin-top:10px;font-size:28px;">KARVA — Qələbə Möhürü</h2>
           ${renderSeljukStarDivider()}
           <p style="margin:12px 0 18px;color:#eadcc3;line-height:1.65;">
             Xəzinənizi <strong>${state.gold} qızıla</strong> çatdıraraq Azərbaycan İpək Yolunun ən mötəbər karvanbaşısı adını qazandınız.
@@ -1377,5 +1498,468 @@ export class UIManager {
     }, 3600);
 
     this._activeToasts.set(message, { el: item, timerId, lastAt: now });
+  }
+
+  /**
+   * GTA V üslubunda canlı radar mini-xəritəni yeniləyir.
+   */
+  /**
+   * Hər şəhərin (Bakı, Şəki, Şuşa) özünəməxsus Xəritəsi + 3D koordinat markerləri.
+   */
+  updateMinimap({ x = 0, z = 0, yaw = 0, markers = [], cityName = '', cityId = 'City_Baku' } = {}) {
+    const wrap = document.getElementById('gta-minimap-wrap');
+    if (wrap) {
+      if (wrap.style.display !== 'block') wrap.style.display = 'block';
+      wrap.classList.toggle('is-expanded', !!this.minimapExpanded);
+    }
+    const canvas = document.getElementById('gta-minimap');
+    if (!canvas) return;
+    const targetW = this.minimapExpanded ? Math.max(360, wrap?.clientWidth || 540) : 172;
+    const targetH = this.minimapExpanded ? Math.max(360, wrap?.clientHeight || 540) : 148;
+    if (canvas.width !== targetW || canvas.height !== targetH) {
+      canvas.width = targetW;
+      canvas.height = targetH;
+    }
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width;
+    const h = canvas.height;
+    const cx = w / 2;
+    const cy = h / 2;
+
+    const zoneEl = document.getElementById('gta-minimap-zone');
+    if (zoneEl) {
+      const area = z > 38 ? 'Liman Meydanı' : z > 14.5 ? 'Çöl Bazar' : 'Karvansara Həyəti';
+      zoneEl.textContent = cityName ? `${cityName} · ${area}` : area;
+    }
+
+    if (!this._satMinimapImg) {
+      this._satMinimapImg = new Image();
+      this._satMinimapImg.src = './images/bazaar_satellite_map.png';
+    }
+
+    if (!this._cityMapCache) this._cityMapCache = {};
+
+    const getCitySatelliteCanvas = (cid) => {
+      if (this._cityMapCache[cid]) return this._cityMapCache[cid];
+      const off = document.createElement('canvas');
+      off.width = 512;
+      off.height = 512;
+      const octx = off.getContext('2d');
+      const isSheki = cid === 'City_Sheki';
+
+      // Zəngin teksturalı torpaq/dağ/qayalıq fonu
+      octx.fillStyle = isSheki ? '#354f2d' : '#4a4e52';
+      octx.fillRect(0, 0, 512, 512);
+
+      let seed = isSheki ? 101 : 202;
+      const rand = () => {
+        seed = (seed * 1664525 + 1013904223) % 4294967296;
+        return seed / 4294967296;
+      };
+
+      // Təbii relyef ləkələri və ağac/qaya teksturası
+      for (let i = 0; i < 650; i++) {
+        const rx = rand() * 512;
+        const ry = rand() * 512;
+        const rr = 3 + rand() * 14;
+        octx.fillStyle = isSheki
+          ? rand() > 0.5
+            ? 'rgba(34, 62, 26, 0.42)'
+            : 'rgba(84, 110, 52, 0.35)'
+          : rand() > 0.5
+            ? 'rgba(54, 58, 64, 0.45)'
+            : 'rgba(115, 118, 122, 0.32)';
+        octx.beginPath();
+        octx.arc(rx, ry, rr, 0, Math.PI * 2);
+        octx.fill();
+      }
+
+      // Şəki: Qıvrılan mavi dağ çayı + daş körpü; Şuşa: Cıdır Düzü qayalıq yarğanı
+      if (isSheki) {
+        octx.strokeStyle = '#2c7694';
+        octx.lineWidth = 24;
+        octx.lineCap = 'round';
+        octx.beginPath();
+        octx.moveTo(45, 0);
+        octx.bezierCurveTo(115, 140, 40, 290, 95, 512);
+        octx.stroke();
+        octx.strokeStyle = '#53a6c4';
+        octx.lineWidth = 8;
+        octx.stroke();
+      } else {
+        octx.fillStyle = '#2d3033';
+        octx.fillRect(0, 0, 512, 42);
+        octx.strokeStyle = '#7e838a';
+        octx.lineWidth = 4;
+        octx.beginPath();
+        octx.moveTo(0, 44);
+        octx.lineTo(512, 44);
+        octx.stroke();
+      }
+
+      // 100m x 100m dünya koordinatını 512x512 xəritəyə çevir (mərkəz: 0.50, 0.25)
+      const toPx = (wx, wz) => [(0.5 + wx / 100) * 512, (0.25 + wz / 100) * 512];
+      const sc = 512 / 100;
+
+      // Karvansaray həyəti və küçə döşəməsi
+      const [cyX, cyY] = toPx(-13, -11);
+      octx.fillStyle = isSheki ? '#8c775c' : '#7b7c7d';
+      octx.fillRect(cyX, cyY, 26 * sc, 25 * sc);
+      const [stX, stY] = toPx(-6, 14);
+      octx.fillRect(stX, stY, 12 * sc, 44 * sc);
+
+      // Qərb Bağça Həyəti
+      const [gx, gy] = toPx(-25, -10.5);
+      octx.fillStyle = '#335229';
+      octx.fillRect(gx, gy, 12 * sc, 24 * sc);
+
+      // Karvansaray divarları (kölgəli)
+      octx.fillStyle = isSheki ? '#b56e52' : '#9aa1a8';
+      const drawWall = (wx, wz, ww, wd) => {
+        const [px, py] = toPx(wx, wz);
+        octx.fillStyle = 'rgba(0,0,0,0.35)';
+        octx.fillRect(px + 2, py + 2, ww * sc, wd * sc);
+        octx.fillStyle = isSheki ? '#b56e52' : '#aeb4ba';
+        octx.fillRect(px, py, ww * sc, wd * sc);
+      };
+      drawWall(-13.5, -11.6, 27, 1.4);
+      drawWall(-13.5, -11.6, 1.4, 26.2);
+      drawWall(12.1, -11.6, 1.4, 26.2);
+      drawWall(-13.5, 13.4, 11.3, 1.4);
+      drawWall(2.2, 13.4, 11.3, 1.4);
+
+      // Şəhərin Xan Sarayı (Şəkidə qərbdə, Şuşada şərqdə)
+      const [palX, palY] = isSheki ? toPx(-25, -22) : toPx(14, -22);
+      octx.fillStyle = 'rgba(0,0,0,0.4)';
+      octx.fillRect(palX + 3, palY + 3, 12 * sc, 8 * sc);
+      octx.fillStyle = isSheki ? '#9c3e2b' : '#43586b';
+      octx.fillRect(palX, palY, 12 * sc, 8 * sc);
+      octx.strokeStyle = '#d4a442';
+      octx.lineWidth = 1.5;
+      octx.strokeRect(palX, palY, 12 * sc, 8 * sc);
+
+      // Küçə boyu damları olan bazar binaları
+      for (const [bx, bz, bw, bd] of [
+        [-12.8, 16.5, 4.8, 5.2], [-12.6, 28.2, 5.0, 5.6], [-10.5, 44, 5.5, 6],
+        [12.8, 16.8, 4.8, 5.4], [12.6, 28.5, 5.0, 5.6], [10.5, 44, 5.5, 6],
+        [-20.5, 25, 7, 8], [20.5, 25, 7, 8],
+      ]) {
+        const [px, py] = toPx(bx - bw / 2, bz - bd / 2);
+        octx.fillStyle = 'rgba(0,0,0,0.35)';
+        octx.fillRect(px + 2, py + 2, bw * sc, bd * sc);
+        octx.fillStyle = isSheki ? '#9e4731' : '#58626b';
+        octx.fillRect(px, py, bw * sc, bd * sc);
+      }
+
+      // Ağac çətirləri
+      for (const [tx, tz] of [
+        [-9, 18], [9, 18], [-9, 28], [9, 28], [-16, 24], [16, 24], [-19, -4], [-19, 8],
+      ]) {
+        const [px, py] = toPx(tx, tz);
+        octx.fillStyle = isSheki ? '#244a20' : '#2f4533';
+        octx.beginPath();
+        octx.arc(px, py, 2.2 * sc, 0, Math.PI * 2);
+        octx.fill();
+      }
+
+      this._cityMapCache[cid] = off;
+      return off;
+    };
+
+    const drawCityBackdrop = (isFull) => {
+      if (cityId === 'City_Baku' && this._satMinimapImg.complete && this._satMinimapImg.naturalWidth > 0) {
+        if (isFull) {
+          ctx.drawImage(this._satMinimapImg, 0, 0, w, h);
+        } else {
+          ctx.drawImage(this._satMinimapImg, -50, -25, 100, 100);
+        }
+        return;
+      }
+
+      const cityCanvas = getCitySatelliteCanvas(cityId);
+      if (isFull) {
+        ctx.drawImage(cityCanvas, 0, 0, w, h);
+      } else {
+        ctx.drawImage(cityCanvas, -50, -25, 100, 100);
+      }
+    };
+
+    ctx.fillStyle = '#1b150f';
+    ctx.fillRect(0, 0, w, h);
+
+    const scale = 3.2; // 1m = 3.2px (kompakt radar üçün)
+    const rotAngle = !this.minimapExpanded && this.minimapRotate ? yaw - Math.PI : 0;
+
+    if (this.minimapExpanded) {
+      drawCityBackdrop(true);
+      ctx.fillStyle = 'rgba(10, 12, 14, 0.10)';
+      ctx.fillRect(0, 0, w, h);
+
+      const toScreen = (wx, wz) => [(0.5 + wx / 100) * w, (0.25 + wz / 100) * h];
+
+      for (const m of markers) {
+        const [mx, my] = toScreen(m.x, m.z);
+        if (mx < -8 || mx > w + 8 || my < -8 || my > h + 8) continue;
+        ctx.fillStyle = m.color || '#f3c65f';
+        ctx.beginPath();
+        ctx.arc(mx, my, (m.radius || 4) * 1.45, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#110d08';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+
+      if (this.cityWaypoint) {
+        const [wx, wy] = toScreen(this.cityWaypoint.x, this.cityWaypoint.z);
+        ctx.strokeStyle = '#f3cf70';
+        ctx.lineWidth = 2.6;
+        ctx.beginPath();
+        ctx.arc(wx, wy, 9, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      const [px, py] = toScreen(x, z);
+      ctx.save();
+      ctx.translate(px, py);
+      ctx.rotate(-yaw + Math.PI);
+      ctx.scale(1.35, 1.35);
+      ctx.fillStyle = '#ffffff';
+      ctx.strokeStyle = '#110d08';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(0, -7);
+      ctx.lineTo(5.5, 5.5);
+      ctx.lineTo(0, 2.5);
+      ctx.lineTo(-5.5, 5.5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
+
+    // Kompakt mini-xəritə (oyunçu mərkəzli, istəyə bağlı dönən)
+    ctx.save();
+    ctx.translate(cx, cy);
+    if (rotAngle !== 0) ctx.rotate(rotAngle);
+    ctx.scale(scale, scale);
+    ctx.translate(-x, -z);
+
+    drawCityBackdrop(false);
+
+    for (const m of markers) {
+      const dist = Math.hypot(m.x - x, m.z - z);
+      if (dist > 26) continue;
+      ctx.fillStyle = m.color || '#f3c65f';
+      ctx.beginPath();
+      ctx.arc(m.x, m.z, 1.15, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#110d08';
+      ctx.lineWidth = 0.35;
+      ctx.stroke();
+    }
+
+    if (this.cityWaypoint) {
+      ctx.strokeStyle = '#f3cf70';
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      ctx.arc(this.cityWaypoint.x, this.cityWaypoint.z, 1.5, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+
+    // Mərkəzdə oyunçu oxu
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(this.minimapRotate ? 0 : -yaw + Math.PI);
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#110d08';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(0, -7);
+    ctx.lineTo(5.5, 5.5);
+    ctx.lineTo(0, 2.5);
+    ctx.lineTo(-5.5, 5.5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  showSettingsModal(audioSettings, perfMode = 'fast', callbacks = {}) {
+    if (!this.modalEl && this.rootEl) {
+      this.modalEl = document.createElement('div');
+      this.rootEl.appendChild(this.modalEl);
+    }
+    if (!this.modalEl) return;
+
+    this.marketOpen = false;
+    this.inventoryOpen = false;
+    this.mapOpen = true;
+
+    const musicPct = Math.round((audioSettings?.musicVolume ?? 0.65) * 100);
+    const sfxPct = Math.round((audioSettings?.sfxVolume ?? 0.85) * 100);
+    const musicMuted = Boolean(audioSettings?.musicMuted);
+    const sfxMuted = Boolean(audioSettings?.sfxMuted);
+
+    this.modalEl.innerHTML = `
+      <div class="modal-backdrop" style="z-index:80;">
+        <div class="modal-card lotm-plate" style="max-width:480px;width:92vw;padding:24px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <h2 style="margin:0;color:#f3cf70;font-size:22px;">⚙ Ayarlar · Səs və Performans</h2>
+            <button id="settings-close" class="btn-ghost">✕ Bağla</button>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div style="padding:12px;background:rgba(16,12,8,0.75);border:1px solid rgba(212,175,55,0.35);border-radius:8px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <strong style="color:#f5e6c8;">🎵 Musiqi Səsi (<span id="lbl-music-pct">${musicPct}%</span>)</strong>
+                <label style="font-size:12.5px;color:#cbb893;cursor:pointer;">
+                  <input type="checkbox" id="chk-music-mute" ${musicMuted ? 'checked' : ''} /> Səssiz
+                </label>
+              </div>
+              <input id="rng-music-vol" type="range" min="0" max="100" value="${musicPct}" style="width:100%;accent-color:#cfa355;" />
+            </div>
+
+            <div style="padding:12px;background:rgba(16,12,8,0.75);border:1px solid rgba(212,175,55,0.35);border-radius:8px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <strong style="color:#f5e6c8;">🔊 Effekt Səsləri (<span id="lbl-sfx-pct">${sfxPct}%</span>)</strong>
+                <label style="font-size:12.5px;color:#cbb893;cursor:pointer;">
+                  <input type="checkbox" id="chk-sfx-mute" ${sfxMuted ? 'checked' : ''} /> Səssiz
+                </label>
+              </div>
+              <input id="rng-sfx-vol" type="range" min="0" max="100" value="${sfxPct}" style="width:100%;accent-color:#cfa355;" />
+            </div>
+
+            <div style="padding:12px;background:rgba(16,12,8,0.75);border:1px solid rgba(212,175,55,0.35);border-radius:8px;">
+              <strong style="color:#f5e6c8;display:block;margin-bottom:8px;">⚡ Qrafik və Performans Rejimi</strong>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                <button type="button" class="btn-secondary perf-mode-btn" data-mode="fast" style="border-color:${perfMode === 'fast' ? '#f3cf70' : 'rgba(212,175,55,0.35)'};">Sürətli (Donmasız)</button>
+                <button type="button" class="btn-secondary perf-mode-btn" data-mode="high" style="border-color:${perfMode === 'high' ? '#f3cf70' : 'rgba(212,175,55,0.35)'};">Yüksək Keyfiyyət</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    this.modalEl.querySelector('#settings-close')?.addEventListener('click', () => {
+      this.closeAllModals();
+    });
+
+    const rngMusic = this.modalEl.querySelector('#rng-music-vol');
+    const lblMusic = this.modalEl.querySelector('#lbl-music-pct');
+    rngMusic?.addEventListener('input', () => {
+      lblMusic.textContent = `${rngMusic.value}%`;
+      callbacks.onMusicVolume?.(Number(rngMusic.value) / 100);
+    });
+
+    this.modalEl.querySelector('#chk-music-mute')?.addEventListener('change', (e) => {
+      callbacks.onMusicMute?.(e.target.checked);
+    });
+
+    const rngSfx = this.modalEl.querySelector('#rng-sfx-vol');
+    const lblSfx = this.modalEl.querySelector('#lbl-sfx-pct');
+    rngSfx?.addEventListener('input', () => {
+      lblSfx.textContent = `${rngSfx.value}%`;
+      callbacks.onSfxVolume?.(Number(rngSfx.value) / 100);
+    });
+
+    this.modalEl.querySelector('#chk-sfx-mute')?.addEventListener('change', (e) => {
+      callbacks.onSfxMute?.(e.target.checked);
+    });
+
+    this.modalEl.querySelectorAll('.perf-mode-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const mode = btn.getAttribute('data-mode');
+        callbacks.onPerfMode?.(mode);
+        this.modalEl.querySelectorAll('.perf-mode-btn').forEach((b) => {
+          b.style.borderColor = b.getAttribute('data-mode') === mode ? '#f3cf70' : 'rgba(212,175,55,0.35)';
+        });
+      });
+    });
+  }
+
+  /**
+   * 3D Fayton Səfər Seçimi (Bakı / Şəki / Şuşa)
+   */
+  showFaytonModal(currentCityId, cities = [], playerGold = 0, fareByCity = {}, onSelectCity, onOpenWorldMap) {
+    if (!this.modalEl) return;
+    this.marketOpen = false;
+    this.inventoryOpen = false;
+    this.mapOpen = true;
+
+    const cards = cities
+      .map((c) => {
+        const isHere = c.city_id === currentCityId;
+        const baseFare = fareByCity[c.city_id] ?? 25;
+        return `
+          <div class="lotm-plate" style="padding:14px;display:flex;justify-content:space-between;align-items:center;gap:12px;border:1px solid ${isHere ? 'rgba(212,175,55,0.3)' : 'rgba(212,175,55,0.65)'};background:rgba(24,18,12,0.88);border-radius:8px;">
+            <div>
+              <div style="font-size:16px;font-weight:700;color:#f5e1b8;">${c.display_name}</div>
+              <div style="font-size:12px;color:#cbb893;margin-top:3px;">${c.era_name}</div>
+              <div style="font-size:12px;color:#d4a442;margin-top:4px;">Faytonçu haqqı: <strong>${baseFare} qızıl</strong> (+ seçilən yol xərci)</div>
+            </div>
+            ${
+              isHere
+                ? `<span style="font-size:12px;color:#a89a82;padding:6px 12px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;">Hazırki Şəhər</span>`
+                : `<button class="btn-primary fayton-go-btn" data-city-id="${c.city_id}" data-fare="${baseFare}" style="white-space:nowrap;">${baseFare} Q. Ödə & Get</button>`
+            }
+          </div>
+        `;
+      })
+      .join('');
+
+    this.modalEl.innerHTML = `
+      <div class="modal-backdrop">
+        <div class="modal-card lotm-plate" style="max-width:580px;width:92vw;padding:22px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <div>
+              <h2 style="margin:0;color:#f3cf70;font-size:21px;">🐎 Faytonçu · Pullu Şəhərlərarası Səfər</h2>
+              <p style="margin:4px 0 0;font-size:13px;color:#cbb893;">Xəzinəniz: <strong style="color:#f5d26b;">${playerGold} qızıl</strong> — Faytonçu sizi istədiyiniz şəhərə çatdırır.</p>
+            </div>
+            <button id="fayton-close-btn" class="btn-ghost">Bağla</button>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;">
+            <label style="display:flex;flex-direction:column;gap:2px;padding:8px;border:1px solid rgba(212,175,55,0.4);border-radius:6px;cursor:pointer;background:rgba(16,12,8,0.7);font-size:12px;color:#e8dac0;">
+              <span><input type="radio" name="fayton-mode" value="normal" checked /> <strong>Normal</strong></span>
+              <span style="color:#a89a82;font-size:11px;">Balanslı xərc & müddət</span>
+            </label>
+            <label style="display:flex;flex-direction:column;gap:2px;padding:8px;border:1px solid rgba(212,175,55,0.4);border-radius:6px;cursor:pointer;background:rgba(16,12,8,0.7);font-size:12px;color:#e8dac0;">
+              <span><input type="radio" name="fayton-mode" value="guarded" /> <strong>Mühafizəli</strong></span>
+              <span style="color:#a89a82;font-size:11px;">+12 q. · aşağı itki riski</span>
+            </label>
+            <label style="display:flex;flex-direction:column;gap:2px;padding:8px;border:1px solid rgba(212,175,55,0.4);border-radius:6px;cursor:pointer;background:rgba(16,12,8,0.7);font-size:12px;color:#e8dac0;">
+              <span><input type="radio" name="fayton-mode" value="rushed" /> <strong>Tələsik</strong></span>
+              <span style="color:#a89a82;font-size:11px;">+10 q. · 28% daha sürətli</span>
+            </label>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin:14px 0;">
+            ${cards}
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px;">
+            <button id="fayton-worldmap-btn" class="btn-ghost">Qədim Xəritəni Aç</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    this.modalEl.querySelector('#fayton-close-btn')?.addEventListener('click', () => {
+      this.closeAllModals();
+    });
+    this.modalEl.querySelector('#fayton-worldmap-btn')?.addEventListener('click', () => {
+      this.closeAllModals();
+      onOpenWorldMap?.();
+    });
+    this.modalEl.querySelectorAll('.fayton-go-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const cityId = btn.getAttribute('data-city-id');
+        const fare = Number(btn.getAttribute('data-fare')) || 25;
+        const mode = this.modalEl.querySelector('input[name="fayton-mode"]:checked')?.value || 'normal';
+        this.closeAllModals();
+        onSelectCity?.(cityId, mode, fare);
+      });
+    });
   }
 }

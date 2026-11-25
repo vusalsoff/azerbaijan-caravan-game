@@ -64,6 +64,28 @@ export class ModelLoader {
   }
 
   /**
+   * Xalça toxunuşu (yun ilmə) üçün bump teksturasını yükləyir və keşləyir.
+   */
+  async loadCarpetWeaveBump() {
+    if (this.carpetWeaveBump) return this.carpetWeaveBump;
+    const url = './textures/carpets/carpet_weave_bump.png';
+    try {
+      const res = await fetch(url, { method: 'HEAD' });
+      if (res.ok) {
+        const tex = await this.textureLoader.loadAsync(url);
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.wrapT = THREE.RepeatWrapping;
+        tex.repeat.set(14, 14);
+        this.carpetWeaveBump = tex;
+        return tex;
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  }
+
+  /**
    * 5 fərqli Azərbaycan xalçası variantından (karabakh, quba, shirvan, sheki, ganja)
    * tekstura qaytarır (əvvəlcə public/textures/carpets/carpet_<region>.png yoxlayır).
    */
@@ -79,8 +101,9 @@ export class ModelLoader {
       if (res.ok) {
         const tex = await this.textureLoader.loadAsync(url);
         tex.colorSpace = THREE.SRGBColorSpace;
-        tex.wrapS = THREE.RepeatWrapping;
-        tex.wrapT = THREE.RepeatWrapping;
+        tex.wrapS = THREE.ClampToEdgeWrapping;
+        tex.wrapT = THREE.ClampToEdgeWrapping;
+        tex.anisotropy = 8;
         this.carpetTextureCache.set(key, tex);
         return tex;
       }
@@ -98,7 +121,10 @@ export class ModelLoader {
    */
   async applyCarpetVariant(object3D, regionKey = 'karabakh') {
     if (!object3D) return object3D;
-    const tex = await this.loadCarpetTexture(regionKey);
+    const [tex, bumpTex] = await Promise.all([
+      this.loadCarpetTexture(regionKey),
+      this.loadCarpetWeaveBump(),
+    ]);
     const pal = CARPET_PALETTES[regionKey] || CARPET_PALETTES.karabakh;
 
     object3D.traverse((node) => {
@@ -115,8 +141,13 @@ export class ModelLoader {
       if (isCarpetPart) {
         const cloned = node.material.clone();
         cloned.map = tex;
+        if (bumpTex) {
+          cloned.bumpMap = bumpTex;
+          cloned.bumpScale = 0.035;
+        }
         cloned.color = new THREE.Color('#ffffff');
-        cloned.roughness = 0.85;
+        cloned.roughness = 0.92;
+        cloned.metalness = 0.0;
         cloned.needsUpdate = true;
         node.material = cloned;
       } else if (name.includes('banner') || name.includes('accent')) {
@@ -231,11 +262,27 @@ export class ModelLoader {
   }
 
   async _fetchAndParse(modelName) {
-    const url = `./models/${modelName}.glb`;
-    try {
-      const res = await fetch(url, { method: 'HEAD' });
-      if (!res.ok) return null;
+    const candidates = [
+      `./models/${modelName}.glb`,
+      `./models/${modelName}/${modelName}.gltf`,
+    ];
 
+    let url = null;
+    for (const cand of candidates) {
+      try {
+        const res = await fetch(cand, { method: 'HEAD' });
+        const ct = (res.headers.get('content-type') || '').toLowerCase();
+        if (res.ok && !ct.includes('text/html')) {
+          url = cand;
+          break;
+        }
+      } catch {
+        // try next
+      }
+    }
+    if (!url) return null;
+
+    try {
       const gltf = await this.loader.loadAsync(url);
       const scene = gltf.scene;
       let hasSkinned = false;

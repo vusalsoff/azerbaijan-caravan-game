@@ -294,6 +294,98 @@
   pointer-events: auto;
 }
 
+.gta-minimap-wrap {
+  position: relative;
+  width: 172px;
+  height: 148px;
+  border: 2px solid rgba(212, 175, 55, 0.78);
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(16, 13, 10, 0.92);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.65), inset 0 0 18px rgba(0, 0, 0, 0.7);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+.gta-minimap-wrap:hover {
+  border-color: #f3cf70;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.78), 0 0 14px rgba(212, 175, 55, 0.28);
+}
+
+.gta-minimap-wrap.is-expanded {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(82vw, 78vh);
+  height: min(82vw, 78vh);
+  z-index: 65;
+  border-width: 3px;
+  border-color: #f3cf70;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.92), 0 0 0 100vmax rgba(8, 6, 4, 0.65);
+}
+
+.gta-minimap-controls {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: none;
+  gap: 6px;
+  z-index: 3;
+}
+
+.gta-minimap-wrap.is-expanded .gta-minimap-controls {
+  display: flex;
+}
+
+.gta-minimap-btn {
+  background: rgba(22, 16, 10, 0.9);
+  color: #f3dfb6;
+  border: 1px solid rgba(212, 175, 55, 0.65);
+  border-radius: 5px;
+  padding: 4px 9px;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+.gta-minimap-btn:hover {
+  border-color: #f3cf70;
+  color: #fff;
+}
+
+.gta-minimap-wrap.is-expanded .gta-minimap-label {
+  font-size: 13px;
+  bottom: 10px;
+  left: 14px;
+  right: 14px;
+  background: rgba(16, 12, 8, 0.78);
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(212, 175, 55, 0.45);
+}
+
+.gta-minimap-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.gta-minimap-label {
+  position: absolute;
+  bottom: 4px;
+  left: 6px;
+  right: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  letter-spacing: 0.4px;
+  color: #f3dfb6;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
+  pointer-events: none;
+}
+
 .irs-stat-badge {
   display: flex;
   align-items: center;

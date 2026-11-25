@@ -3,3 +3,6 @@ dist/
 .DS_Store
 *.log
 Art/_ph_cache/
+.vercel/
+public/models/fir_tree_01/
+public/models/island_tree_01/
