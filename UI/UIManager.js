@@ -138,6 +138,8 @@ export class UIManager {
         const btnId =
           prox.type === 'exit_to_map'
             ? 'btn-exit-map'
+            : prox.type === 'mission_encounter'
+            ? 'btn-mission-encounter'
             : prox.type === 'angle_portal'
             ? 'btn-angle-portal'
             : prox.type === 'fayton'
@@ -187,17 +189,35 @@ export class UIManager {
       `
           : '';
 
+      const roomsList =
+        state.bazaarRooms && state.bazaarRooms.length > 0
+          ? state.bazaarRooms
+          : [
+              { id: 'courtyard', shortTitle: 'Həyət' },
+              { id: 'carpet_gallery', shortTitle: 'Pasaj' },
+              { id: 'palace_hall', shortTitle: 'Divan' },
+            ];
+      const roomsPillsHtml = roomsList
+        .map(
+          (rm) =>
+            `<button class="cinema-pill ${activeAngle === rm.id ? 'active' : ''}" data-angle="${rm.id}" title="${rm.title || rm.shortTitle}">${rm.shortTitle}</button>`
+        )
+        .join('');
+      const separateRoomRow = roomsList.length >= 4;
+
+      const isNight = state.timeOfDay === 'night';
       this.hudEl.innerHTML = `
         <div class="cinema-hud-shell">
           <div class="cinema-top-strip">
             <div class="cinema-location-whisper">
               <span class="cinema-brand-mark">KARVA</span>
               <span class="cinema-sep">·</span>
-              <span class="cinema-city-text">${state.currentCity?.short_name || 'Bakı'}</span>
+              <span class="cinema-city-text">${state.bazaarCityLabel || state.currentCity?.short_name || 'Bakı'}</span>
               <span class="cinema-sep">·</span>
               <span class="cinema-zone-text">${angleLabel}</span>
             </div>
             <div class="cinema-top-right-mini">
+              <button id="btn-toggle-time" class="cinema-mini-btn" title="Səhər / Gecə Modu (T)">${isNight ? '☾ Gecə' : '☀ Səhər'}</button>
               <button id="btn-toggle-25d" class="cinema-mini-btn" title="Klassik 3D Rejiminə keç">🏛️ 3D</button>
               <button id="btn-mute" class="cinema-mini-btn" title="Səs">${this.muted ? '🔇' : '🔊'}</button>
               <button id="btn-settings" class="cinema-mini-btn" title="Ayarlar">⚙</button>
@@ -207,6 +227,11 @@ export class UIManager {
           <div class="cinema-bottom-wrap">
             ${questPopoverHtml}
             ${contextBtnHtml}
+            ${
+              separateRoomRow
+                ? `<div class="cinema-room-strip lotm-plate" title="Şəhərin Xüsusi Məkanları">${roomsPillsHtml}</div>`
+                : ''
+            }
             <div class="cinema-dock lotm-plate">
               <div class="cinema-stat" title="Xəzinə">
                 ${renderSigil('coin', 14)}
@@ -216,22 +241,11 @@ export class UIManager {
                 ${renderSigil('sun', 13)}
                 <span>G.${state.gameDay}</span>
               </div>
-              <span class="cinema-dock-div"></span>
-              <div class="cinema-angle-pills" title="Şəhərin 5 Xüsusi Məkanı">
-                ${(state.bazaarRooms && state.bazaarRooms.length > 0
-                  ? state.bazaarRooms
-                  : [
-                      { id: 'courtyard', shortTitle: 'Həyət' },
-                      { id: 'carpet_gallery', shortTitle: 'Pasaj' },
-                      { id: 'palace_hall', shortTitle: 'Divan' },
-                    ]
-                )
-                  .map(
-                    (rm) =>
-                      `<button class="cinema-pill ${activeAngle === rm.id ? 'active' : ''}" data-angle="${rm.id}" title="${rm.title || rm.shortTitle}">${rm.shortTitle}</button>`
-                  )
-                  .join('')}
-              </div>
+              ${
+                !separateRoomRow
+                  ? `<span class="cinema-dock-div"></span><div class="cinema-angle-pills">${roomsPillsHtml}</div>`
+                  : ''
+              }
               <span class="cinema-dock-div"></span>
               <button id="btn-inv-top" class="cinema-dock-btn" title="Karvan Heybəsi (I)">
                 ${renderSigil('satchel', 14)}
@@ -270,6 +284,14 @@ export class UIManager {
         e.stopPropagation();
         this._cinemaQuestOpen = !this._cinemaQuestOpen;
         this.updateHUD(this.lastState);
+      });
+      this.hudEl.querySelector('#btn-toggle-time')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.eventBus.emit('bazaar:toggle_time');
+      });
+      this.hudEl.querySelector('#btn-mission-encounter')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.eventBus.emit('world:trigger_event_now');
       });
       this.hudEl.querySelector('#btn-toggle-25d')?.addEventListener('click', () => {
         this.eventBus.emit('bazaar:toggle_render_mode');

@@ -4,82 +4,109 @@ import { ModelLoader } from '../Prefabs/ModelLoader.js';
 
 /**
  * Scenes/Cinematic_Bazaar_25D.js
- * 6 Şəhər × 5 Xüsusi Məkan · Düzgün sRGB Parlaq İşıqlandırma + Mədəniyyətə Uyğun Unikal Atmosfer:
- * - Düzgün `#include <colorspace_fragment>` sRGB çıxışı: Bakı və bütün digər məkanlar artıq qaranlıq boğulmur,
- *   günəşli əhəngdaşı, rəngli şəbəkə, firuzəyi kaşı və isti fənər işığı tam canlı parlayır!
- * - Hər 6 şəhərin (Bakı, Şamaxı, Şəki, Gəncə, Şuşa, Lənkəran) öz mədəniyyətinə xas işıq palitrası,
- *   3D atmosfer effektləri (Şəkidə rəngli Şəbəkə işıq şüaları, Bakıda Atəşgah/neft məşəlləri və qızılı günəş,
- *   Şamaxıda firuzəyi fənərlər, Gəncədə qırmızı kərpic-mis parıltısı, Şuşada dağ dumanı, Lənkəranda cənub qürubu)
- * - 10-addımlı GLSL Parallax Occlusion Mapping (POM) + real 3D Kamera Dolly-In + FogExp2 dərinlik dumanı
+ * 6 Şəhər (hərəsində 5–6 özəl adlı məkan) + 4 Xüsusi Missiya Məkanı (hərəsində 2 otaq)
+ * + Real Vaxt ☀ Səhər ↔ ☾ Gecə Modu (T düyməsi)
+ * + Hər Məkan Üçün Fərdi Hərəkət Sərhədi & Hərəkət Etməmə Zolaqları (blockedZones) + B (Sərhəd Göstəricisi)
  */
 
 const ENABLE_PLACEHOLDER_NPCS = false;
 
-// Hər şəhərin mədəniyyətinə xas vizual imza (işıq, fənər rəngi, 3D atmosfer effekti)
 const CITY_CULTURE_STYLES = {
   City_Baku: {
-    cultureTag: 'Abşeron & Xəzər İşıqlığı',
+    label: 'Bakı',
     exposure: 1.38,
     glowTint: [1.0, 0.76, 0.34],
     lanternHex: 0xffb347,
     dustHex: 0xffe4a8,
-    accentMode: 'baku_sun_fire', // Qızılı Xəzər günəş şüaları + Atəşgah neft məşəlləri
-    interiorTint: [1.06, 1.02, 0.94],
+    accentMode: 'baku_sun_fire',
   },
   City_Shamakhi: {
-    cultureTag: 'Şirvan Firuzəsi & İpək',
+    label: 'Şamaxı',
     exposure: 1.36,
     glowTint: [0.42, 0.92, 0.95],
     lanternHex: 0x4fd2d6,
     dustHex: 0xaef0f2,
-    accentMode: 'shamakhi_turquoise', // Firuzəyi şəbəkəli Şirvan fənərləri
-    interiorTint: [0.92, 1.03, 1.08],
+    accentMode: 'shamakhi_turquoise',
   },
   City_Sheki: {
-    cultureTag: 'Şəbəkə & Dağ İpəyi',
+    label: 'Şəki',
     exposure: 1.36,
     glowTint: [0.98, 0.84, 0.42],
     lanternHex: 0xffc858,
     dustHex: 0xe6f8c8,
-    accentMode: 'sheki_shebeke', // Rəngli 3D Şəbəkə (yaqut, firuzə, zümrüd, kəhrəba) işıq şüaları!
-    interiorTint: [0.95, 1.06, 0.97],
+    accentMode: 'sheki_shebeke',
   },
   City_Ganja: {
-    cultureTag: 'Nizami Yurdu & Qırmızı Kərpic',
+    label: 'Gəncə',
     exposure: 1.34,
-    glowTint: [1.0, 0.62, 0.30],
+    glowTint: [1.0, 0.62, 0.3],
     lanternHex: 0xff9442,
     dustHex: 0xffcfa0,
-    accentMode: 'ganja_copper', // İsti qırmızı kərpic-mis məşəl şüaları
-    interiorTint: [1.09, 0.94, 0.86],
+    accentMode: 'ganja_copper',
   },
   City_Shusha: {
-    cultureTag: 'Qarabağ Qalası & Muğam',
+    label: 'Şuşa',
     exposure: 1.34,
     glowTint: [0.98, 0.66, 0.48],
     lanternHex: 0xf4a862,
     dustHex: 0xdce0f5,
-    accentMode: 'shusha_mist', // Cıdır Düzü dağ dumanı zolaqları + al-qırmızı xalça istiliyi
-    interiorTint: [0.94, 0.95, 1.08],
+    accentMode: 'shusha_mist',
   },
   City_Lankaran: {
-    cultureTag: 'Talış Bağları & Dairəvi Qala',
+    label: 'Lənkəran',
     exposure: 1.36,
     glowTint: [1.0, 0.72, 0.36],
     lanternHex: 0xffa846,
     dustHex: 0xffe09c,
-    accentMode: 'lankaran_orchard', // Cənub bağ qürubu & zümrüd-kəhrəba işıq
-    interiorTint: [1.06, 1.02, 0.88],
+    accentMode: 'lankaran_orchard',
+  },
+  Mission_Bridge_North: {
+    label: 'Şimal Quldur Körpüsü',
+    exposure: 1.24,
+    glowTint: [1.0, 0.56, 0.24],
+    lanternHex: 0xff8c36,
+    dustHex: 0xffc488,
+    accentMode: 'shusha_mist',
+  },
+  Mission_Bridge_South: {
+    label: 'Cənub Qaçaq Körpüsü',
+    exposure: 1.22,
+    glowTint: [1.0, 0.62, 0.28],
+    lanternHex: 0xff9a3c,
+    dustHex: 0xd0dced,
+    accentMode: 'shamakhi_turquoise',
+  },
+  Mission_Field_North: {
+    label: 'Şimal Dağ Tarlası',
+    exposure: 1.36,
+    glowTint: [1.0, 0.82, 0.42],
+    lanternHex: 0xffc458,
+    dustHex: 0xf6f0c0,
+    accentMode: 'sheki_shebeke',
+  },
+  Mission_Field_South: {
+    label: 'Cənub Nar Zəmiləri',
+    exposure: 1.36,
+    glowTint: [1.0, 0.72, 0.34],
+    lanternHex: 0xffaa44,
+    dustHex: 0xffe2a2,
+    accentMode: 'lankaran_orchard',
   },
 };
 
+// Hər məkan şablonunun öz fərdi kamerası, üfüqü, hərəkət sərhədi və HƏRƏKƏT ETMƏMƏ ZOLAQLARI (blockedZones)
 const ROOM_TEMPLATES = {
   baku_courtyard: {
     baseImage: './images/bazaar_baku_25d',
     camPos: [0, 1.82, 13.4],
     lookAt: [0, 3.35, -12.0],
-    zRange: [-8.8, 6.8],
-    xBounds: [-3.6, 3.2, 0.9, 0.6],
+    zRange: [-8.4, 6.6],
+    xBounds: [-3.4, 2.75, 0.85, 0.55],
+    // Sağ ön tərəfdəki meyvə səbətləri hərəkət etməmə zolağıdır
+    blockedZones: [
+      { x: 2.85, z: 3.6, rx: 1.15, rz: 2.2, label: 'Meyvə Səbətləri' },
+      { x: -3.65, z: 2.8, rx: 0.75, rz: 2.8, label: 'Sol Sütunlar' },
+    ],
     sunColor: 0xffe4b0,
     sunPos: [14, 17, 7],
     sunBaseIntensity: 2.65,
@@ -100,8 +127,12 @@ const ROOM_TEMPLATES = {
     baseImage: './images/bazaar_shamakhi_25d',
     camPos: [0, 1.72, 13.0],
     lookAt: [0, 3.85, -12.0],
-    zRange: [-8.4, 6.6],
-    xBounds: [-3.5, 3.5, 0.85, 0.85],
+    zRange: [-8.0, 6.5],
+    xBounds: [-3.25, 3.25, 0.8, 0.8],
+    blockedZones: [
+      { x: -3.25, z: 2.4, rx: 1.0, rz: 2.4, label: 'Sol Ədviyyat Kisələri' },
+      { x: 3.35, z: 2.6, rx: 0.95, rz: 2.2, label: 'Sağ Sandıqlar' },
+    ],
     sunColor: 0xd0e4f8,
     sunPos: [8, 16, 4],
     sunBaseIntensity: 2.15,
@@ -122,8 +153,13 @@ const ROOM_TEMPLATES = {
     baseImage: './images/bazaar_sheki_25d',
     camPos: [0, 1.84, 13.4],
     lookAt: [0, 3.25, -12.0],
-    zRange: [-8.6, 6.8],
-    xBounds: [-3.4, 3.0, 0.85, 0.8],
+    zRange: [-8.2, 6.6],
+    xBounds: [-3.15, 2.95, 0.85, 0.75],
+    // Sağdakı səkkizguşəli daş bulaq və sol ön halva masası hərəkət etməmə zolağıdır!
+    blockedZones: [
+      { x: 2.1, z: 1.45, rx: 1.45, rz: 1.35, label: 'Səkkizguşəli Daş Bulaq' },
+      { x: -3.05, z: 5.1, rx: 1.25, rz: 1.45, label: 'Halva Piştaxtası' },
+    ],
     sunColor: 0xffe8b0,
     sunPos: [10, 17, 5],
     sunBaseIntensity: 2.5,
@@ -144,8 +180,12 @@ const ROOM_TEMPLATES = {
     baseImage: './images/bazaar_ganja_25d',
     camPos: [0, 1.74, 13.0],
     lookAt: [0, 3.85, -12.0],
-    zRange: [-8.6, 6.6],
-    xBounds: [-3.4, 3.4, 0.9, 0.9],
+    zRange: [-8.2, 6.4],
+    xBounds: [-2.85, 2.85, 0.8, 0.8],
+    blockedZones: [
+      { x: -2.65, z: -0.6, rx: 0.85, rz: 0.95, label: 'Sol Çinar Ağacı' },
+      { x: 2.65, z: -0.6, rx: 0.85, rz: 0.95, label: 'Sağ Çinar Ağacı' },
+    ],
     sunColor: 0xffd596,
     sunPos: [-11, 15, 6],
     sunBaseIntensity: 2.4,
@@ -166,8 +206,12 @@ const ROOM_TEMPLATES = {
     baseImage: './images/bazaar_shusha_25d',
     camPos: [0, 1.6, 12.4],
     lookAt: [0, 4.45, -12.0],
-    zRange: [-8.2, 6.4],
-    xBounds: [-3.3, 3.3, 0.9, 0.9],
+    zRange: [-7.8, 6.2],
+    xBounds: [-2.9, 2.75, 0.85, 0.85],
+    blockedZones: [
+      { x: 2.95, z: 3.2, rx: 1.05, rz: 2.1, label: 'Sağ Misgərlik Piştaxtası' },
+      { x: -3.2, z: 3.4, rx: 0.9, rz: 2.4, label: 'Sol Xalça Məhəccəri' },
+    ],
     sunColor: 0xfad8ae,
     sunPos: [8, 15, 4],
     sunBaseIntensity: 2.25,
@@ -188,8 +232,12 @@ const ROOM_TEMPLATES = {
     baseImage: './images/bazaar_lankaran_25d',
     camPos: [0, 1.68, 12.8],
     lookAt: [0, 4.05, -12.0],
-    zRange: [-8.2, 6.4],
-    xBounds: [-3.2, 3.2, 0.85, 0.85],
+    zRange: [-7.8, 6.2],
+    xBounds: [-2.75, 2.75, 0.8, 0.8],
+    blockedZones: [
+      { x: -2.85, z: 3.8, rx: 1.15, rz: 2.0, label: 'Sol Nar Səbətləri' },
+      { x: 2.95, z: 3.8, rx: 1.1, rz: 1.9, label: 'Sağ Samovarlar' },
+    ],
     sunColor: 0xffd088,
     sunPos: [6, 15, 2],
     sunBaseIntensity: 2.35,
@@ -210,8 +258,12 @@ const ROOM_TEMPLATES = {
     baseImage: './images/bazaar_baku_carpet_25d',
     camPos: [0, 1.56, 12.2],
     lookAt: [0, 4.72, -12.0],
-    zRange: [-7.2, 5.8],
-    xBounds: [-2.35, 2.35, 0.75, 0.75],
+    zRange: [-7.0, 5.6],
+    xBounds: [-1.95, 1.95, 0.55, 0.55],
+    blockedZones: [
+      { x: -2.35, z: 3.2, rx: 0.9, rz: 2.2, label: 'Sol Xalça Piştaxtası' },
+      { x: 2.35, z: 3.2, rx: 0.9, rz: 2.2, label: 'Sağ Mis və Ədviyyat Masası' },
+    ],
     sunColor: 0xffd692,
     sunPos: [5.5, 14.0, 2.0],
     sunBaseIntensity: 2.35,
@@ -232,8 +284,13 @@ const ROOM_TEMPLATES = {
     baseImage: './images/bazaar_baku_palace_25d',
     camPos: [0, 1.72, 13.0],
     lookAt: [0, 3.8, -12.0],
-    zRange: [-4.8, 6.2],
-    xBounds: [-3.2, 3.2, 0.45, 0.45],
+    zRange: [-4.2, 6.0],
+    xBounds: [-2.85, 2.85, 0.45, 0.45],
+    blockedZones: [
+      { x: 0.0, z: -5.2, rx: 2.2, rz: 1.2, label: 'Taxt Kürsüsü' },
+      { x: -3.2, z: 1.4, rx: 0.7, rz: 2.0, label: 'Sol Şamdanlar' },
+      { x: 3.2, z: 1.4, rx: 0.7, rz: 2.0, label: 'Sağ Şamdanlar' },
+    ],
     sunColor: 0xffdc9a,
     sunPos: [3.0, 16.0, 1.0],
     sunBaseIntensity: 2.25,
@@ -254,8 +311,13 @@ const ROOM_TEMPLATES = {
     baseImage: './images/room_baku_harbor_25d',
     camPos: [0, 1.62, 12.6],
     lookAt: [0, 4.3, -12.0],
-    zRange: [-8.0, 6.0],
-    xBounds: [-2.3, 1.45, 0.5, 0.4],
+    zRange: [-7.6, 5.8],
+    // Sağ tərəf Xəzər dənizi suyudur — yalnız daş liman körpüsü boyunca gəzmə!
+    xBounds: [-2.05, 0.95, 0.45, 0.35],
+    blockedZones: [
+      { x: -2.4, z: 3.8, rx: 1.0, rz: 2.2, label: 'Liman Sandıqları və Tuluqlar' },
+      { x: 1.85, z: 0.0, rx: 1.0, rz: 8.5, label: 'Xəzər Suyu (Kənar)' },
+    ],
     sunColor: 0xffcc84,
     sunPos: [10, 12, -8],
     sunBaseIntensity: 2.3,
@@ -276,8 +338,12 @@ const ROOM_TEMPLATES = {
     baseImage: './images/room_fortress_rampart_25d',
     camPos: [0, 1.62, 12.6],
     lookAt: [0, 4.35, -12.0],
-    zRange: [-7.8, 6.0],
-    xBounds: [-2.2, 1.45, 0.6, 0.5],
+    zRange: [-7.2, 5.8],
+    // Sağ tərəf uçurum məhəccəridir, sol tərəf qala divarıdır
+    xBounds: [-1.85, 0.85, 0.5, 0.45],
+    blockedZones: [
+      { x: 1.75, z: 0.0, rx: 0.95, rz: 8.0, label: 'Qala Uçurum Məhəccəri' },
+    ],
     sunColor: 0xffc888,
     sunPos: [12, 13, -6],
     sunBaseIntensity: 2.25,
@@ -298,8 +364,12 @@ const ROOM_TEMPLATES = {
     baseImage: './images/bazaar_quba_25d',
     camPos: [0, 1.66, 12.6],
     lookAt: [0, 4.15, -12.0],
-    zRange: [-8.2, 6.4],
-    xBounds: [-3.3, 3.3, 0.8, 0.8],
+    zRange: [-7.8, 6.2],
+    xBounds: [-2.9, 2.9, 0.75, 0.75],
+    blockedZones: [
+      { x: -3.15, z: 3.5, rx: 1.05, rz: 2.3, label: 'Sol Alma Səbətləri' },
+      { x: 3.15, z: 3.5, rx: 1.05, rz: 2.3, label: 'Sağ Yun və Alma Səbətləri' },
+    ],
     sunColor: 0xffe6b6,
     sunPos: [-12, 16, 6],
     sunBaseIntensity: 2.45,
@@ -320,8 +390,13 @@ const ROOM_TEMPLATES = {
     baseImage: './images/bazaar_nakhchivan_25d',
     camPos: [0, 1.74, 13.0],
     lookAt: [0, 3.85, -12.0],
-    zRange: [-7.4, 6.4],
-    xBounds: [-3.2, 3.2, 0.8, 0.8],
+    zRange: [-6.6, 6.2],
+    xBounds: [-2.95, 2.95, 0.75, 0.75],
+    blockedZones: [
+      { x: 0.0, z: -7.2, rx: 1.8, rz: 1.4, label: 'Türbə Bünövrəsi' },
+      { x: -3.1, z: 4.1, rx: 1.1, rz: 1.8, label: 'Sol Duz Kisələri' },
+      { x: 3.1, z: 4.2, rx: 1.05, rz: 1.6, label: 'Sağ Zəfəran Qabları' },
+    ],
     sunColor: 0xffb874,
     sunPos: [-10, 13, -4],
     sunBaseIntensity: 2.35,
@@ -340,79 +415,124 @@ const ROOM_TEMPLATES = {
   },
 };
 
-const CITY_FIVE_ROOMS = {
+// HƏR 6 ŞƏHƏR + 4 XÜSUSİ MİSSİYA YERİ ÜÇÜN ÖZƏL, TƏKRARLANMAYAN TARİXİ MƏKAN ADLARI!
+const LOCATION_ROOMS = {
   City_Baku: {
-    palaceTitle: 'Şirvanşahlar Divan Qəbulu',
-    gateLabel: 'Qız Qalası Darvazası · Qədim Xəritəyə Çıx',
+    isMission: false,
+    palaceTitle: 'Şirvanşahlar Divanxanası Qəbulu',
+    gateLabel: 'Qoşa Qala Qapısı · Qədim Xəritəyə Çıx',
     rooms: [
-      { id: 'courtyard', shortTitle: 'Həyət', title: 'İçərişəhər Karvansaray Həyəti', template: 'baku_courtyard', tint: [1.05, 1.02, 0.96] },
-      { id: 'carpet_gallery', shortTitle: 'Pasaj', title: 'Bakı Xalça & Neft Pasajı', template: 'covered_arcade', tint: [1.06, 1.02, 0.94] },
-      { id: 'palace_hall', shortTitle: 'Divan', title: 'Şirvanşahlar Divan Zalı', template: 'divan_palace', tint: [1.05, 1.01, 0.94] },
-      { id: 'harbor', shortTitle: 'Liman', title: 'Xəzər Limanı & Dəniz Darvazası', template: 'caspian_harbor', tint: [1.04, 1.02, 0.97] },
-      { id: 'rampart', shortTitle: 'Bürc', title: 'Qız Qalası Müdafiə Bürcləri', template: 'fortress_rampart', tint: [1.06, 1.01, 0.94] },
+      { id: 'courtyard', shortTitle: 'İçərişəhər', title: 'Multani Karvansarayı Həyəti', template: 'baku_courtyard', tint: [1.05, 1.02, 0.96], role: 'courtyard' },
+      { id: 'bukhara_market', shortTitle: 'Buxara', title: 'Buxara Örtülü Xalça Bazarı', template: 'covered_arcade', tint: [1.06, 1.02, 0.94], role: 'market' },
+      { id: 'palace_hall', shortTitle: 'Şirvanşahlar', title: 'Şirvanşahlar Divanxanası', template: 'divan_palace', tint: [1.05, 1.01, 0.94], role: 'palace' },
+      { id: 'caspian_port', shortTitle: 'Xəzər Limanı', title: 'Bakı Dəniz Limanı & Fənər', template: 'caspian_harbor', tint: [1.04, 1.02, 0.97], role: 'explore' },
+      { id: 'maiden_tower', shortTitle: 'Qız Qalası', title: 'Qız Qalası Müdafiə Bürcləri', template: 'fortress_rampart', tint: [1.06, 1.01, 0.94], role: 'explore' },
+      { id: 'ateshgah_road', shortTitle: 'Atəşgah Yolu', title: 'Abşeron Neft & Duz Yolu', template: 'mausoleum_square', tint: [1.05, 0.98, 0.92], role: 'explore' },
     ],
   },
   City_Shamakhi: {
-    palaceTitle: 'Şamaxı Şirvan Divan Qəbulu',
+    isMission: false,
+    palaceTitle: 'Şamaxı Şirvanşah Divanı Qəbulu',
     gateLabel: 'Şirvan Karvan Qapısı · Qədim Xəritəyə Çıx',
     rooms: [
-      { id: 'courtyard', shortTitle: 'Həyət', title: 'Firuzəyi Karvansaray', template: 'shamakhi_courtyard', tint: [1.0, 1.02, 1.04] },
-      { id: 'carpet_gallery', shortTitle: 'Pasaj', title: 'Şirvan İpək & Firuzə Pasajı', template: 'covered_arcade', tint: [0.91, 1.04, 1.1] },
-      { id: 'palace_hall', shortTitle: 'Divan', title: 'Şamaxı Şirvanşah Divanı', template: 'divan_palace', tint: [0.91, 1.03, 1.1] },
-      { id: 'mausoleum', shortTitle: 'Türbə', title: 'Yeddi Günbəz & Rəsədxana Yolu', template: 'mausoleum_square', tint: [0.96, 1.01, 1.05] },
-      { id: 'rampart', shortTitle: 'Gülüstan', title: 'Gülüstan Qalası Bürcləri', template: 'fortress_rampart', tint: [0.94, 1.01, 1.08] },
+      { id: 'courtyard', shortTitle: 'Şirvan Həyəti', title: 'Firuzəyi Günbəzli Karvansaray', template: 'shamakhi_courtyard', tint: [1.0, 1.02, 1.04], role: 'courtyard' },
+      { id: 'juma_bazaar', shortTitle: 'Cümə Bazarı', title: 'Şamaxı İpək & Venesiya Rəstəsi', template: 'covered_arcade', tint: [0.91, 1.04, 1.1], role: 'market' },
+      { id: 'palace_hall', shortTitle: 'Şirvan Divanı', title: 'Şamaxı Hökmdar Divanxanası', template: 'divan_palace', tint: [0.91, 1.03, 1.1], role: 'palace' },
+      { id: 'yeddi_gunbez', shortTitle: 'Yeddi Günbəz', title: 'Yeddi Günbəz Türbə Meydanı', template: 'mausoleum_square', tint: [0.96, 1.01, 1.05], role: 'explore' },
+      { id: 'gulustan_fort', shortTitle: 'Gülüstan Qalası', title: 'Gülüstan Qalası Bürcləri', template: 'fortress_rampart', tint: [0.94, 1.01, 1.08], role: 'explore' },
     ],
   },
   City_Sheki: {
+    isMission: false,
     palaceTitle: 'Şəki Xan Sarayı Qəbulu',
     gateLabel: 'Karvansaray Darvazası · Qədim Xəritəyə Çıx',
     rooms: [
-      { id: 'courtyard', shortTitle: 'Həyət', title: 'Yuxarı Karvansaray (Şəbəkə)', template: 'sheki_courtyard', tint: [1.0, 1.03, 0.99] },
-      { id: 'carpet_gallery', shortTitle: 'İpək', title: 'Şəki İpək & Halva Pasajı', template: 'covered_arcade', tint: [0.95, 1.07, 0.98] },
-      { id: 'palace_hall', shortTitle: 'Divan', title: 'Şəki Xan Sarayı · Şəbəkə Zalı', template: 'divan_palace', tint: [0.95, 1.07, 1.0] },
-      { id: 'mountain_pass', shortTitle: 'Yaylaq', title: 'Qafqaz Dağ Aşırımı Bazarı', template: 'mountain_pass_bazaar', tint: [1.0, 1.02, 0.99] },
-      { id: 'rampart', shortTitle: 'Qala', title: 'Gələrsən-Görərsən Bürcləri', template: 'fortress_rampart', tint: [0.94, 1.04, 0.99] },
+      { id: 'courtyard', shortTitle: 'Yuxarı Karvansaray', title: 'Şəki Yuxarı Karvansarayı', template: 'sheki_courtyard', tint: [1.0, 1.03, 0.99], role: 'courtyard' },
+      { id: 'silk_row', shortTitle: 'İpək Rəstəsi', title: 'Şəki İpək & Halva Çarşısı', template: 'covered_arcade', tint: [0.95, 1.07, 0.98], role: 'market' },
+      { id: 'palace_hall', shortTitle: 'Xan Sarayı', title: 'Şəki Xan Sarayı · Şəbəkə Zalı', template: 'divan_palace', tint: [0.95, 1.07, 1.0], role: 'palace' },
+      { id: 'kish_pass', shortTitle: 'Kiş Aşırımı', title: 'Kiş Kəndi & Dağ Bazarı', template: 'mountain_pass_bazaar', tint: [1.0, 1.02, 0.99], role: 'explore' },
+      { id: 'gelersen_fort', shortTitle: 'Gələrsən-Görərsən', title: 'Gələrsən-Görərsən Qalası', template: 'fortress_rampart', tint: [0.94, 1.04, 0.99], role: 'explore' },
     ],
   },
   City_Ganja: {
-    palaceTitle: 'Gəncə Bəylərbəyi Qəbulu',
-    gateLabel: 'Gəncə Qapısı · Qədim Xəritəyə Çıx',
+    isMission: false,
+    palaceTitle: 'Cavad Xan Divanı Qəbulu',
+    gateLabel: 'Gəncə Qala Qapısı · Qədim Xəritəyə Çıx',
     rooms: [
-      { id: 'courtyard', shortTitle: 'Həyət', title: 'Şah Abbas Karvansarayı', template: 'ganja_courtyard', tint: [1.03, 0.99, 0.96] },
-      { id: 'carpet_gallery', shortTitle: 'Pasaj', title: 'Gəncə Saxsı & Sənətkar Pasajı', template: 'covered_arcade', tint: [1.1, 0.94, 0.87] },
-      { id: 'palace_hall', shortTitle: 'Divan', title: 'Gəncə Bəylərbəyi Zalı', template: 'divan_palace', tint: [1.09, 0.95, 0.88] },
-      { id: 'mausoleum', shortTitle: 'Nizami', title: 'Nizami Türbə & Mədrəsə Meydanı', template: 'mausoleum_square', tint: [1.05, 0.98, 0.93] },
-      { id: 'rampart', shortTitle: 'Bürc', title: 'Gəncə Qırmızı Kərpic Bürcləri', template: 'fortress_rampart', tint: [1.08, 0.95, 0.88] },
+      { id: 'courtyard', shortTitle: 'Şah Abbas', title: 'Gəncə Şah Abbas Karvansarayı', template: 'ganja_courtyard', tint: [1.03, 0.99, 0.96], role: 'courtyard' },
+      { id: 'chokek_market', shortTitle: 'Çökək Rəstə', title: 'Gəncə Misgər & Saxsı Çarşısı', template: 'covered_arcade', tint: [1.1, 0.94, 0.87], role: 'market' },
+      { id: 'palace_hall', shortTitle: 'Cavad Xan', title: 'Gəncə Xanlığı Divanxanası', template: 'divan_palace', tint: [1.09, 0.95, 0.88], role: 'palace' },
+      { id: 'nizami_square', shortTitle: 'Nizami Məqbərəsi', title: 'Nizami Gəncəvi Türbə Meydanı', template: 'mausoleum_square', tint: [1.05, 0.98, 0.93], role: 'explore' },
+      { id: 'ganja_walls', shortTitle: 'Gəncə Qalası', title: 'Qədim Gəncə Qala Divarları', template: 'fortress_rampart', tint: [1.08, 0.95, 0.88], role: 'explore' },
     ],
   },
   City_Shusha: {
-    palaceTitle: 'Qarabağ Xanı Qəbulu',
+    isMission: false,
+    palaceTitle: 'Pənahəli Xan Sarayı Qəbulu',
     gateLabel: 'Gəncə Qapısı · Qədim Xəritəyə Çıx',
     rooms: [
-      { id: 'courtyard', shortTitle: 'Meydan', title: 'Şuşa Qala Meydanı', template: 'shusha_courtyard', tint: [0.98, 0.99, 1.04] },
-      { id: 'carpet_gallery', shortTitle: 'Xalça', title: 'Qarabağ Xalça & Muğam Pasajı', template: 'covered_arcade', tint: [0.95, 0.95, 1.09] },
-      { id: 'palace_hall', shortTitle: 'Divan', title: 'Pənahəli Xan Divan Zalı', template: 'divan_palace', tint: [0.95, 0.94, 1.09] },
-      { id: 'rampart', shortTitle: 'Cıdır', title: 'Cıdır Düzü Qala Bürcləri', template: 'fortress_rampart', tint: [0.97, 0.98, 1.06] },
-      { id: 'mountain_pass', shortTitle: 'Yaylaq', title: 'Qarabağ Dağ Bazarı', template: 'mountain_pass_bazaar', tint: [0.96, 0.98, 1.05] },
+      { id: 'courtyard', shortTitle: 'Şuşa Qalası', title: 'Yuxarı Gövhər Ağa Meydanı', template: 'shusha_courtyard', tint: [0.98, 0.99, 1.04], role: 'courtyard' },
+      { id: 'rasta_bazaar', shortTitle: 'Rasta Bazar', title: 'Şuşa Rasta Xalça Bazarı', template: 'covered_arcade', tint: [0.95, 0.95, 1.09], role: 'market' },
+      { id: 'palace_hall', shortTitle: 'Pənahəli Xan', title: 'Qarabağ Xanı Divanxanası', template: 'divan_palace', tint: [0.95, 0.94, 1.09], role: 'palace' },
+      { id: 'cidir_duzu', shortTitle: 'Cıdır Düzü', title: 'Cıdır Düzü Qala Bürcləri', template: 'fortress_rampart', tint: [0.97, 0.98, 1.06], role: 'explore' },
+      { id: 'isa_bulagi', shortTitle: 'İsa Bulağı', title: 'İsa Bulağı Dağ Yaylaq Bazarı', template: 'mountain_pass_bazaar', tint: [0.96, 0.98, 1.05], role: 'explore' },
     ],
   },
   City_Lankaran: {
-    palaceTitle: 'Talış Xanı Divan Qəbulu',
+    isMission: false,
+    palaceTitle: 'Mirəhməd Xan Divan Qəbulu',
     gateLabel: 'Cənub Karvan Qapısı · Qədim Xəritəyə Çıx',
     rooms: [
-      { id: 'courtyard', shortTitle: 'Qala', title: 'Dairəvi Qala & Nar Meydanı', template: 'lankaran_courtyard', tint: [1.03, 1.01, 0.95] },
-      { id: 'carpet_gallery', shortTitle: 'Pasaj', title: 'Lənkəran Çay & Ədviyyat Pasajı', template: 'covered_arcade', tint: [1.06, 1.03, 0.88] },
-      { id: 'palace_hall', shortTitle: 'Divan', title: 'Talış Xanı Divan Zalı', template: 'divan_palace', tint: [1.05, 1.02, 0.89] },
-      { id: 'harbor', shortTitle: 'Liman', title: 'Cənub Xəzər Sahil Limanı', template: 'caspian_harbor', tint: [0.96, 1.04, 0.96] },
-      { id: 'rampart', shortTitle: 'Bürc', title: 'Talış Dağ Sərhəd Bürcləri', template: 'fortress_rampart', tint: [1.0, 1.03, 0.93] },
+      { id: 'courtyard', shortTitle: 'Dairəvi Qala', title: 'Lənkəran Dairəvi Qala Meydanı', template: 'lankaran_courtyard', tint: [1.03, 1.01, 0.95], role: 'courtyard' },
+      { id: 'lankaran_caravanserai', shortTitle: 'Lənkəran Karvansarayı', title: 'Talış Ədviyyat & Çay Karvansarayı', template: 'covered_arcade', tint: [1.06, 1.03, 0.88], role: 'market' },
+      { id: 'palace_hall', shortTitle: 'Mirəhməd Xan', title: 'Talış Xanlığı Divan Zalı', template: 'divan_palace', tint: [1.05, 1.02, 0.89], role: 'palace' },
+      { id: 'south_port', shortTitle: 'Sahil Limanı', title: 'Lənkəran Xəzər Sahil Limanı', template: 'caspian_harbor', tint: [0.96, 1.04, 0.96], role: 'explore' },
+      { id: 'hirkan_fort', shortTitle: 'Hirkan Qalası', title: 'Hirkan Dağ Sərhəd Qalası', template: 'fortress_rampart', tint: [1.0, 1.03, 0.93], role: 'explore' },
+    ],
+  },
+  // 4 XÜSUSİ MİSSİYA MƏKANI (Hərəsində 2 özəl 2.5D səhnə — Xəritədəki 2 Körpü və 2 Tarla!)
+  Mission_Bridge_North: {
+    isMission: true,
+    missionPrompt: 'Şimal Körpüsü Quldurları ilə Üzləş',
+    gateLabel: 'Körpüdən Qədim Xəritəyə Qayıt',
+    rooms: [
+      { id: 'courtyard', shortTitle: 'Körpü Keçidi', title: 'Şimal Daş Körpüsü · Quldur Pusqusu', template: 'fortress_rampart', tint: [1.02, 0.94, 0.92], role: 'mission' },
+      { id: 'bandit_camp', shortTitle: 'Quldur Düşərgəsi', title: 'Körpü Altı Gizli Düşərgə', template: 'covered_arcade', tint: [0.96, 0.9, 0.88], role: 'mission' },
+    ],
+  },
+  Mission_Bridge_South: {
+    isMission: true,
+    missionPrompt: 'Cənub Körpüsü Qaçaqçıları ilə Danış',
+    gateLabel: 'Cənub Körpüsündən Xəritəyə Qayıt',
+    rooms: [
+      { id: 'courtyard', shortTitle: 'Cənub Körpüsü', title: 'Cənub Daş Körpüsü · Gecə Rüsumu', template: 'caspian_harbor', tint: [0.94, 0.98, 1.04], role: 'mission' },
+      { id: 'smuggler_vault', shortTitle: 'Qaçaq Anbarı', title: 'Sahil Gizli Anbarı', template: 'covered_arcade', tint: [0.92, 0.98, 1.04], role: 'mission' },
+    ],
+  },
+  Mission_Field_North: {
+    isMission: true,
+    missionPrompt: 'Dağ Bağbanı ilə Məhsul Missiyası',
+    gateLabel: 'Tarladan Qədim Xəritəyə Qayıt',
+    rooms: [
+      { id: 'courtyard', shortTitle: 'Alma Yamacı', title: 'Şimal Dağ Yamacı & Meyvə Bağı', template: 'mountain_pass_bazaar', tint: [1.0, 1.04, 0.96], role: 'mission' },
+      { id: 'farmer_yard', shortTitle: 'Bağban Həyəti', title: 'Dağ Kəndi Karvan Dayanacağı', template: 'sheki_courtyard', tint: [1.0, 1.03, 0.96], role: 'mission' },
+    ],
+  },
+  Mission_Field_South: {
+    isMission: true,
+    missionPrompt: 'Nar Zəmiləri Sahibi ilə Görüş',
+    gateLabel: 'Zəmilərdən Qədim Xəritəyə Qayıt',
+    rooms: [
+      { id: 'courtyard', shortTitle: 'Nar Zəmiləri', title: 'Cənub Nar & Zəfəran Bağları', template: 'lankaran_courtyard', tint: [1.04, 1.0, 0.93], role: 'mission' },
+      { id: 'valley_road', shortTitle: 'Kənd Karvan Yolu', title: 'Düzənlik Məhsul Toplanışı', template: 'mausoleum_square', tint: [1.03, 1.0, 0.94], role: 'mission' },
     ],
   },
 };
 
-function buildCityAngleMap(cityId) {
+function buildLocationAngleMap(locationId) {
   const aliases = { City_Quba: 'City_Shamakhi', City_Nakhchivan: 'City_Lankaran' };
-  const resolvedId = aliases[cityId] || cityId;
-  const spec = CITY_FIVE_ROOMS[resolvedId] || CITY_FIVE_ROOMS.City_Baku;
+  const resolvedId = aliases[locationId] || locationId;
+  const spec = LOCATION_ROOMS[resolvedId] || LOCATION_ROOMS.City_Baku;
   const culture = CITY_CULTURE_STYLES[resolvedId] || CITY_CULTURE_STYLES.City_Baku;
 
   const angleMap = {};
@@ -425,65 +545,74 @@ function buildCityAngleMap(cityId) {
     const zSpan = Math.max(1, zMax - zMin);
 
     const nextRoom = spec.rooms[(idx + 1) % spec.rooms.length];
-    const portals =
-      rm.id === 'courtyard'
-        ? [
-            {
-              id: 'portal_to_arcade',
-              label: `${spec.rooms[1].title} · Keçid`,
-              targetAngle: spec.rooms[1].id,
-              pos: [xMin0 + 0.35, 0, -2.0],
-              triggerRadius: 1.35,
-              ringColor: 0xe6be68,
-            },
-            {
-              id: 'portal_to_palace',
-              label: `${spec.rooms[2].title} · Keçid`,
-              targetAngle: spec.rooms[2].id,
-              pos: [xMin0 + 1.0, 0, -5.8],
-              triggerRadius: 1.4,
-              ringColor: 0xd46a54,
-            },
-            {
-              id: 'portal_to_special4',
-              label: `${spec.rooms[3].title} · Keçid`,
-              targetAngle: spec.rooms[3].id,
-              pos: [xMax0 - 0.5, 0, -2.2],
-              triggerRadius: 1.35,
-              ringColor: 0x6cb8cf,
-            },
-          ]
-        : [
-            {
-              id: 'portal_return_courtyard',
-              label: `${spec.rooms[0].title} · Qayıt`,
-              targetAngle: 'courtyard',
-              pos: [0.0, 0, zMin + 0.65],
-              triggerRadius: 1.45,
-              ringColor: 0xf4cf76,
-            },
-            {
-              id: 'portal_next_room',
-              label: `${nextRoom.title} · Keçid`,
-              targetAngle: nextRoom.id,
-              pos: [xMax0 - 0.12, 0, 0.2],
-              triggerRadius: 0.9,
-              ringColor: 0x82be74,
-            },
-          ];
+    let portals = [];
+    if (rm.id === 'courtyard') {
+      if (spec.rooms.length >= 2) {
+        portals.push({
+          id: 'portal_to_r1',
+          label: `${spec.rooms[1].title} · Keçid`,
+          targetAngle: spec.rooms[1].id,
+          pos: [xMin0 + 0.35, 0, -1.8],
+          triggerRadius: 1.25,
+          ringColor: 0xe6be68,
+        });
+      }
+      if (spec.rooms.length >= 3) {
+        portals.push({
+          id: 'portal_to_r2',
+          label: `${spec.rooms[2].title} · Keçid`,
+          targetAngle: spec.rooms[2].id,
+          pos: [xMin0 + 0.9, 0, -5.4],
+          triggerRadius: 1.3,
+          ringColor: 0xd46a54,
+        });
+      }
+      if (spec.rooms.length >= 4) {
+        portals.push({
+          id: 'portal_to_r3',
+          label: `${spec.rooms[3].title} · Keçid`,
+          targetAngle: spec.rooms[3].id,
+          pos: [xMax0 - 0.35, 0, -2.0],
+          triggerRadius: 1.25,
+          ringColor: 0x6cb8cf,
+        });
+      }
+    } else {
+      portals = [
+        {
+          id: 'portal_return_courtyard',
+          label: `${spec.rooms[0].title} · Qayıt`,
+          targetAngle: 'courtyard',
+          pos: [0.0, 0, zMin + 0.65],
+          triggerRadius: 1.35,
+          ringColor: 0xf4cf76,
+        },
+        {
+          id: 'portal_next_room',
+          label: `${nextRoom.title} · Keçid`,
+          targetAngle: nextRoom.id,
+          pos: [xMax0 - 0.1, 0, 0.2],
+          triggerRadius: 0.85,
+          ringColor: 0x82be74,
+        },
+      ];
+    }
 
     angleMap[rm.id] = {
       id: rm.id,
       shortTitle: rm.shortTitle,
       title: rm.title,
+      role: rm.role,
       baseImage: tpl.baseImage,
       camPos: tpl.camPos,
       lookAt: tpl.lookAt,
       fov: 43,
       baseZoom: 1.07,
-      spawnPos: [0.0, 0, Math.min(4.4, zMax - 1.6)],
+      spawnPos: [0.0, 0, Math.min(4.2, zMax - 1.5)],
       spawnYaw: Math.PI,
       zRange: tpl.zRange,
+      xBoundsRaw: tpl.xBounds,
+      blockedZones: tpl.blockedZones || [],
       xBoundsFn: (z) => {
         const tBack = (zMax - z) / zSpan;
         return [xMin0 + tBack * xMinBack, xMax0 - tBack * xMaxBack];
@@ -503,7 +632,7 @@ function buildCityAngleMap(cityId) {
       useDynamicSunZone: Boolean(tpl.useDynamicSunZone),
       isInterior: Boolean(tpl.isInterior),
       tint: new THREE.Color(...rm.tint),
-      playerScaleHeight: rm.id === 'carpet_gallery' ? 1.78 : 1.84,
+      playerScaleHeight: rm.template === 'covered_arcade' ? 1.78 : 1.84,
       portals,
     };
 
@@ -521,7 +650,7 @@ const BACKDROP_VERT = /* glsl */ `
   }
 `;
 
-// Düzgün sRGB çıxışı (`#include <colorspace_fragment>`) + 10-addımlı POM + Mədəni İşıqlandırma
+// Səhər (aydın sRGB gün işığı) ↔ Gecə (dərin qaranlıq qamma + parlaq yanan fənərlər) + 10-addımlı POM!
 const BACKDROP_FRAG = /* glsl */ `
   precision highp float;
 
@@ -540,6 +669,7 @@ const BACKDROP_FRAG = /* glsl */ `
   uniform vec3 uCityTint;
   uniform vec3 uGlowTint;
   uniform float uExposure;
+  uniform float uNightMix;
   uniform vec2 uLanternA;
   uniform vec2 uLanternB;
   uniform float uFade;
@@ -560,7 +690,6 @@ const BACKDROP_FRAG = /* glsl */ `
   void main() {
     vec2 baseUv = computeCoverUv(vUv);
 
-    // 10-addımlı 3D Parallax Occlusion Mapping + irəli-geri Dolly genişlənməsi
     vec2 pUv = baseUv;
     float depth = 0.0;
     vec2 radial = (baseUv - 0.5);
@@ -574,42 +703,48 @@ const BACKDROP_FRAG = /* glsl */ `
     }
 
     pUv = clamp(pUv, 0.002, 0.998);
-    // WebGL SRGBColorSpace -> linear rəng nümunəsi
     vec3 color = texture2D(uColorMap, pUv).rgb * uCityTint;
     vec3 normalTex = texture2D(uNormalMap, pUv).rgb * 2.0 - 1.0;
     vec3 N = normalize(vec3(normalTex.x * 1.22, normalTex.y * 1.22, max(0.26, normalTex.z)));
     float glow = texture2D(uGlowMap, pUv).r;
 
+    // Gecə modunda dərin mistik qaranlıq (qamma-öncəsi atmosfer + ay işığı çaları)
+    vec3 nightGrade = pow(max(color, vec3(0.0001)), vec3(2.15, 2.10, 1.90)) * vec3(0.28, 0.32, 0.44);
+    vec3 gradedBase = mix(color, nightGrade, uNightMix);
+
     float flickerA = 0.88 + 0.12 * sin(uTime * 5.1 + pUv.x * 19.0) * cos(uTime * 3.0 + pUv.y * 11.0);
     float flickerB = 0.91 + 0.09 * sin(uTime * 7.4 + pUv.x * 31.0);
-    vec3 lanternBloom = uGlowTint * glow * (0.42 * flickerA);
+    // Gecə vaxtı bütün fənərlər və alovlar kəskin parlayır
+    float nightGlowBoost = mix(0.42, 1.32, uNightMix);
+    vec3 lanternBloom = uGlowTint * glow * (nightGlowBoost * flickerA);
 
     vec3 lDir1 = normalize(vec3(uLanternA - pUv, 0.20));
     float dist1 = length((uLanternA - pUv) * vec2(1.4, 1.0));
-    float att1 = exp(-dist1 * 3.8) * flickerA;
+    float att1 = exp(-dist1 * 3.6) * flickerA;
     float diff1 = max(dot(N, lDir1), 0.0);
 
     vec3 lDir2 = normalize(vec3(uLanternB - pUv, 0.20));
     float dist2 = length((uLanternB - pUv) * vec2(1.4, 1.0));
-    float att2 = exp(-dist2 * 3.8) * flickerB;
+    float att2 = exp(-dist2 * 3.6) * flickerB;
     float diff2 = max(dot(N, lDir2), 0.0);
 
+    // Tacirin əl fənəri gecə vaxtı ətraf daşları daha güclü işıqlandırır
     vec2 playerLight = uPlayerUV + vec2(0.0, 0.05);
-    vec3 lDirP = normalize(vec3(playerLight - pUv, 0.22));
-    float distP = length((playerLight - pUv) * vec2(1.4, 1.7));
-    float attP = exp(-distP * 5.0) * (0.35 + 0.55 * uPlayerDepth) * (0.94 + 0.06 * sin(uTime * 4.2));
+    vec3 lDirP = normalize(vec3(playerLight - pUv, 0.20));
+    float distP = length((playerLight - pUv) * vec2(1.35, 1.65));
+    float attP = exp(-distP * mix(5.0, 3.7, uNightMix)) * (0.38 + 0.55 * uPlayerDepth) * (0.94 + 0.06 * sin(uTime * 4.2));
     float diffP = max(dot(N, lDirP), 0.0);
 
+    float dynMul = mix(0.22, 0.55, uNightMix);
     vec3 dynamicLight =
-      uGlowTint * (diff1 * att1 * 0.22 + diff2 * att2 * 0.22 + diffP * attP * 0.24);
+      uGlowTint * (diff1 * att1 * dynMul + diff2 * att2 * dynMul + diffP * attP * (dynMul * 1.15));
 
-    vec3 finalCol = (color + lanternBloom + dynamicLight * color) * uExposure;
-    // Yumşaq kinematik highlight qorunması (qaranlıq kölgələri əzmədən parlaq işığı qoruyur)
+    float expNow = mix(uExposure, uExposure * 0.84, uNightMix);
+    vec3 finalCol = (gradedBase + lanternBloom + dynamicLight * (gradedBase + vec3(0.14 * uNightMix))) * expNow;
     finalCol = finalCol / (vec3(1.0) + finalCol * 0.26);
 
-    // Zərif, açıq vinyetka (kənarları qaranlıq boğmur)
-    float vig = smoothstep(1.05, 0.32, length((vUv - 0.5) * vec2(1.06, 1.02)));
-    finalCol *= mix(0.86, 1.04, vig);
+    float vig = smoothstep(1.05, 0.30, length((vUv - 0.5) * vec2(1.08, 1.03)));
+    finalCol *= mix(mix(0.86, 0.62, uNightMix), 1.04, vig);
     finalCol *= clamp(uFade, 0.0, 1.0);
 
     gl_FragColor = vec4(finalCol, 1.0);
@@ -624,9 +759,10 @@ export class CinematicBazaar25DScene {
     this.data = data;
     this.gameManager = gameManager;
     this.cityId = cityId;
-    this.city = data.getCityById(cityId) || data.cities[0];
+    this.isMissionScene = String(cityId).startsWith('Mission_');
+    this.city = !this.isMissionScene ? data.getCityById(cityId) || data.cities[0] : data.cities[0];
 
-    const built = buildCityAngleMap(cityId);
+    const built = buildLocationAngleMap(cityId);
     this.citySpec = built.spec;
     this.cultureStyle = built.culture;
     this.angleConfigs = built.angleMap;
@@ -647,6 +783,14 @@ export class CinematicBazaar25DScene {
     this.isTransitioning = false;
     this.portalCooldown = 1.6;
 
+    // Səhər ↔ Gecə keçidi (0 = Səhər, 1 = Gecə)
+    this.targetNightMix = 0.0;
+    this.currentNightMix = 0.0;
+
+    // Sərhəd & Hərəkət etməmə zolağı göstəricisi (B düyməsi ilə aç/bağla)
+    this.showWalkBoundsDebug = false;
+    this.debugBoundsGroup = null;
+
     this.backdropMesh = null;
     this.backdropUniforms = null;
     this.imageAspect = 16 / 9;
@@ -654,7 +798,7 @@ export class CinematicBazaar25DScene {
     this.player = {
       group: null,
       baseNormScale: 1.0,
-      pos: new THREE.Vector3(0.0, 0, 4.4),
+      pos: new THREE.Vector3(0.0, 0, 4.2),
       yaw: Math.PI,
       speed: 4.6,
       walkPhase: 0,
@@ -687,6 +831,7 @@ export class CinematicBazaar25DScene {
     this.hemiLight = null;
     this.sunLight = null;
     this.rimLight = null;
+    this.playerLanternLight = null;
     this.flickerLights = [];
     this.floorMesh = null;
     this.dustPoints = null;
@@ -708,8 +853,23 @@ export class CinematicBazaar25DScene {
     this._onContextMenu = (e) => e.preventDefault();
   }
 
+  getLocationLabel() {
+    return this.cultureStyle.label;
+  }
+
   getRoomList() {
     return this.roomList;
+  }
+
+  setTimeOfDay(mode, immediate = false) {
+    this.targetNightMix = mode === 'night' ? 1.0 : 0.0;
+    if (immediate) {
+      this.currentNightMix = this.targetNightMix;
+      if (this.backdropUniforms) {
+        this.backdropUniforms.uNightMix.value = this.currentNightMix;
+      }
+      this._applyTimeLighting();
+    }
   }
 
   getNearestInteractable() {
@@ -753,6 +913,16 @@ export class CinematicBazaar25DScene {
     if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(code)) {
       this.keys.add(code);
       this.player.targetPos = null;
+    } else if (code === 'KeyB' && !e.repeat && !this.gameManager?.ui?.isAnyModalOpen?.()) {
+      // Hər məkanın hərəkət sərhədini (yaşıl) və hərəkət etməmə zolaqlarını (qırmızı) göstər/gizlət
+      this.showWalkBoundsDebug = !this.showWalkBoundsDebug;
+      this._rebuildWalkBoundsDebug();
+      this.eventBus.emit('ui:toast', {
+        message: this.showWalkBoundsDebug
+          ? 'Sərhəd Göstəricisi AÇIQ (Yaşıl: Hərəkət sahəsi · Qırmızı: Qadağan zolaq).'
+          : 'Sərhəd Göstəricisi bağlandı.',
+        type: 'info',
+      });
     }
   }
 
@@ -781,11 +951,30 @@ export class CinematicBazaar25DScene {
     }
   }
 
+  /**
+   * Hər məkanın öz fərdi trapesiya sərhədi + HƏRƏKƏT ETMƏMƏ ZOLAQLARI (blockedZones) üzrə sürüşmə
+   */
   _clampWalkable(x, z) {
     const [zMin, zMax] = this.angleCfg.zRange;
-    const cz = Math.max(zMin, Math.min(zMax, z));
+    let cz = Math.max(zMin, Math.min(zMax, z));
     const [xMin, xMax] = this.angleCfg.xBoundsFn(cz);
-    const cx = Math.max(xMin, Math.min(xMax, x));
+    let cx = Math.max(xMin, Math.min(xMax, x));
+
+    for (const obs of this.angleCfg.blockedZones || []) {
+      const dx = (cx - obs.x) / Math.max(0.1, obs.rx);
+      const dz = (cz - obs.z) / Math.max(0.1, obs.rz);
+      const distSq = dx * dx + dz * dz;
+      if (distSq < 1.0) {
+        const dist = Math.sqrt(distSq) || 0.001;
+        cx = obs.x + (dx / dist) * obs.rx * 1.02;
+        cz = obs.z + (dz / dist) * obs.rz * 1.02;
+      }
+    }
+
+    // İkinci dəfə əsas sərhəd daxilində saxla
+    cz = Math.max(zMin, Math.min(zMax, cz));
+    const [xMin2, xMax2] = this.angleCfg.xBoundsFn(cz);
+    cx = Math.max(xMin2, Math.min(xMax2, cx));
     return { x: cx, z: cz };
   }
 
@@ -797,6 +986,49 @@ export class CinematicBazaar25DScene {
       this.clickRipple.visible = true;
       this.clickRippleLife = 1.0;
     }
+  }
+
+  _rebuildWalkBoundsDebug() {
+    if (this.debugBoundsGroup) {
+      this.debugBoundsGroup.traverse((o) => {
+        if (o.geometry) o.geometry.dispose();
+        if (o.material) o.material.dispose();
+      });
+      this.scene.remove(this.debugBoundsGroup);
+      this.debugBoundsGroup = null;
+    }
+    if (!this.showWalkBoundsDebug || !this.scene) return;
+
+    this.debugBoundsGroup = new THREE.Group();
+    const [zMin, zMax] = this.angleCfg.zRange;
+    const [xMinFront, xMaxFront] = this.angleCfg.xBoundsFn(zMax);
+    const [xMinBack, xMaxBack] = this.angleCfg.xBoundsFn(zMin);
+
+    // Yaşıl hərəkət sərhədi trapesiyası
+    const borderPts = [
+      new THREE.Vector3(xMinFront, 0.04, zMax),
+      new THREE.Vector3(xMaxFront, 0.04, zMax),
+      new THREE.Vector3(xMaxBack, 0.04, zMin),
+      new THREE.Vector3(xMinBack, 0.04, zMin),
+      new THREE.Vector3(xMinFront, 0.04, zMax),
+    ];
+    const lineGeo = new THREE.BufferGeometry().setFromPoints(borderPts);
+    const lineMat = new THREE.LineBasicMaterial({ color: 0x52e078 });
+    this.debugBoundsGroup.add(new THREE.Line(lineGeo, lineMat));
+
+    // Qırmızı hərəkət etməmə zolaqları (ellipslər)
+    for (const obs of this.angleCfg.blockedZones || []) {
+      const pts = [];
+      for (let i = 0; i <= 32; i++) {
+        const a = (i / 32) * Math.PI * 2;
+        pts.push(new THREE.Vector3(obs.x + Math.cos(a) * obs.rx, 0.05, obs.z + Math.sin(a) * obs.rz));
+      }
+      const oGeo = new THREE.BufferGeometry().setFromPoints(pts);
+      const oMat = new THREE.LineBasicMaterial({ color: 0xf24e4e });
+      this.debugBoundsGroup.add(new THREE.Line(oGeo, oMat));
+    }
+
+    this.scene.add(this.debugBoundsGroup);
   }
 
   async _loadTextureSafe(url, isColor = false) {
@@ -866,6 +1098,7 @@ export class CinematicBazaar25DScene {
     this._rebuildCulturalAccents();
     await this._buildPlayableMerchant();
     this._rebuildHotspots(this.activeAngleId);
+    this._applyTimeLighting();
 
     for (const rm of this.roomList) {
       if (rm.id !== this.activeAngleId) this._loadAngleTextures(rm.id);
@@ -881,6 +1114,28 @@ export class CinematicBazaar25DScene {
     dom.addEventListener('contextmenu', this._onContextMenu);
 
     this.isMounted = true;
+  }
+
+  _applyTimeLighting() {
+    const n = this.currentNightMix;
+    if (this.hemiLight) {
+      const daySky = new THREE.Color(this.angleCfg.ambientSky);
+      const nightSky = new THREE.Color(0x283652);
+      this.hemiLight.color.copy(daySky).lerp(nightSky, n);
+      this.hemiLight.intensity = THREE.MathUtils.lerp(this.angleCfg.ambientIntensity, 0.42, n);
+    }
+    if (this.sunLight && !this.angleCfg.useDynamicSunZone) {
+      this.sunLight.intensity = THREE.MathUtils.lerp(this.angleCfg.sunBaseIntensity, 0.55, n);
+    }
+    if (this.playerLanternLight) {
+      this.playerLanternLight.intensity = THREE.MathUtils.lerp(0.18, 1.15, n);
+    }
+    if (this.scene?.fog) {
+      const dayFog = new THREE.Color(this.angleCfg.fogColor);
+      const nightFog = new THREE.Color(0x0b0e16);
+      this.scene.fog.color.copy(dayFog).lerp(nightFog, n);
+      this.scene.fog.density = THREE.MathUtils.lerp(this.angleCfg.fogDensity, this.angleCfg.fogDensity * 1.65, n);
+    }
   }
 
   _buildForegroundFrame() {
@@ -927,14 +1182,6 @@ export class CinematicBazaar25DScene {
     this.scene.add(this.foregroundGroup);
   }
 
-  /**
-   * Hər şəhərin mədəniyyətinə uyğun canlı 3D atmosferik elementlər:
-   * - Şəki: Rəngli 3D Şəbəkə (yaqut, firuzə, zümrüd, kəhrəba) işıq şüaları
-   * - Bakı: İsti Xəzər günəş şüaları & Atəşgah məşəl parıltıları
-   * - Şamaxı: Firuzəyi kaşı işıq parıltıları
-   * - Şuşa: Cıdır Düzü yüngül dağ dumanı zolaqları
-   * - Gəncə / Lənkəran: Mis-kərpic & cənub bağı isti işıq zolaqları
-   */
   _rebuildCulturalAccents() {
     if (this.culturalAccentGroup) {
       this.culturalAccentGroup.traverse((o) => {
@@ -965,7 +1212,6 @@ export class CinematicBazaar25DScene {
     const mode = this.cultureStyle.accentMode;
 
     if (mode === 'sheki_shebeke' && this.angleCfg.isInterior) {
-      // Şəki Şəbəkə pəncərələrindən döşəməyə düşən 4 rəngli şüşə işıq ləkəsi (yaqut, göy, zümrüd, qızılı)
       const stainColors = [
         'rgba(220, 48, 64, 0.55)',
         'rgba(48, 148, 232, 0.55)',
@@ -990,24 +1236,17 @@ export class CinematicBazaar25DScene {
         this.culturalAnimItems.push({ mesh, kind: 'pulse', baseOpacity: 0.45, phase: i * 1.1 });
       });
     } else if (mode === 'shusha_mist') {
-      // Şuşa / Cıdır Düzü dağ dumanı zolaqları
       const mistTex = makeSoftGradientTex('rgba(210, 218, 238, 0.32)');
       for (let i = 0; i < 4; i++) {
         const m = new THREE.Mesh(
           new THREE.PlaneGeometry(7.5, 2.8),
-          new THREE.MeshBasicMaterial({
-            map: mistTex,
-            transparent: true,
-            opacity: 0.22,
-            depthWrite: false,
-          })
+          new THREE.MeshBasicMaterial({ map: mistTex, transparent: true, opacity: 0.22, depthWrite: false })
         );
         m.position.set(-3.5 + i * 2.4, 0.8 + (i % 2) * 0.5, -2.5 - i * 1.4);
         this.culturalAccentGroup.add(m);
         this.culturalAnimItems.push({ mesh: m, kind: 'drift', speed: 0.22 + i * 0.05, baseX: m.position.x });
       }
     } else if (mode === 'shamakhi_turquoise') {
-      // Şamaxı firuzəyi kaşı parıltısı
       const turqTex = makeSoftGradientTex('rgba(64, 212, 218, 0.42)');
       for (const [tx, tz] of [
         [-2.2, -1.2],
@@ -1028,7 +1267,6 @@ export class CinematicBazaar25DScene {
         this.culturalAnimItems.push({ mesh: glow, kind: 'pulse', baseOpacity: 0.32, phase: tx });
       }
     } else if (mode === 'baku_sun_fire' && !this.angleCfg.isInterior) {
-      // Bakı isti günəşli Xəzər parıltısı (yumşaq dairəvi, sərt düz xətsiz!)
       const sunTex = makeSoftGradientTex('rgba(255, 224, 152, 0.42)');
       const sunPool = new THREE.Mesh(
         new THREE.PlaneGeometry(4.8, 3.8),
@@ -1076,10 +1314,6 @@ export class CinematicBazaar25DScene {
     this.smoothZoom = this.angleCfg.baseZoom;
     this.smoothDolly = 0.0;
 
-    if (this.scene) {
-      this.scene.fog = new THREE.FogExp2(this.angleCfg.fogColor, this.angleCfg.fogDensity);
-    }
-
     if (bundle.colorMap?.image?.width && bundle.colorMap?.image?.height) {
       this.imageAspect = bundle.colorMap.image.width / bundle.colorMap.image.height;
     }
@@ -1099,15 +1333,9 @@ export class CinematicBazaar25DScene {
       this.backdropUniforms.uAspectRatio.value = (w / Math.max(1, h)) / this.imageAspect;
     }
 
-    if (this.hemiLight) {
-      this.hemiLight.color.setHex(this.angleCfg.ambientSky);
-      this.hemiLight.groundColor.setHex(this.angleCfg.ambientGround);
-      this.hemiLight.intensity = this.angleCfg.ambientIntensity;
-    }
     if (this.sunLight) {
       this.sunLight.color.setHex(this.angleCfg.sunColor);
       this.sunLight.position.set(...this.angleCfg.sunPos);
-      this.sunLight.intensity = this.angleCfg.sunBaseIntensity;
     }
     if (this.floorMesh) {
       this.floorMesh.material.opacity = this.angleCfg.shadowOpacity;
@@ -1120,8 +1348,11 @@ export class CinematicBazaar25DScene {
       }
     });
 
+    this._applyTimeLighting();
+
     const sp = customSpawn || this.angleCfg.spawnPos;
-    this.player.pos.set(sp[0], 0, sp[2]);
+    const safeSp = this._clampWalkable(sp[0], sp[2]);
+    this.player.pos.set(safeSp.x, 0, safeSp.z);
     this.player.yaw = this.angleCfg.spawnYaw;
     if (this.player.group) {
       this.player.group.scale.setScalar(this.player.baseNormScale * (this.angleCfg.playerScaleHeight / 1.84));
@@ -1131,6 +1362,7 @@ export class CinematicBazaar25DScene {
 
     this._rebuildCulturalAccents();
     this._rebuildHotspots(angleId);
+    this._rebuildWalkBoundsDebug();
     this.eventBus.emit('bazaar:angle_changed', { angleId, title: this.angleCfg.title });
 
     const fadeInSteps = 10;
@@ -1176,6 +1408,7 @@ export class CinematicBazaar25DScene {
       uCityTint: { value: this.angleCfg.tint.clone() },
       uGlowTint: { value: this.angleCfg.glowTint.clone() },
       uExposure: { value: this.angleCfg.exposure },
+      uNightMix: { value: this.currentNightMix },
       uLanternA: { value: new THREE.Vector2(...this.angleCfg.lanterns[0].uv) },
       uLanternB: { value: new THREE.Vector2(...this.angleCfg.lanterns[1].uv) },
       uFade: { value: 1.0 },
@@ -1213,6 +1446,11 @@ export class CinematicBazaar25DScene {
     this.sunLight.shadow.camera.bottom = -14;
     this.sunLight.shadow.bias = -0.0004;
     this.scene.add(this.sunLight);
+
+    // Gecə vaxtı tacirin öz ətrafını işıqlandıran isti fənər işığı
+    this.playerLanternLight = new THREE.PointLight(0xffb454, 0.25, 7.5, 1.5);
+    this.playerLanternLight.position.set(0, 1.5, 4.2);
+    this.scene.add(this.playerLanternLight);
 
     this.flickerLights = [];
     this.angleCfg.lanterns.forEach((lCfg, idx) => {
@@ -1306,16 +1544,39 @@ export class CinematicBazaar25DScene {
       this.city?.goods?.[0]?.item_id ||
       'carpet';
 
+    const role = this.angleCfg.role;
     const defs = [];
-    if (angleId === 'courtyard') {
+
+    if (this.citySpec.isMission) {
+      defs.push(
+        {
+          id: 'mission_point',
+          type: 'mission_encounter',
+          label: this.citySpec.missionPrompt || 'Xüsusi Missiya Hadisəsi',
+          pos: new THREE.Vector3(0.0, 0, -1.2),
+          npcPos: new THREE.Vector3(0.0, 1.5, -2.5),
+          radius: 2.8,
+          ringColor: 0xe6884c,
+        },
+        {
+          id: 'exit_gate',
+          type: 'exit_to_map',
+          label: this.citySpec.gateLabel,
+          pos: new THREE.Vector3(0.0, 0, this.angleCfg.zRange[1] - 0.5),
+          npcPos: new THREE.Vector3(0.0, 1.6, 8.0),
+          radius: 2.2,
+          ringColor: 0xf4cf76,
+        }
+      );
+    } else if (role === 'courtyard') {
       defs.push(
         {
           id: 'market_stall_zone',
           type: 'market',
           label: `Bazar Dəftəri & Ticarət (${this.city?.short_name || 'Bazar'})`,
-          pos: new THREE.Vector3(-2.4, 0, 2.0),
-          npcPos: new THREE.Vector3(-3.4, 1.5, 2.0),
-          radius: 2.5,
+          pos: new THREE.Vector3(-2.1, 0, 2.0),
+          npcPos: new THREE.Vector3(-3.2, 1.5, 2.0),
+          radius: 2.4,
           defaultItem: primaryLuxury,
           ringColor: 0xd9ad58,
         },
@@ -1323,41 +1584,41 @@ export class CinematicBazaar25DScene {
           id: 'fayton_station',
           type: 'fayton',
           label: 'Fayton Dayanacağı · Şəhərlərarası Səfər',
-          pos: new THREE.Vector3(2.2, 0, 2.2),
-          npcPos: new THREE.Vector3(3.2, 1.5, 2.2),
-          radius: 2.5,
+          pos: new THREE.Vector3(1.6, 0, 2.5),
+          npcPos: new THREE.Vector3(2.8, 1.5, 2.5),
+          radius: 2.3,
           ringColor: 0x6cb8cf,
         },
         {
           id: 'exit_gate',
           type: 'exit_to_map',
           label: this.citySpec.gateLabel,
-          pos: new THREE.Vector3(0.0, 0, -7.8),
+          pos: new THREE.Vector3(0.0, 0, this.angleCfg.zRange[0] + 0.6),
           npcPos: new THREE.Vector3(0.0, 1.6, -11.0),
-          radius: 2.6,
+          radius: 2.5,
           ringColor: 0xf4cf76,
         }
       );
-    } else if (angleId === 'carpet_gallery') {
+    } else if (role === 'market') {
       defs.push({
         id: 'market_arcade_zone',
         type: 'market',
-        label: `Örtülü Bazar Ticarəti (${this.city?.short_name || 'Bazar'})`,
-        pos: new THREE.Vector3(-1.45, 0, 1.6),
-        npcPos: new THREE.Vector3(-2.4, 1.5, 1.6),
-        radius: 2.7,
+        label: `${this.angleCfg.title} · Sövdələş`,
+        pos: new THREE.Vector3(-1.1, 0, 1.5),
+        npcPos: new THREE.Vector3(-2.2, 1.5, 1.5),
+        radius: 2.6,
         defaultItem: primaryLuxury,
         ringColor: 0xd9ad58,
       });
-    } else if (angleId === 'palace_hall') {
+    } else if (role === 'palace') {
       defs.push({
         id: 'palace_throne',
         type: 'palace_audience',
         label: this.citySpec.palaceTitle,
         palaceTitle: this.citySpec.palaceTitle,
-        pos: new THREE.Vector3(0.0, 0, -2.6),
+        pos: new THREE.Vector3(0.0, 0, -2.4),
         npcPos: new THREE.Vector3(0.0, 1.6, -5.0),
-        radius: 3.0,
+        radius: 2.9,
         ringColor: 0xd96b54,
       });
     }
@@ -1404,7 +1665,7 @@ export class CinematicBazaar25DScene {
     }
 
     if (ENABLE_PLACEHOLDER_NPCS) {
-      // 3D dostunun özəl .glb NPC modelləri gəldikdə burada qoşulacaq
+      // Özəl 3D NPC modelləri gəldikdə burada qoşulacaq
     }
 
     this.scene.add(this.interactGroup);
@@ -1454,6 +1715,8 @@ export class CinematicBazaar25DScene {
       mesh.add(coat);
     }
 
+    const safeSp = this._clampWalkable(this.player.pos.x, this.player.pos.z);
+    this.player.pos.set(safeSp.x, 0, safeSp.z);
     mesh.position.copy(this.player.pos);
     mesh.rotation.y = this.player.yaw;
     this.scene.add(mesh);
@@ -1487,6 +1750,13 @@ export class CinematicBazaar25DScene {
     if (!this.isMounted || !this.renderer || !this.scene || !this.camera) return;
     this.elapsed += dt;
     if (this.portalCooldown > 0) this.portalCooldown = Math.max(0, this.portalCooldown - dt);
+
+    // Səhər ↔ Gecə hamar animasiyası
+    if (Math.abs(this.targetNightMix - this.currentNightMix) > 0.001) {
+      this.currentNightMix += (this.targetNightMix - this.currentNightMix) * Math.min(1, dt * 3.5);
+      if (this.backdropUniforms) this.backdropUniforms.uNightMix.value = this.currentNightMix;
+      this._applyTimeLighting();
+    }
 
     let moveX = 0;
     let moveZ = 0;
@@ -1538,6 +1808,9 @@ export class CinematicBazaar25DScene {
         this.player.mixer.update(dt);
       }
     }
+    if (this.playerLanternLight) {
+      this.playerLanternLight.position.set(this.player.pos.x + 0.55, 1.25, this.player.pos.z - 0.45);
+    }
 
     if (this.portalCooldown <= 0 && !this.isTransitioning && !this.dialogueFocus && !modalBlocking && this.player.isMoving) {
       for (const p of this.angleCfg.portals || []) {
@@ -1549,11 +1822,11 @@ export class CinematicBazaar25DScene {
       }
     }
 
-    // Dinamik Günəş Şüası ↔ Kölgə Zonası (Bakı həyətində günəşli və kölgəli balanslı keçid)
     if (this.sunLight && this.angleCfg.useDynamicSunZone) {
       const sunBoundaryX = -0.35 - this.player.pos.z * 0.14;
       const sunFactor = Math.max(0, Math.min(1, (sunBoundaryX - this.player.pos.x + 1.4) / 2.8));
-      const targetSun = 1.25 + sunFactor * 1.65;
+      const daySun = 1.25 + sunFactor * 1.65;
+      const targetSun = THREE.MathUtils.lerp(daySun, 0.45, this.currentNightMix);
       this.sunLight.intensity += (targetSun - this.sunLight.intensity) * Math.min(1, dt * 5.0);
     }
 
@@ -1591,7 +1864,6 @@ export class CinematicBazaar25DScene {
       }
     }
 
-    // Mədəni atmosferik 3D animasiyalar (Şəbəkə işıqları, Şuşa dumanı, firuzə parıltısı)
     for (const item of this.culturalAnimItems) {
       if (item.kind === 'pulse') {
         item.mesh.material.opacity = item.baseOpacity * (0.85 + Math.sin(this.elapsed * 1.8 + item.phase) * 0.15);
@@ -1600,8 +1872,9 @@ export class CinematicBazaar25DScene {
       }
     }
 
+    const nightLanternBoost = THREE.MathUtils.lerp(1.0, 1.65, this.currentNightMix);
     for (const fl of this.flickerLights) {
-      fl.light.intensity = fl.base * (0.91 + Math.sin(this.elapsed * 5.8 + fl.phase) * 0.09);
+      fl.light.intensity = fl.base * nightLanternBoost * (0.91 + Math.sin(this.elapsed * 5.8 + fl.phase) * 0.09);
     }
     for (const hl of this.hangingLanterns) {
       hl.pivot.rotation.z = Math.sin(this.elapsed * 1.15 + hl.phase) * 0.045;
@@ -1618,7 +1891,6 @@ export class CinematicBazaar25DScene {
       posAttr.needsUpdate = true;
     }
 
-    // 10-addımlı POM + Kamera Dolly-In + Pan sinxronizasiyası
     const [zMin, zMax] = this.angleCfg.zRange;
     const depthProgress = Math.max(0, Math.min(1, (zMax - this.player.pos.z) / Math.max(1, zMax - zMin)));
 

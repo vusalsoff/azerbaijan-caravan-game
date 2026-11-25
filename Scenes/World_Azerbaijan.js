@@ -502,14 +502,14 @@ export class WorldAzerbaijanScene {
       return;
     }
 
-    // Körpü quldur pusqusu və ya Tarla kiçik missiya nöqtəsinə klikləndikdə hadisə başlat!
+    // Körpü quldur pusqusu və ya Tarla kiçik missiya nöqtəsinə klikləndikdə onun özəl 2.5D məkanına daxil ol!
     const hitSpot = this._findSpecialSpotAtScreen(sx, sy);
     if (hitSpot) {
       this.eventBus.emit('ui:toast', {
-        message: `${hitSpot.label}: ${hitSpot.subtitle}`,
+        message: `${hitSpot.label} məkanına daxil olunur...`,
         type: hitSpot.kind === 'bridge' ? 'warn' : 'info',
       });
-      this.eventBus.emit('world:trigger_event_now', { spotId: hitSpot.id, spotKind: hitSpot.kind });
+      this.eventBus.emit('mission:enter_spot', hitSpot.id);
       return;
     }
 

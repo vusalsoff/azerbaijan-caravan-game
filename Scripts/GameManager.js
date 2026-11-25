@@ -44,6 +44,7 @@ export class GameManager {
     this.currentSceneName = 'Story_Intro';
     this.bazaarCityId = 'City_Baku';
     this.bazaarRenderMode = localStorage.getItem('karva_bazaar_mode') || '25d'; // '25d' | '3d'
+    this.timeOfDay = localStorage.getItem('karva_time_of_day') || 'day'; // 'day' | 'night'
 
     this.cameraMode = 'map';
     this.bazaarProximity = null;
@@ -93,6 +94,8 @@ export class GameManager {
       sceneName: this.currentSceneName,
       bazaarProximity: this.bazaarProximity,
       bazaarRenderMode: this.bazaarRenderMode,
+      timeOfDay: this.timeOfDay,
+      bazaarCityLabel: this.bazaarScene?.getLocationLabel?.() || snapshot.currentCity?.short_name || 'Bakı',
       bazaarAngleId: this.bazaarScene?.activeAngleId || 'courtyard',
       bazaarAngleTitle: this.bazaarScene?.angleCfg?.title || 'Karvansaray Həyəti',
       bazaarRooms: this.bazaarScene?.getRoomList?.() || [],
@@ -108,6 +111,30 @@ export class GameManager {
     this.eventBus.on('scene:enter_bazaar', (cityId) => {
       const targetCity = cityId || this.tradeManager.currentCityId || 'City_Baku';
       this.loadBazaarScene(targetCity);
+    });
+
+    this.eventBus.on('mission:enter_spot', (spotId) => {
+      if (!spotId) return;
+      this.loadBazaarScene(`Mission_${spotId}`);
+    });
+
+    this.eventBus.on('bazaar:toggle_time', () => {
+      this.timeOfDay = this.timeOfDay === 'day' ? 'night' : 'day';
+      try {
+        localStorage.setItem('karva_time_of_day', this.timeOfDay);
+      } catch {
+        // ignore
+      }
+      if (this.bazaarScene?.setTimeOfDay) {
+        this.bazaarScene.setTimeOfDay(this.timeOfDay);
+      }
+      this.ui.updateHUD(this._getUIState(this.tradeManager.getSnapshot()));
+      this.ui.showToast(
+        this.timeOfDay === 'night'
+          ? '☾ Gecə Modu: Fənərlər yandı, kölgələr dərinləşdi.'
+          : '☀ Səhər Modu: Günəş işığı məkanı aydınlatdı.',
+        'info'
+      );
     });
 
     this.eventBus.on('scene:exit_to_world', () => {
@@ -461,6 +488,8 @@ export class GameManager {
             this.eventBus.emit('market:close');
           } else if (this.bazaarProximity?.type === 'exit_to_map') {
             this.eventBus.emit('scene:exit_to_world');
+          } else if (this.bazaarProximity?.type === 'mission_encounter') {
+            this.eventBus.emit('world:trigger_event_now');
           } else if (this.bazaarProximity?.type === 'angle_portal' && this.bazaarProximity.targetAngle) {
             this.bazaarScene?.switchAngle?.(this.bazaarProximity.targetAngle);
           } else if (this.bazaarProximity?.type === 'horse_mount') {
@@ -479,6 +508,8 @@ export class GameManager {
         } else if (e.code === 'KeyI' || e.code === 'Tab') {
           if (e.code === 'Tab') e.preventDefault();
           this.eventBus.emit('ui:toggle_inventory');
+        } else if (e.code === 'KeyT' && !this.ui.isAnyModalOpen()) {
+          this.eventBus.emit('bazaar:toggle_time');
         } else if (e.code === 'KeyX' && !this.ui.isAnyModalOpen()) {
           this.eventBus.emit('scene:exit_to_world');
         } else if (e.code === 'KeyM') {
@@ -549,18 +580,26 @@ export class GameManager {
   async loadBazaarScene(cityId = 'City_Baku') {
     this._clearActiveScenes();
     this.currentSceneName = 'Caravanserai_Bazaar';
-    this.bazaarCityId = cityId;
+    const isMissionSpot = String(cityId).startsWith('Mission_');
+    if (!isMissionSpot) {
+      this.bazaarCityId = cityId;
+    }
 
     const SceneClass =
-      this.bazaarRenderMode === '25d' ? CinematicBazaar25DScene : CaravanseraiBazaarScene;
+      this.bazaarRenderMode === '25d' || isMissionSpot ? CinematicBazaar25DScene : CaravanseraiBazaarScene;
     this.bazaarScene = new SceneClass(this.sceneRoot, this.eventBus, this.data, this, cityId);
     await this.bazaarScene.mount();
+    if (this.bazaarScene?.setTimeOfDay) {
+      this.bazaarScene.setTimeOfDay(this.timeOfDay, true);
+    }
 
     this.ui.mount();
-    this.tradeManager.setCurrentCity(cityId);
+    if (!isMissionSpot) {
+      this.tradeManager.setCurrentCity(cityId);
+    }
     this.tradeManager.emitState();
 
-    const city = this.data.getCityById(cityId);
+    const city = !isMissionSpot ? this.data.getCityById(cityId) : this.data.getCityById(this.bazaarCityId);
     if (city) {
       this.audio.playCityMusic(city.music_track);
     }
