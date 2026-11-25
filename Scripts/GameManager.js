@@ -60,6 +60,9 @@ export class GameManager {
   }
 
   _handlePalaceAudience() {
+    if (this.bazaarScene?.switchAngle && this.bazaarScene.activeAngleId !== 'palace_hall') {
+      this.bazaarScene.switchAngle('palace_hall');
+    }
     const cityId = this.tradeManager.currentCityId || this.bazaarCityId;
     const greetings = {
       City_Baku: 'Şirvanşah Hüzuru: "Xoş gəldin, tacir! Bakı limanı və karvansaray yolları sənə açıqdır."',

@@ -137,28 +137,39 @@ def np_image(name, rgb, non_color=False):
     return img
 
 
-GOLD_C = np.array([0.86, 0.65, 0.28])
-RED_C = np.array([0.52, 0.11, 0.09])
-DARK_BRONZE = np.array([0.19, 0.11, 0.065])
-COAT_GAP = 0.44
-WEAVE_PERIOD = 4.5
+GOLD_C = np.array([0.76, 0.57, 0.25])
+RED_C = np.array([0.36, 0.08, 0.075])
+DARK_BRONZE = np.array([0.11, 0.068, 0.045])
+COAT_GAP = 0.42
+WEAVE_PERIOD = 3.8
 
 
 def coat_texture(size=512, band=True, trims=False, back_yoke=False, gap=COAT_GAP):
     U, V = grid(size, size)
-    base = np.array([0.33, 0.195, 0.115])
-    weave = 0.5 + 0.5 * np.sin(2 * np.pi * (U * size * 1.15 + V * size * 0.85) / WEAVE_PERIOD)
-    n = smooth_noise(size, size, 22, 7)
-    n2 = smooth_noise(size, size, 88, 11)
-    shade = 0.89 + 0.11 * weave + 0.16 * (n - 0.5) + 0.07 * (n2 - 0.5)
+    # Tünd zadəgan Şirvan qoz-bordo yun çuxa (fotorealistik 2.5D fona tam uyğun)
+    base = np.array([0.155, 0.078, 0.060])
+    weave = 0.5 + 0.5 * np.sin(2 * np.pi * (U * size * 1.25 + V * size * 0.95) / WEAVE_PERIOD)
+    n = smooth_noise(size, size, 24, 7)
+    n2 = smooth_noise(size, size, 96, 11)
+    n3 = smooth_noise(size, size, 192, 17)
+    shade = 0.84 + 0.12 * weave + 0.18 * (n - 0.5) + 0.09 * (n2 - 0.5) + 0.05 * (n3 - 0.5)
     rgb = base[None, None, :] * shade[..., None]
 
-    # Zərif şaquli arxa qırçın tikiş kölgəsi (üçüncü şəxs kamera üçün canlı görünüş)
+    # Zərif şaquli ətək qırçınları və aşağı kənarda təbii yol tozu/AO kölgələnməsi
     if band and not trims:
-        # Ətəkdə şaquli qırçın kölgələri (arxa mərkəz U=0/1 ətrafında)
-        pleat = 0.5 + 0.5 * np.cos(2 * np.pi * U * 12.0)
+        pleat = 0.5 + 0.5 * np.cos(2 * np.pi * U * 14.0)
         pleat_mask = np.clip(1.0 - V * 1.15, 0.0, 1.0)
-        rgb *= (1.0 - 0.10 * pleat * pleat_mask)[..., None]
+        rgb *= (1.0 - 0.22 * pleat * pleat_mask)[..., None]
+        # Ətək kənarı AO kölgəsi
+        hem_ao = np.clip(V / 0.14, 0.68, 1.0)
+        rgb *= hem_ao[..., None]
+    else:
+        # Çuxa gövdəsində yumşaq bel-qoltuq AO və ətək qırçınları
+        pleat = 0.5 + 0.5 * np.cos(2 * np.pi * U * 12.0)
+        pleat_mask = np.clip((0.52 - V) / 0.52, 0.0, 1.0)
+        rgb *= (1.0 - 0.20 * pleat * pleat_mask)[..., None]
+        waist_ao = 1.0 - 0.18 * np.exp(-((V - 0.52) / 0.065) ** 2)
+        rgb *= waist_ao[..., None]
 
     if band:
         v0, v1 = 0.015, 0.095
@@ -195,12 +206,14 @@ def coat_texture(size=512, band=True, trims=False, back_yoke=False, gap=COAT_GAP
     return rgb
 
 
-def coat_normal(size=512, strength=0.6):
+def coat_normal(size=512, strength=0.95):
     U, V = grid(size, size)
-    h = 0.5 + 0.5 * np.sin(2 * np.pi * (U * size * 1.15 + V * size * 0.85) / WEAVE_PERIOD)
-    h += 0.38 * smooth_noise(size, size, 128, 3)
-    dx = (np.roll(h, -1, axis=1) - np.roll(h, 1, axis=1)) * 0.5
-    dy = (np.roll(h, -1, axis=0) - np.roll(h, 1, axis=0)) * 0.5
+    h = 0.5 + 0.5 * np.sin(2 * np.pi * (U * size * 1.25 + V * size * 0.95) / WEAVE_PERIOD)
+    h += 0.45 * smooth_noise(size, size, 128, 3) + 0.25 * smooth_noise(size, size, 36, 13)
+    # Şaquli parça qatlarının normal relyefi
+    h += 0.28 * np.cos(2 * np.pi * U * 12.0) * np.clip((0.55 - V) / 0.55, 0.0, 1.0)
+    dx = (np.roll(h, -1, axis=1) - np.roll(h, 1, axis=1)) * 0.55
+    dy = (np.roll(h, -1, axis=0) - np.roll(h, 1, axis=0)) * 0.55
     nx = -dx * strength
     ny = -dy * strength
     nz = np.ones_like(h)
@@ -822,23 +835,46 @@ M_SCABBARD = mat_basic("Scabbard", (0.07, 0.055, 0.045), rough=0.45)
 # ---------------------------------------------------------------------------
 # Geometriyanın Qurulması
 # ---------------------------------------------------------------------------
-# 1. Vahid Çuxa Gövdəsi + Ətək (kəsiksiz tikiş beldə, təbii çiyin əyriliyi!)
+# 1. Vahid Çuxa Gövdəsi + Zərif Uzun Ətək (realist zadəgan nisbəti, şişkin konus deyil!)
 CHUKHA_ALL = [
-    (0.50, 0.285, 0.245, 0.01),
-    (0.60, 0.268, 0.230, 0.009),
-    (0.72, 0.242, 0.206, 0.007),
-    (0.84, 0.212, 0.180, 0.004),
-    (0.94, 0.184, 0.155, 0.000),
-    (1.01, 0.171, 0.141, 0.000),
-    (1.10, 0.174, 0.144, -0.004),
-    (1.20, 0.187, 0.150, -0.010),
-    (1.30, 0.200, 0.153, -0.013),
-    (1.38, 0.206, 0.147, -0.008),
-    (1.435, 0.194, 0.126, 0.000),
-    (1.475, 0.152, 0.095, 0.005),
-    (1.500, 0.088, 0.074, 0.006),
+    (0.44, 0.246, 0.205, 0.012),
+    (0.56, 0.232, 0.194, 0.010),
+    (0.70, 0.214, 0.180, 0.007),
+    (0.84, 0.195, 0.165, 0.004),
+    (0.95, 0.178, 0.150, 0.000),
+    (1.01, 0.168, 0.139, 0.000),
+    (1.10, 0.173, 0.144, -0.004),
+    (1.20, 0.189, 0.152, -0.010),
+    (1.31, 0.204, 0.156, -0.013),
+    (1.39, 0.210, 0.149, -0.008),
+    (1.440, 0.196, 0.128, 0.000),
+    (1.478, 0.152, 0.096, 0.005),
+    (1.502, 0.088, 0.074, 0.006),
 ]
-reg(lathe("Chukha_Coat", CHUKHA_ALL, M_COAT, segs=36, gap=COAT_GAP, subsurf=1), "torso_grad")
+reg(lathe("Chukha_Coat", CHUKHA_ALL, M_COAT, segs=40, gap=COAT_GAP, subsurf=1), "torso_grad")
+
+# 1b. Çiyin Pelerini / Səfər Yapıncı Yaxalığı (Lord of the Mysteries × İpək Yolu karvanbaşı silueti)
+MANTLE_MAT = mat_tex("Mantle_Wool", IMG_COAT_CUFF, rough=0.92, nimg=IMG_COAT_N, nstrength=0.9, sheen=0.35)
+MANTLE_PROF = [
+    (1.02, 0.268, 0.215, 0.036),
+    (1.16, 0.256, 0.198, 0.026),
+    (1.30, 0.244, 0.182, 0.015),
+    (1.41, 0.228, 0.162, 0.006),
+    (1.475, 0.170, 0.118, 0.003),
+    (1.508, 0.102, 0.088, 0.004),
+]
+reg(lathe("Shoulder_Mantle", MANTLE_PROF, MANTLE_MAT, segs=36, gap=1.35, caps=(False, False), subsurf=1), "torso_grad")
+
+# Pelerin sinə bürünc sancaq-toqqası
+reg(prim("Mantle_Clasp_L", "sphere", M_GOLD, loc=(0.068, -0.132, 1.455), scale=(0.016, 0.009, 0.016), segs=10, rings=8), "fixed", "Chest")
+reg(prim("Mantle_Clasp_R", "sphere", M_GOLD, loc=(-0.068, -0.132, 1.455), scale=(0.016, 0.009, 0.016), segs=10, rings=8), "fixed", "Chest")
+reg(prim("Mantle_Chain", "cyl", M_GOLD, loc=(0.0, -0.136, 1.448), rot=(0, math.pi / 2, 0), segs=8, r1=0.0045, r2=0.0045, depth=0.13), "fixed", "Chest")
+
+# Bel arxasında surğuçlu əlyazma-salnamə qabı (Scroll Tube)
+M_SCROLL = Matrix.Translation((0.155, 0.165, 0.96)) @ Matrix.Rotation(0.35, 4, "Y") @ Matrix.Rotation(0.22, 4, "X")
+reg(prim("Scroll_Case", "cyl", M_POUCH_FLAP, loc=(0, 0, 0), segs=12, r1=0.024, r2=0.024, depth=0.22, base=M_SCROLL), "fixed", "Hips")
+reg(prim("Scroll_CapTop", "cyl", M_GOLD, loc=(0, 0, 0.108), segs=12, r1=0.026, r2=0.026, depth=0.018, base=M_SCROLL), "fixed", "Hips")
+reg(prim("Scroll_CapBot", "cyl", M_GOLD, loc=(0, 0, -0.108), segs=12, r1=0.026, r2=0.026, depth=0.018, base=M_SCROLL), "fixed", "Hips")
 
 # 2. Daxili İpək Ərxalıq (həm üst, həm alt vahid)
 ARKH_ALL = [
@@ -947,19 +983,18 @@ for s in (1, -1):
     reg(prim(f"Ear_{sd}", "sphere", M_SKIN, loc=(0.088 * s, 0.004, 1.668), scale=(0.010, 0.022, 0.029),
              rot=(0, -0.15 * s, 0), subsurf=1, segs=10, rings=8), "fixed", "Head")
 
-# Qoyun dərisi Papaq (təbii qıvrım relyefli, qaşların üstündə oturan)
-PAPAQ_TILT = Matrix.Translation((0, 0, 1.6)) @ Matrix.Rotation(0.055, 4, "X") @ Matrix.Translation((0, 0, -1.6))
+# Qoyun dərisi Qaragül Papaq (realist hündürlük və təbii yumşaq qıvrım forma)
+PAPAQ_TILT = Matrix.Translation((0, 0, 1.6)) @ Matrix.Rotation(0.065, 4, "X") @ Matrix.Translation((0, 0, -1.6))
 papaq = lathe("Papaq", [
-    (1.732, 0.095, 0.104, 0.004),
-    (1.740, 0.107, 0.115, 0.004),
-    (1.762, 0.115, 0.123, 0.003),
-    (1.815, 0.120, 0.127, 0.001),
-    (1.870, 0.121, 0.129, 0.000),
-    (1.902, 0.116, 0.123, 0.000),
-    (1.916, 0.095, 0.102, 0.000),
-    (1.922, 0.045, 0.050, 0.000),
-    (1.924, 0.003, 0.003, 0.000),
-], M_PAPAQ, segs=30, caps=(True, True), subsurf=1, matrix=PAPAQ_TILT, curl_displace=True)
+    (1.724, 0.094, 0.104, 0.004),
+    (1.736, 0.109, 0.118, 0.004),
+    (1.762, 0.117, 0.126, 0.002),
+    (1.805, 0.119, 0.128, 0.000),
+    (1.842, 0.115, 0.123, -0.001),
+    (1.864, 0.098, 0.106, -0.001),
+    (1.874, 0.056, 0.062, -0.001),
+    (1.878, 0.003, 0.003, -0.001),
+], M_PAPAQ, segs=32, caps=(True, True), subsurf=1, matrix=PAPAQ_TILT, curl_displace=True)
 reg(papaq, "fixed", "Head")
 
 # 8. Vahid Qollar (çiyindən biləyə qədər TƏK kəsiksiz qol — çiyin tikişsiz içəri girir)
