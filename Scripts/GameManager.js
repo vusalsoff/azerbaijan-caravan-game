@@ -256,6 +256,11 @@ export class GameManager {
       const muted = this.audio.toggleMute();
       this.ui.setMuted(muted);
     });
+    this.eventBus.on('audio:toggle_vo', () => {
+      const voMuted = this.audio.toggleVoMute();
+      this.ui.setVoMuted(voMuted);
+      this.ui.showToast(voMuted ? 'Səsləndirmə (Voiceover) söndürüldü — yalnız musiqi aktivdir.' : 'Səsləndirmə (Voiceover) aktiv edildi.', 'info');
+    });
     this.eventBus.on('palace:audience', () => this._handlePalaceAudience());
 
     this.eventBus.on('ui:open_settings', () => {
@@ -264,12 +269,18 @@ export class GameManager {
       this.ui.showSettingsModal(this.audio.getSettings(), perfMode, {
         onMusicVolume: (v) => this.audio.setMusicVolume(v),
         onSfxVolume: (v) => this.audio.setSfxVolume(v),
+        onVoVolume: (v) => this.audio.setVoVolume(v),
         onMusicMute: (b) => {
           this.audio.setMusicMuted(b);
           this.ui.setMuted(this.audio.muted);
         },
         onSfxMute: (b) => {
           this.audio.setSfxMuted(b);
+          this.ui.setMuted(this.audio.muted);
+        },
+        onVoMute: (b) => {
+          this.audio.setVoMuted(b);
+          this.ui.setVoMuted(this.audio.voMuted);
           this.ui.setMuted(this.audio.muted);
         },
         onPerfMode: (mode) => {

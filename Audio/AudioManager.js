@@ -85,8 +85,10 @@ export class AudioManager {
     this.muted = false;
     this.musicMuted = false;
     this.sfxMuted = false;
+    this.voMuted = false;
     this.musicVolume = 0.65;
     this.sfxVolume = 0.85;
+    this.voVolume = 0.9;
     this.currentTrack = null;
     this.loopTimer = null;
     this.stepIdx = 0;
@@ -103,9 +105,11 @@ export class AudioManager {
       const s = JSON.parse(raw);
       if (typeof s.musicVolume === 'number') this.musicVolume = Math.max(0, Math.min(1, s.musicVolume));
       if (typeof s.sfxVolume === 'number') this.sfxVolume = Math.max(0, Math.min(1, s.sfxVolume));
+      if (typeof s.voVolume === 'number') this.voVolume = Math.max(0, Math.min(1, s.voVolume));
       if (typeof s.musicMuted === 'boolean') this.musicMuted = s.musicMuted;
       if (typeof s.sfxMuted === 'boolean') this.sfxMuted = s.sfxMuted;
-      this.muted = this.musicMuted && this.sfxMuted;
+      if (typeof s.voMuted === 'boolean') this.voMuted = s.voMuted;
+      this.muted = this.musicMuted && this.sfxMuted && this.voMuted;
     } catch {
       // ignore
     }
@@ -118,8 +122,10 @@ export class AudioManager {
         JSON.stringify({
           musicVolume: this.musicVolume,
           sfxVolume: this.sfxVolume,
+          voVolume: this.voVolume,
           musicMuted: this.musicMuted,
           sfxMuted: this.sfxMuted,
+          voMuted: this.voMuted,
         })
       );
     } catch {
@@ -131,8 +137,10 @@ export class AudioManager {
     return {
       musicVolume: this.musicVolume,
       sfxVolume: this.sfxVolume,
+      voVolume: this.voVolume,
       musicMuted: this.musicMuted,
       sfxMuted: this.sfxMuted,
+      voMuted: this.voMuted,
     };
   }
 
@@ -150,7 +158,7 @@ export class AudioManager {
       this.externalAudio.volume = this.muted || this.musicMuted ? 0 : this.musicVolume * 0.5 * duck;
     }
     if (this.voiceoverAudio) {
-      this.voiceoverAudio.volume = this.muted || this.sfxMuted ? 0 : this.sfxVolume;
+      this.voiceoverAudio.volume = this.muted || this.voMuted ? 0 : this.voVolume;
     }
   }
 
@@ -166,18 +174,37 @@ export class AudioManager {
     this._saveSettings();
   }
 
+  setVoVolume(v) {
+    this.voVolume = Math.max(0, Math.min(1, Number(v)));
+    this._syncGains();
+    this._saveSettings();
+  }
+
   setMusicMuted(b) {
     this.musicMuted = Boolean(b);
-    this.muted = this.musicMuted && this.sfxMuted;
+    this.muted = this.musicMuted && this.sfxMuted && this.voMuted;
     this._syncGains();
     this._saveSettings();
   }
 
   setSfxMuted(b) {
     this.sfxMuted = Boolean(b);
-    this.muted = this.musicMuted && this.sfxMuted;
+    this.muted = this.musicMuted && this.sfxMuted && this.voMuted;
     this._syncGains();
     this._saveSettings();
+  }
+
+  setVoMuted(b) {
+    this.voMuted = Boolean(b);
+    if (this.voMuted) this.stopVoiceover();
+    this.muted = this.musicMuted && this.sfxMuted && this.voMuted;
+    this._syncGains();
+    this._saveSettings();
+  }
+
+  toggleVoMute() {
+    this.setVoMuted(!this.voMuted);
+    return this.voMuted;
   }
 
   init() {
@@ -224,7 +251,7 @@ export class AudioManager {
    * Fayl mövcud deyilsə səssizcə və konsol xətası atmadan ötürür.
    */
   async playVoiceover(voId) {
-    if (!voId || this.muted || this.sfxMuted) return false;
+    if (!voId || this.muted || this.voMuted) return false;
     this.stopVoiceover();
     const seq = ++this._voSeq;
 
@@ -236,7 +263,7 @@ export class AudioManager {
         if (seq !== this._voSeq) return false;
         if (res.ok && ct.startsWith('audio/')) {
           const el = new Audio(url);
-          el.volume = this.muted || this.sfxMuted ? 0 : this.sfxVolume;
+          el.volume = this.muted || this.voMuted ? 0 : this.voVolume;
           el.addEventListener('ended', () => {
             if (this.voiceoverAudio === el) {
               this.voiceoverAudio = null;
