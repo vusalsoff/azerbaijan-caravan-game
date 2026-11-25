@@ -35,6 +35,7 @@ export class UIManager {
     this.mapOpen = false;
     this.inventoryOpen = false;
     this.muted = false;
+    this.voMuted = false;
 
     this.selectedMarketItemId = null;
     this.dockedMarketTab = 'stall'; // 'stall' | 'bag'
@@ -85,6 +86,11 @@ export class UIManager {
 
   setMuted(muted) {
     this.muted = muted;
+    if (this.lastState) this.updateHUD(this.lastState);
+  }
+
+  setVoMuted(voMuted) {
+    this.voMuted = Boolean(voMuted);
     if (this.lastState) this.updateHUD(this.lastState);
   }
 
@@ -219,6 +225,7 @@ export class UIManager {
             <div class="cinema-top-right-mini">
               <button id="btn-toggle-time" class="cinema-mini-btn" title="Səhər / Gecə Modu (T)">${isNight ? '☾ Gecə' : '☀ Səhər'}</button>
               <button id="btn-toggle-25d" class="cinema-mini-btn" title="Klassik 3D Rejiminə keç">🏛️ 3D</button>
+              <button id="btn-vo-toggle" class="cinema-mini-btn" title="Səsləndirmə (Voiceover) Aç/Bağla">${this.voMuted ? '🎙️✕' : '🎙️'}</button>
               <button id="btn-mute" class="cinema-mini-btn" title="Səs">${this.muted ? '🔇' : '🔊'}</button>
               <button id="btn-settings" class="cinema-mini-btn" title="Ayarlar">⚙</button>
             </div>
@@ -298,7 +305,9 @@ export class UIManager {
       });
       this.hudEl.querySelector('#btn-mission-encounter')?.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.eventBus.emit('world:trigger_event_now');
+        this.eventBus.emit('world:trigger_event_now', {
+          spotId: this.lastState?.bazaarProximity?.spotId || null,
+        });
       });
       this.hudEl.querySelector('#btn-toggle-25d')?.addEventListener('click', () => {
         this.eventBus.emit('bazaar:toggle_render_mode');
@@ -326,6 +335,9 @@ export class UIManager {
       });
       this.hudEl.querySelector('#btn-event-test')?.addEventListener('click', () => {
         this.eventBus.emit('world:trigger_event_now');
+      });
+      this.hudEl.querySelector('#btn-vo-toggle')?.addEventListener('click', () => {
+        this.eventBus.emit('audio:toggle_vo');
       });
       this.hudEl.querySelector('#btn-mute')?.addEventListener('click', () => {
         this.eventBus.emit('audio:toggle_mute');
@@ -426,6 +438,7 @@ export class UIManager {
               ${renderSigil('seal', 15)}
               <span>Rəvayət</span>
             </button>
+            <button id="btn-vo-toggle" class="btn-secondary" title="Səsləndirməni Aç/Bağla">${this.voMuted ? '🎙️ Səsləndirmə: Bağlı' : '🎙️ Səsləndirmə'}</button>
             <button id="btn-mute" class="btn-secondary" title="Səs">${this.muted ? 'Səssiz' : 'Səs'}</button>
             <button id="btn-settings" class="btn-secondary" title="Ayarlar">⚙ Ayarlar</button>
             <button id="btn-reset" class="btn-secondary" title="Səfəri Yenidən Başlat">↺</button>
@@ -576,6 +589,9 @@ export class UIManager {
     });
     this.hudEl.querySelector('#btn-event-test')?.addEventListener('click', () => {
       this.eventBus.emit('world:trigger_event_now');
+    });
+    this.hudEl.querySelector('#btn-vo-toggle')?.addEventListener('click', () => {
+      this.eventBus.emit('audio:toggle_vo');
     });
     this.hudEl.querySelector('#btn-mute')?.addEventListener('click', () => {
       this.eventBus.emit('audio:toggle_mute');
@@ -1391,6 +1407,7 @@ export class UIManager {
           <h2 style="margin-top:8px;">${quest.title}</h2>
           ${renderSeljukStarDivider()}
           <p style="margin:10px 0 16px;line-height:1.68;color:#eadcc3;font-size:14.5px;">${quest.description}</p>
+          ${quest.clue_text ? `<div style="margin:-6px 0 14px;padding:8px 12px;border-left:2px solid var(--gold-bright);background:rgba(212,175,55,0.08);font-size:12.5px;color:#e7d3a5;font-style:italic;">📜 Sirli İpucu: ${quest.clue_text}</div>` : ''}
           <div class="lotm-lore-box" style="margin-bottom:18px;font-size:13.5px;">
             <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px;">
               ${renderItemSvg(quest.required_item, 18)}
@@ -1434,6 +1451,7 @@ export class UIManager {
             Rəvayətçi: ${evt.npc_name} (${npc?.title || evt.npc_role})
           </div>
           ${renderSeljukStarDivider()}
+          ${evt.video_file ? `<video src="${evt.video_file}" autoplay loop muted playsinline style="width:100%;max-height:230px;object-fit:cover;border-radius:8px;border:1px solid rgba(212,175,55,0.48);margin:8px 0 12px;background:#0e0b08;"></video>` : ''}
           <p style="line-height:1.7;color:#ede0c7;margin-bottom:14px;font-size:14.5px;">${evt.story_text}</p>
           <div class="lotm-lore-box" style="margin-bottom:18px;">
             <strong style="color:var(--gold-bright);">Tarixi Qeyd:</strong> ${evt.history_fact}
@@ -2014,8 +2032,10 @@ export class UIManager {
 
     const musicPct = Math.round((audioSettings?.musicVolume ?? 0.65) * 100);
     const sfxPct = Math.round((audioSettings?.sfxVolume ?? 0.85) * 100);
+    const voPct = Math.round((audioSettings?.voVolume ?? 0.9) * 100);
     const musicMuted = Boolean(audioSettings?.musicMuted);
     const sfxMuted = Boolean(audioSettings?.sfxMuted);
+    const voMuted = Boolean(audioSettings?.voMuted);
 
     this.modalEl.innerHTML = `
       <div class="modal-backdrop" style="z-index:80;">
@@ -2034,6 +2054,16 @@ export class UIManager {
                 </label>
               </div>
               <input id="rng-music-vol" type="range" min="0" max="100" value="${musicPct}" style="width:100%;accent-color:#cfa355;" />
+            </div>
+
+            <div style="padding:12px;background:rgba(16,12,8,0.75);border:1px solid rgba(212,175,55,0.35);border-radius:8px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <strong style="color:#f5e6c8;">🎙️ Səsləndirmə / Rəvayətçi (<span id="lbl-vo-pct">${voPct}%</span>)</strong>
+                <label style="font-size:12.5px;color:#cbb893;cursor:pointer;">
+                  <input type="checkbox" id="chk-vo-mute" ${voMuted ? 'checked' : ''} /> Səssiz (Yalnız Musiqi)
+                </label>
+              </div>
+              <input id="rng-vo-vol" type="range" min="0" max="100" value="${voPct}" style="width:100%;accent-color:#cfa355;" />
             </div>
 
             <div style="padding:12px;background:rgba(16,12,8,0.75);border:1px solid rgba(212,175,55,0.35);border-radius:8px;">
@@ -2082,6 +2112,17 @@ export class UIManager {
 
     this.modalEl.querySelector('#chk-sfx-mute')?.addEventListener('change', (e) => {
       callbacks.onSfxMute?.(e.target.checked);
+    });
+
+    const rngVo = this.modalEl.querySelector('#rng-vo-vol');
+    const lblVo = this.modalEl.querySelector('#lbl-vo-pct');
+    rngVo?.addEventListener('input', () => {
+      lblVo.textContent = `${rngVo.value}%`;
+      callbacks.onVoVolume?.(Number(rngVo.value) / 100);
+    });
+
+    this.modalEl.querySelector('#chk-vo-mute')?.addEventListener('change', (e) => {
+      callbacks.onVoMute?.(e.target.checked);
     });
 
     this.modalEl.querySelectorAll('.perf-mode-btn').forEach((btn) => {

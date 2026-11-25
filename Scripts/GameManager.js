@@ -11,6 +11,7 @@ import { StoryIntroScene } from '../Scenes/Story_Intro.js';
 import { WorldAzerbaijanScene } from '../Scenes/World_Azerbaijan.js';
 import { CaravanseraiBazaarScene } from '../Scenes/Caravanserai_Bazaar.js';
 import { CinematicBazaar25DScene } from '../Scenes/Cinematic_Bazaar_25D.js';
+import dialoguesData from '../Data/dialogues.json';
 
 /**
  * GameManager — Bütün səhnələri, Karvan Heybəsini, Bazar ticarətini və tarixi hadisələri birləşdirir.
@@ -223,8 +224,38 @@ export class GameManager {
       }
     });
 
-    this.eventBus.on('bazaar:angle_changed', () => {
+    this.eventBus.on('bazaar:angle_changed', (payload) => {
       this.ui.updateHUD(this._getUIState(this.tradeManager.getSnapshot()));
+      const angleId = payload?.angleId;
+      if (angleId && this.bazaarCityId) {
+        const roomVoAliases = {
+          bukhara_market: 'carpet_gallery',
+          caspian_port: 'harbor',
+          juma_bazaar: 'carpet_gallery',
+          yeddi_gunbez: 'mausoleum',
+          gulustan_fort: 'rampart',
+          silk_row: 'carpet_gallery',
+          kish_pass: 'mountain_pass',
+          gelersen_fort: 'rampart',
+          chokek_market: 'carpet_gallery',
+          nizami_square: 'mausoleum',
+          ganja_walls: 'rampart',
+          rasta_bazaar: 'carpet_gallery',
+          cidir_duzu: 'rampart',
+          isa_bulagi: 'mountain_pass',
+          lankaran_caravanserai: 'carpet_gallery',
+          south_port: 'harbor',
+          hirkan_fort: 'rampart',
+        };
+        const cityRooms = dialoguesData?.rooms?.[this.bazaarCityId];
+        const roomInfo = cityRooms?.[angleId] || cityRooms?.[roomVoAliases[angleId]];
+        if (roomInfo?.vo_id) {
+          this.audio.playVoiceover(roomInfo.vo_id);
+        }
+        if (roomInfo?.line) {
+          this.ui.showToast(roomInfo.line, 'info');
+        }
+      }
     });
 
     this.eventBus.on('state:updated', (snapshot) => {
@@ -276,6 +307,11 @@ export class GameManager {
       const muted = this.audio.toggleMute();
       this.ui.setMuted(muted);
     });
+    this.eventBus.on('audio:toggle_vo', () => {
+      const voMuted = this.audio.toggleVoMute();
+      this.ui.setVoMuted(voMuted);
+      this.ui.showToast(voMuted ? 'Səsləndirmə (Voiceover) söndürüldü — yalnız musiqi aktivdir.' : 'Səsləndirmə (Voiceover) aktiv edildi.', 'info');
+    });
     this.eventBus.on('palace:audience', () => this._handlePalaceAudience());
 
     this.eventBus.on('ui:open_settings', () => {
@@ -284,12 +320,18 @@ export class GameManager {
       this.ui.showSettingsModal(this.audio.getSettings(), perfMode, {
         onMusicVolume: (v) => this.audio.setMusicVolume(v),
         onSfxVolume: (v) => this.audio.setSfxVolume(v),
+        onVoVolume: (v) => this.audio.setVoVolume(v),
         onMusicMute: (b) => {
           this.audio.setMusicMuted(b);
           this.ui.setMuted(this.audio.muted);
         },
         onSfxMute: (b) => {
           this.audio.setSfxMuted(b);
+          this.ui.setMuted(this.audio.muted);
+        },
+        onVoMute: (b) => {
+          this.audio.setVoMuted(b);
+          this.ui.setVoMuted(this.audio.voMuted);
           this.ui.setMuted(this.audio.muted);
         },
         onPerfMode: (mode) => {
@@ -376,15 +418,18 @@ export class GameManager {
       this.paused = true;
       this.merchant.clearWaypoint();
       this.audio.playSFX('quest');
+      if (quest?.vo_id) this.audio.playVoiceover(quest.vo_id);
       this.ui.showQuest(quest, npc);
     });
 
     this.eventBus.on('quest:accept', (quest) => {
+      this.audio.stopVoiceover();
       this.tradeManager.acceptQuest(quest);
       this.paused = false;
     });
 
     this.eventBus.on('quest:decline', () => {
+      this.audio.stopVoiceover();
       this.paused = false;
     });
 
@@ -392,10 +437,12 @@ export class GameManager {
       this.paused = true;
       this.merchant.clearWaypoint();
       this.audio.playSFX('quest');
+      if (event?.vo_id) this.audio.playVoiceover(event.vo_id);
       this.ui.showHistoricalEvent(event, npc);
     });
 
     this.eventBus.on('event:choose', ({ event, choiceIndex }) => {
+      this.audio.stopVoiceover();
       this.tradeManager.applyHistoricalEventChoice(event, choiceIndex);
       this.paused = false;
     });
@@ -460,8 +507,16 @@ export class GameManager {
       this.paused = false;
     });
 
-    this.eventBus.on('world:trigger_event_now', () => {
+    this.eventBus.on('world:trigger_event_now', (payload) => {
       if (!this.paused) {
+        if (payload?.spotId) {
+          const spotEvt = (this.data.events || []).find((e) => e.spot_id === payload.spotId);
+          if (spotEvt) {
+            const npc = this.data.getNpcByRole(spotEvt.npc_role);
+            this.eventBus.emit('encounter:historical_event', { event: spotEvt, npc });
+            return;
+          }
+        }
         const cityMap =
           this.currentSceneName === 'Caravanserai_Bazaar' && this.bazaarCityId
             ? { [this.bazaarCityId]: { x: this.merchant.position.x, z: this.merchant.position.z } }
@@ -493,7 +548,9 @@ export class GameManager {
           } else if (this.bazaarProximity?.type === 'exit_to_map') {
             this.eventBus.emit('scene:exit_to_world');
           } else if (this.bazaarProximity?.type === 'mission_encounter') {
-            this.eventBus.emit('world:trigger_event_now');
+            this.eventBus.emit('world:trigger_event_now', {
+              spotId: this.bazaarProximity.spotId || (this.activeLocationId?.startsWith('Mission_') ? this.activeLocationId.replace('Mission_', '') : null),
+            });
           } else if (this.bazaarProximity?.type === 'angle_portal' && this.bazaarProximity.targetAngle) {
             this.bazaarScene?.switchAngle?.(
               this.bazaarProximity.targetAngle,
@@ -583,11 +640,13 @@ export class GameManager {
 
     this.storyScene = new StoryIntroScene(this.sceneRoot, this.eventBus, this.data);
     this.storyScene.mount();
+    this.audio.playVoiceover('intro_narrator');
   }
 
   async loadBazaarScene(cityId = 'City_Baku') {
     this._clearActiveScenes();
     this.currentSceneName = 'Caravanserai_Bazaar';
+    this.activeLocationId = cityId;
     const isMissionSpot = String(cityId).startsWith('Mission_');
     if (!isMissionSpot) {
       this.bazaarCityId = cityId;
@@ -610,6 +669,10 @@ export class GameManager {
     const city = !isMissionSpot ? this.data.getCityById(cityId) : this.data.getCityById(this.bazaarCityId);
     if (city) {
       this.audio.playCityMusic(city.music_track);
+    }
+    const welcome = dialoguesData?.city_welcomes?.[cityId];
+    if (welcome?.vo_id) {
+      this.audio.playVoiceover(welcome.vo_id);
     }
 
     this.lastTime = performance.now();

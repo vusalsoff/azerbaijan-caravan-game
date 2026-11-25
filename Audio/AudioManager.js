@@ -30,6 +30,46 @@ const TRACK_CONFIGS = {
     tempoMs: 680,
     timbre: 'kamancha',
   },
+  // Quba / Segah-Şüştər Şahdağ dağ motivi
+  audio_quba_mountain: {
+    droneFreq: 164.81, // E3
+    scale: [329.63, 349.23, 392.0, 415.3, 493.88, 523.25, 587.33, 659.25],
+    pattern: [0, 2, 4, 3, 2, 1, 2, 0, 4, 5, 6, 4, 3, 2, 1, 0],
+    tempoMs: 590,
+    timbre: 'tar',
+  },
+  // Gəncə / Rast-Mahur Nizami İntibahı motivi
+  audio_ganja_nizami: {
+    droneFreq: 138.59, // C#3
+    scale: [277.18, 311.13, 349.23, 369.99, 415.3, 466.16, 523.25, 554.37],
+    pattern: [0, 2, 3, 4, 5, 4, 2, 3, 4, 6, 5, 4, 2, 1, 0, 2],
+    tempoMs: 540,
+    timbre: 'oud',
+  },
+  // Naxçıvan / Hümayun-Bayatı Atabəylər motivi
+  audio_nakhchivan_atabeg: {
+    droneFreq: 110.0, // A2
+    scale: [220.0, 233.08, 277.18, 293.66, 329.63, 349.23, 415.3, 440.0],
+    pattern: [0, 1, 2, 3, 4, 3, 2, 1, 4, 5, 4, 3, 2, 1, 0, 1],
+    tempoMs: 650,
+    timbre: 'kamancha',
+  },
+  // Şamaxı / Şur-Şirvan Firuzəyi Karvansaray motivi
+  audio_shamakhi_shirvan: {
+    droneFreq: 138.59, // C#3
+    scale: [277.18, 293.66, 329.63, 369.99, 415.3, 440.0, 493.88, 554.37],
+    pattern: [0, 2, 3, 4, 2, 1, 3, 2, 4, 5, 4, 3, 1, 0, 2, 1],
+    tempoMs: 575,
+    timbre: 'tar',
+  },
+  // Lənkəran / Cənub Xəzər Sahili motivi
+  audio_lankaran_caspian: {
+    droneFreq: 146.83, // D3
+    scale: [293.66, 311.13, 369.99, 392.0, 440.0, 466.16, 554.37, 587.33],
+    pattern: [0, 1, 3, 4, 5, 4, 3, 1, 4, 6, 5, 3, 2, 1, 0, 2],
+    tempoMs: 600,
+    timbre: 'oud',
+  },
 };
 
 const AUDIO_SETTINGS_KEY = 'karva_audio_settings_v1';
@@ -45,12 +85,16 @@ export class AudioManager {
     this.muted = false;
     this.musicMuted = false;
     this.sfxMuted = false;
+    this.voMuted = false;
     this.musicVolume = 0.65;
     this.sfxVolume = 0.85;
+    this.voVolume = 0.9;
     this.currentTrack = null;
     this.loopTimer = null;
     this.stepIdx = 0;
     this.externalAudio = null;
+    this.voiceoverAudio = null;
+    this._voSeq = 0;
     this._loadSettings();
   }
 
@@ -61,9 +105,11 @@ export class AudioManager {
       const s = JSON.parse(raw);
       if (typeof s.musicVolume === 'number') this.musicVolume = Math.max(0, Math.min(1, s.musicVolume));
       if (typeof s.sfxVolume === 'number') this.sfxVolume = Math.max(0, Math.min(1, s.sfxVolume));
+      if (typeof s.voVolume === 'number') this.voVolume = Math.max(0, Math.min(1, s.voVolume));
       if (typeof s.musicMuted === 'boolean') this.musicMuted = s.musicMuted;
       if (typeof s.sfxMuted === 'boolean') this.sfxMuted = s.sfxMuted;
-      this.muted = this.musicMuted && this.sfxMuted;
+      if (typeof s.voMuted === 'boolean') this.voMuted = s.voMuted;
+      this.muted = this.musicMuted && this.sfxMuted && this.voMuted;
     } catch {
       // ignore
     }
@@ -76,8 +122,10 @@ export class AudioManager {
         JSON.stringify({
           musicVolume: this.musicVolume,
           sfxVolume: this.sfxVolume,
+          voVolume: this.voVolume,
           musicMuted: this.musicMuted,
           sfxMuted: this.sfxMuted,
+          voMuted: this.voMuted,
         })
       );
     } catch {
@@ -89,8 +137,10 @@ export class AudioManager {
     return {
       musicVolume: this.musicVolume,
       sfxVolume: this.sfxVolume,
+      voVolume: this.voVolume,
       musicMuted: this.musicMuted,
       sfxMuted: this.sfxMuted,
+      voMuted: this.voMuted,
     };
   }
 
@@ -104,7 +154,11 @@ export class AudioManager {
       this.sfxGain.gain.setValueAtTime(this.muted || this.sfxMuted ? 0 : this.sfxVolume, now);
     }
     if (this.externalAudio) {
-      this.externalAudio.volume = this.muted || this.musicMuted ? 0 : this.musicVolume * 0.5;
+      const duck = this.voiceoverAudio ? 0.35 : 1;
+      this.externalAudio.volume = this.muted || this.musicMuted ? 0 : this.musicVolume * 0.5 * duck;
+    }
+    if (this.voiceoverAudio) {
+      this.voiceoverAudio.volume = this.muted || this.voMuted ? 0 : this.voVolume;
     }
   }
 
@@ -120,18 +174,37 @@ export class AudioManager {
     this._saveSettings();
   }
 
+  setVoVolume(v) {
+    this.voVolume = Math.max(0, Math.min(1, Number(v)));
+    this._syncGains();
+    this._saveSettings();
+  }
+
   setMusicMuted(b) {
     this.musicMuted = Boolean(b);
-    this.muted = this.musicMuted && this.sfxMuted;
+    this.muted = this.musicMuted && this.sfxMuted && this.voMuted;
     this._syncGains();
     this._saveSettings();
   }
 
   setSfxMuted(b) {
     this.sfxMuted = Boolean(b);
-    this.muted = this.musicMuted && this.sfxMuted;
+    this.muted = this.musicMuted && this.sfxMuted && this.voMuted;
     this._syncGains();
     this._saveSettings();
+  }
+
+  setVoMuted(b) {
+    this.voMuted = Boolean(b);
+    if (this.voMuted) this.stopVoiceover();
+    this.muted = this.musicMuted && this.sfxMuted && this.voMuted;
+    this._syncGains();
+    this._saveSettings();
+  }
+
+  toggleVoMute() {
+    this.setVoMuted(!this.voMuted);
+    return this.voMuted;
   }
 
   init() {
@@ -171,6 +244,56 @@ export class AudioManager {
       if (started || this.currentTrack !== trackId) return;
       this._startProceduralMusic(trackId);
     });
+  }
+
+  /**
+   * Səsləndirmə (Voiceover) oxudur: public/audio/vo/<voId>.mp3 (və ya .ogg).
+   * Fayl mövcud deyilsə səssizcə və konsol xətası atmadan ötürür.
+   */
+  async playVoiceover(voId) {
+    if (!voId || this.muted || this.voMuted) return false;
+    this.stopVoiceover();
+    const seq = ++this._voSeq;
+
+    for (const ext of ['mp3', 'ogg']) {
+      const url = `./audio/vo/${voId}.${ext}`;
+      try {
+        const res = await fetch(url, { method: 'HEAD' });
+        const ct = (res.headers.get('content-type') || '').toLowerCase();
+        if (seq !== this._voSeq) return false;
+        if (res.ok && ct.startsWith('audio/')) {
+          const el = new Audio(url);
+          el.volume = this.muted || this.voMuted ? 0 : this.voVolume;
+          el.addEventListener('ended', () => {
+            if (this.voiceoverAudio === el) {
+              this.voiceoverAudio = null;
+              this._syncGains();
+            }
+          });
+          this.voiceoverAudio = el;
+          this._syncGains();
+          await el.play().catch(() => {});
+          return true;
+        }
+      } catch {
+        // Səs faylı hələ yoxdursa səssizcə ötür
+      }
+    }
+    return false;
+  }
+
+  stopVoiceover() {
+    this._voSeq += 1;
+    if (this.voiceoverAudio) {
+      try {
+        this.voiceoverAudio.pause();
+        this.voiceoverAudio.currentTime = 0;
+      } catch {
+        // ignore
+      }
+      this.voiceoverAudio = null;
+      this._syncGains();
+    }
   }
 
   async _tryExternalAudio(trackId) {
@@ -269,6 +392,19 @@ export class AudioManager {
       case 'guard':
         this._playPluck(392.0, 0.20, 0.15, 'triangle');
         setTimeout(() => this._playPluck(587.33, 0.22, 0.22, 'triangle'), 75);
+        break;
+      case 'seal':
+      case 'scroll':
+        this._playNoiseBurst(0.08, 0.09, 900);
+        setTimeout(() => this._playPluck(329.63, 0.15, 0.22, 'sine'), 40);
+        break;
+      case 'whisper':
+        this._playNoiseBurst(0.18, 0.04, 650);
+        setTimeout(() => this._playPluck(293.66, 0.12, 0.3, 'sine'), 70);
+        break;
+      case 'bell':
+        this._playPluck(880.0, 0.18, 0.45, 'sine');
+        setTimeout(() => this._playPluck(1318.5, 0.12, 0.35, 'sine'), 45);
         break;
       case 'victory':
       case 'victory_small':

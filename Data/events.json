@@ -1,7 +1,108 @@
 {
   "historical_events": [
     {
+      "event_id": "evt_bridge_north_ambush",
+      "spot_id": "Bridge_North",
+      "vo_id": "vo_evt_bridge_north_ambush",
+      "video_file": "./videos/bridge_north_ambush.mp4",
+      "era": "XVI əsr (Şimal Daş Körpüsü)",
+      "region": "Şamaxı ↔ Şuşa Dağ Keçidi",
+      "near_city": "City_Shamakhi",
+      "npc_role": "NPC_Traveler",
+      "npc_name": "Körpü Quldurbaşısı",
+      "title": "Şimal Daş Körpüsündə Pusqu",
+      "story_text": "Çay dərəsinin üstündəki qədim daş körpüdə silahlı yol kəsənlər karvanın önünü kəsib rüsum tələb edirlər. Duman içində fənərlər yanır — necə keçəcəksən?",
+      "history_fact": "XVI əsrdə dağ çayları üzərindəki strateji daş körpülər həm ticarət rüsumu məntəqəsi, həm də qaçaqların ən çox pusqu qurduğu nöqtələr idi.",
+      "choices": [
+        {
+          "label": "Rüşvət verib sakitcə keç (-45 Qızıl, +10s Sürət)",
+          "effect": { "gold": -45, "speed_boost_sec": 10 }
+        },
+        {
+          "label": "Ağılla Gildiya möhürü göstərib aldat (+35 Qızıl, +2 Zəka)",
+          "effect": { "gold": 35, "intelligence": 2 }
+        },
+        {
+          "label": "Keşikçi dəstəsi ilə qorunaraq keç (+1 Xarizma, +25s Qoruma)",
+          "effect": { "charisma": 1, "guard_boost_sec": 25 }
+        }
+      ]
+    },
+    {
+      "event_id": "evt_bridge_south_smuggler",
+      "spot_id": "Bridge_South",
+      "vo_id": "vo_evt_bridge_south_smuggler",
+      "video_file": "./videos/bridge_south_smuggler.mp4",
+      "era": "XVI əsr (Cənub Daş Körpüsü)",
+      "region": "Bakı ↔ Şuşa / Lənkəran Yolu",
+      "near_city": "City_Lankaran",
+      "npc_role": "NPC_Traveler",
+      "npc_name": "Gecə Fənərli Qaçaqmalçı",
+      "title": "Cənub Körpüsündə Sirli Möhürlü Sandıq",
+      "story_text": "Gecə yarısı Cənub Daş Körpüsünün altında fənər tutan gizli tacir səni saxlayır: əlində qırmızı mumla möhürlənmiş qədim sandıq var.",
+      "history_fact": "Cənub karvan yolu Xəzər sahilini Qarabağ və İran körfəzi marşrutları ilə birləşdirən gizli gecə keçidlərinə malik idi.",
+      "choices": [
+        {
+          "label": "Möhürlü sandığı yoxla və sirri aç (+85 Qızıl, +2 Zəka)",
+          "effect": { "gold": 85, "intelligence": 2 }
+        },
+        {
+          "label": "Qaçaqmalçıdan kəsə sahil yolunu öyrən (+40 Qızıl, +22s Sürət)",
+          "effect": { "gold": 40, "speed_boost_sec": 22 }
+        }
+      ]
+    },
+    {
+      "event_id": "evt_field_north_harvest",
+      "spot_id": "Field_North",
+      "vo_id": "vo_evt_field_north_harvest",
+      "video_file": "./videos/field_north_harvest.mp4",
+      "era": "XVI–XVII əsr (Şimal Yamac Tarlası)",
+      "region": "Şəki Altı · Dağ Ətəyi Bağları",
+      "near_city": "City_Sheki",
+      "npc_role": "NPC_Farmer",
+      "npc_name": "Yamac Bağbanı",
+      "title": "Şimal Yamac Tarlasında Bərəkət",
+      "story_text": "Şəki dağlarının ətəyindəki zəmilərdə kəndlilər təzə alma, bal və taxıl yığırlar. Karvanına ucuz təzə məhsul və yol azuqəsi təklif edirlər.",
+      "history_fact": "Şəki və Quba dağ ətəyi kəndləri karvanları qış boyu quru meyvə, dağ balı və buğda ilə təmin edən əsas tədarük mənbəyi idi.",
+      "choices": [
+        {
+          "label": "Kəndlilərə kömək et və təzə azuqə al (+55 Qızıl, Təzəlik 100%)",
+          "effect": { "gold": 55, "refresh_produce": true }
+        },
+        {
+          "label": "Bağbanlardan saxlama sirrini öyrən (+45 Qızıl, +1 Zəka, +1 Xarizma)",
+          "effect": { "gold": 45, "intelligence": 1, "charisma": 1 }
+        }
+      ]
+    },
+    {
+      "event_id": "evt_field_south_orchard",
+      "spot_id": "Field_South",
+      "vo_id": "vo_evt_field_south_orchard",
+      "video_file": "./videos/field_south_orchard.mp4",
+      "era": "XVI–XVIII əsr (Cənub Nar Zəmiləri)",
+      "region": "Şuşa ↔ Lənkəran Arası · Nar Bağları",
+      "near_city": "City_Lankaran",
+      "npc_role": "NPC_Farmer",
+      "npc_name": "Cənub Narçı Ağsaqqalı",
+      "title": "Cənub Nar Zəmilərinin Mühafizəsi",
+      "story_text": "Şuşa ilə Lənkəran arasındakı qızılı nar zəmilərində məhsul yığımı gedir. Bağbanlar səndən karvanındakı meyvələri sərin samanla yeniləməyi və bağı qorumağı xahiş edirlər.",
+      "history_fact": "Cənub və Kür-Araz vadisi nar bağları Şərq təbabəti və saray məclisləri üçün ən keyfiyyətli nar sortlarını yetişdirirdi.",
+      "choices": [
+        {
+          "label": "Məhsulları sərin samanla yenilə (+50 Qızıl, Təzəlik 100%)",
+          "effect": { "gold": 50, "refresh_produce": true }
+        },
+        {
+          "label": "Nar bağını keşikçilərlə qoru (+70 Qızıl, +2 Xarizma)",
+          "effect": { "gold": 70, "charisma": 2 }
+        }
+      ]
+    },
+    {
       "event_id": "evt_gobustan_bce",
+      "vo_id": "vo_evt_gobustan_bce",
       "era": "Eramızdan əvvəl (XII–VIII minillik)",
       "region": "Qobustan (Abşeron yaxınlığı)",
       "near_city": "City_Baku",
@@ -23,6 +124,7 @@
     },
     {
       "event_id": "evt_gabala_6th_century",
+      "vo_id": "vo_evt_gabala_6th_century",
       "era": "IV–VI əsrlər (Qafqaz Albaniyası)",
       "region": "Qəbələ / Şəki Yolu",
       "near_city": "City_Sheki",
@@ -43,31 +145,11 @@
       ]
     },
     {
-      "event_id": "evt_ganja_baku_12th_century",
-      "era": "XII əsr (Azərbaycan İntibahı)",
-      "region": "Şirvan — Gəncə İpək Xətti",
-      "near_city": "City_Baku",
-      "npc_role": "NPC_Ashig",
-      "npc_name": "Səyyar Aşıq və Şair",
-      "title": "XII Əsr Mədəniyyət Karvanı",
-      "story_text": "Yolda Gəncədən Şirvana gedən sənətkarlar və aşıqlarla qarşılaşdınız. XII əsr Azərbaycan ədəbiyyatının, memarlığının və ticarətinin qızıl dövrüdür.",
-      "history_fact": "XII əsrdə Gəncə, Şamaxı və Bakı Şərqin ən mühüm elm, sənətkarlıq və ticarət mərkəzləri idi; Nizami Gəncəvinin 'Xəmsə'si bu dövrdə yaranıb.",
-      "choices": [
-        {
-          "label": "Aşıq məclisinə qoşul (+70 Qızıl, +1 Xarizma)",
-          "effect": { "gold": 70, "charisma": 1 }
-        },
-        {
-          "label": "Karvanı qorumaq üçün birgə irəlilə (+30 Qızıl, +18s Qoruma)",
-          "effect": { "gold": 30, "guard_boost_sec": 18 }
-        }
-      ]
-    },
-    {
       "event_id": "evt_shamakhi_16th_carpet",
-      "era": "XVI əsr (Şamaxı İpək & Xalça Bazarı)",
+      "vo_id": "vo_evt_shamakhi_16th_carpet",
+      "era": "XVI əsr (Şamaxı Firuzəyi Karvansarayı)",
       "region": "Şamaxı Karvansarayı",
-      "near_city": "City_Baku",
+      "near_city": "City_Shamakhi",
       "npc_role": "NPC_Craftsman",
       "npc_name": "Şamaxılı Xalça Taciri",
       "title": "Şamaxı Karvansarayında Bazarlıq Sənəti",
@@ -85,28 +167,30 @@
       ]
     },
     {
-      "event_id": "evt_quba_sheki_orchards",
-      "era": "XVII–XVIII əsr (Kənd Təsərrüfatı İrsi)",
-      "region": "Quba — Şəki Meyvə Bağları",
-      "near_city": "City_Sheki",
-      "npc_role": "NPC_Farmer",
-      "npc_name": "Bağban Ağsaqqal",
-      "title": "Bərəkətli Meyvə Bağları və Təzəlik Sirri",
-      "story_text": "Dağ ətəyindəki alma və armud bağbanları karvanını sərin bulaq suyu və samanla meyvələri uzun müddət təzə saxlamaq üsulu ilə tanış edir.",
-      "history_fact": "Azərbaycanın Quba, Şəki və Göyçay bölgələri əsrlərdir alma, armud, nar və təmiz dağ balı ilə karvan ticarətinin əsas kənd təsərrüfatı dayağı olub.",
+      "event_id": "evt_shamakhi_seven_domes",
+      "vo_id": "vo_evt_shamakhi_seven_domes",
+      "era": "XVII–XVIII əsr (Yeddi Günbəz & Gülüstan)",
+      "region": "Şamaxı · Yeddi Günbəz Meydanı",
+      "near_city": "City_Shamakhi",
+      "npc_role": "NPC_Historian",
+      "npc_name": "Şamaxı Salnaməçisi",
+      "title": "Yeddi Günbəzin Səssiz Möhürü",
+      "story_text": "Yeddi Günbəz türbələrinin kölgəsində qoca salnaməçi sənə Şirvan xanlarının gizli karvan fərmanını göstərir.",
+      "history_fact": "Şamaxıdaki Yeddi Günbəz kompleksi və Gülüstan qalası Şirvanşahlar və Şamaxı xanlığının tarixi yaddaşını yaşadır.",
       "choices": [
         {
-          "label": "Bütün meyvələrin təzəliyini yenilə (+45 Qızıl, Təzəlik 100%)",
-          "effect": { "gold": 45, "refresh_produce": true }
+          "label": "Fərmanın mətnini köçür (+75 Qızıl, +2 Zəka)",
+          "effect": { "gold": 75, "intelligence": 2 }
         },
         {
-          "label": "Bağçılıq təqvimini öyrən (+55 Qızıl, +1 Zəka)",
-          "effect": { "gold": 55, "intelligence": 1 }
+          "label": "Türbə xidmətçilərinə ehsan ver (+55 Qızıl, +2 Xarizma)",
+          "effect": { "gold": 55, "charisma": 2 }
         }
       ]
     },
     {
       "event_id": "evt_sheki_shebeke_18th",
+      "vo_id": "vo_evt_sheki_shebeke_18th",
       "era": "XVIII əsr (Şəki Xanlığı)",
       "region": "Şəki Karvansarayı",
       "near_city": "City_Sheki",
@@ -127,7 +211,52 @@
       ]
     },
     {
+      "event_id": "evt_ganja_nizami_lantern",
+      "vo_id": "vo_evt_ganja_nizami_lantern",
+      "era": "XVI–XVII əsr (Gəncə İntibah İrsi)",
+      "region": "Gəncə · Nizami Türbə Meydanı",
+      "near_city": "City_Ganja",
+      "npc_role": "NPC_Ashig",
+      "npc_name": "Gəncəli Hafiz",
+      "title": "Nizami Türbəsində Gecə Fənəri",
+      "story_text": "Axşamçağı Gəncə çinarlarının kölgəsində səyyar hafiz əlində mis fənərlə Nizaminin 'İskəndərnamə'sindən gizli hikmətlər oxuyur.",
+      "history_fact": "Gəncə XII əsrdə Nizami Gəncəvinin yaşayıb yaratdığı, XVI–XVII əsrlərdə isə Şah Abbas Karvansarayı ilə abadlaşmış mühüm ticarət şəhəridir.",
+      "choices": [
+        {
+          "label": "Hikmət məclisini dinlə (+70 Qızıl, +2 Zəka)",
+          "effect": { "gold": 70, "intelligence": 2 }
+        },
+        {
+          "label": "Fənər üçün Abşeron nefti bağışla (+55 Qızıl, +2 Xarizma)",
+          "effect": { "gold": 55, "charisma": 2 }
+        }
+      ]
+    },
+    {
+      "event_id": "evt_ganja_shah_abbas_vault",
+      "vo_id": "vo_evt_ganja_shah_abbas_vault",
+      "era": "XVII əsr (Səfəvi Ticarət Dəftərxanası)",
+      "region": "Gəncə · Şah Abbas Karvansarayı",
+      "near_city": "City_Ganja",
+      "npc_role": "PadishahNPC",
+      "npc_name": "Dəftərdar Əli",
+      "title": "Karvansarayın Gizli Dəftərxanası",
+      "story_text": "Gəncə Karvansarayının qırmızı kərpic tağları altında Dəftərdar Əli sənə şifrəli bir ticarət dəftərini göstərir — burada İpək Yolunun gizli keçidləri qeyd olunub.",
+      "history_fact": "XVII əsrin əvvəllərində inşa edilən Gəncə Şah Abbas Karvansarayı ikimərtəbəli 54 otağı ilə karvanların əsas dayanacağı idi.",
+      "choices": [
+        {
+          "label": "Gizli keçid xəritəsini köçür (+45 Qızıl, +25s Sürət)",
+          "effect": { "gold": 45, "speed_boost_sec": 25 }
+        },
+        {
+          "label": "Dəftərdarla gizli ortaqlıq qur (+95 Qızıl, +1 Xarizma)",
+          "effect": { "gold": 95, "charisma": 1 }
+        }
+      ]
+    },
+    {
       "event_id": "evt_shusha_karabakh_horse",
+      "vo_id": "vo_evt_shusha_karabakh_horse",
       "era": "XVIII–XIX əsr (Qarabağ Xanlığı)",
       "region": "Şuşa — Cıdır Düzü",
       "near_city": "City_Shusha",
@@ -148,23 +277,46 @@
       ]
     },
     {
-      "event_id": "evt_goychay_pomegranate_harvest",
-      "era": "XIX əsr (Kənd Təsərrüfatı & Nar Festivalı)",
-      "region": "Göyçay — Kür Vadisi",
-      "near_city": "City_Shusha",
-      "npc_role": "NPC_Farmer",
-      "npc_name": "Narçı Usta",
-      "title": "Qızıl Payız — Nar və Buğda Bərəkəti",
-      "story_text": "Kür-Araz vadisində məhsul yığımı qızğın çağındadır. Kəndlilər karvan yolçularına qırmızı nar və təzə çörək təklif edirlər.",
-      "history_fact": "Azərbaycanın Göyçay və Qarabağ nar sortları ənənəvi kənd təsərrüfatının simvoludur və UNESCO qeyri-maddi irs siyahısına daxil edilib.",
+      "event_id": "evt_lankaran_round_fortress",
+      "vo_id": "vo_evt_lankaran_round_fortress",
+      "era": "XVIII əsr (Talış Xanlığı · Dairəvi Qala)",
+      "region": "Lənkəran · Dairəvi Qala Meydanı",
+      "near_city": "City_Lankaran",
+      "npc_role": "PadishahNPC",
+      "npc_name": "Talış Xanı Elçisi",
+      "title": "Dairəvi Qalanın Gizli Sərhəd Möhürü",
+      "story_text": "Lənkəran Dairəvi Qalasının qalın kərpic bürcləri arasında elçi sənə Cənub Xəzər limanının gizli gömrük möhürünü təklif edir.",
+      "history_fact": "XVIII əsrdə inşa edilən Lənkəran Dairəvi Qalası (Zindan qalası) cənub sərhədlərinin və Xəzər ticarət limanının müdafiə dayağı olub.",
       "choices": [
         {
-          "label": "Məhsul bayramına qatıl (+65 Qızıl, +1 Xarizma, Təzəlik +1 gün)",
-          "effect": { "gold": 65, "charisma": 1, "refresh_produce": true }
+          "label": "Liman gömrük möhürünü al (+85 Qızıl, +2 Zəka)",
+          "effect": { "gold": 85, "intelligence": 2 }
         },
         {
-          "label": "Ticarət yolları barədə məlumat al (+50 Qızıl, +1 Zəka)",
-          "effect": { "gold": 50, "intelligence": 1 }
+          "label": "Qala mühafizəçiləri ilə müqavilə bağla (+45 Qızıl, +25s Qoruma)",
+          "effect": { "gold": 45, "guard_boost_sec": 25 }
+        }
+      ]
+    },
+    {
+      "event_id": "evt_lankaran_caspian_spice",
+      "vo_id": "vo_evt_lankaran_caspian_spice",
+      "era": "XVI–XVIII əsr (Cənub Xəzər Limanı)",
+      "region": "Lənkəran · Cənub Xəzər Limanı",
+      "near_city": "City_Lankaran",
+      "npc_role": "NPC_Traveler",
+      "npc_name": "Gəmi Kapitanı",
+      "title": "Xəzər Gəmisindən Gələn Ədviyyat Sandığı",
+      "story_text": "Lənkəran limanına yan alan yelkənli gəmidən ədviyyat və ipək sandıqları boşaldılır. Kapitan sənin karvanına gizli dəniz xəritəsi təklif edir.",
+      "history_fact": "Lənkəran limanı XVI–XVIII əsrlərdə Xəzər dənizi vasitəsilə Şirvan, Gilan və Mərkəzi Asiya bazarlarını birləşdirirdi.",
+      "choices": [
+        {
+          "label": "Dəniz ticarəti məlumatını al (+75 Qızıl, +1 Xarizma)",
+          "effect": { "gold": 75, "charisma": 1 }
+        },
+        {
+          "label": "Meyvə və nar ehtiyatını yenilə (+45 Qızıl, Təzəlik 100%)",
+          "effect": { "gold": 45, "refresh_produce": true }
         }
       ]
     }

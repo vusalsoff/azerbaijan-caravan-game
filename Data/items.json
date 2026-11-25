@@ -2,102 +2,102 @@
   "items": {
     "salt": {
       "item_id": "salt",
-      "name": "Abşeron Duzu",
+      "name": "Abşeron və Duzdağ Kristal Duzu",
       "category": "craft",
-      "tier_label": "Əsnaf Tədarükü",
-      "seal_title": "Masazır Mədən Möhürü",
-      "origin_region": "Abşeron · Masazır və Böyükşor gölləri",
-      "unit_label": "Çuval",
-      "lore": "Xəzər küləyinin və qızmar Abşeron günəşinin göl sahillərində kristallaşdırdığı bərk duz layları. Həm uzaq səfər azuqəsini xarab olmaqdan qoruyur, həm də qədim el adətində çörəklə birgə əhd-peyman rəmzi sayılır.",
-      "merchant_whisper": "«Duz yükü ağır, bərəkəti sabitdir; dənizdən uzaq dağ ellərində hər çuvalı qızıla bərabər tutular.»"
+      "tier_label": "Əsnaf Tədarükü · I Dərəcə",
+      "seal_title": "Masazır-Duzdağ Mədən Möhürü",
+      "origin_region": "Abşeron · Masazır və Naxçıvan Duzdağı",
+      "unit_label": "Möhürlü çuval",
+      "lore": "Xəzər küləyinin və Naxçıvanın beş min illik yeraltı mağaralarının bəxş etdiyi şəffaf kristal duz layları. Uzaq səfər azuqəsini qorumaqla yanaşı, Şərq karvansaraylarında əhd-peyman və duz-çörək sədaqətinin toxunulmaz rəmzidir.",
+      "merchant_whisper": "«Duz yükü ağır, bərəkəti sabitdir; Gildiya dəftərində hər möhürlü çuvalı qızıl sikkəyə bərabər tutular.»"
     },
     "oil": {
       "item_id": "oil",
-      "name": "Qara Neft (Tuluq)",
+      "name": "Abşeron Qara Nefti (Tuluq)",
       "category": "craft",
-      "tier_label": "Mədən İrsi",
-      "seal_title": "Şirvan Darğası Damğası",
+      "tier_label": "Mədən İrsi · Sirli Yanacaq",
+      "seal_title": "Şirvan Darğası Qırmızı Damğası",
       "origin_region": "Bakı · Balaxanı və Suraxanı quyuları",
-      "unit_label": "Dəri tuluq",
-      "lore": "Odlar Yurdunun daş quyularından çəkilib qatranlanmış dəri tuluqlarda möhürlənən qatı yer yağı. Gecə keşik məşəllərini küləkdə belə söndürməz; uzaq diyarların təbibləri və sənətkarları onun sorağı ilə karvan gözləyər.",
-      "merchant_whisper": "«Qoxusu sərt, hökmü böyükdür; qış yaxınlaşdıqca dağ qalalarında qiyməti ikiqat qalxar.»"
+      "unit_label": "Qatranlı dəri tuluq",
+      "lore": "Odlar Yurdunun daş quyularından çəkilib qatranlanmış dəri tuluqlarda gizli möhürlə bağlanan qatı yer yağı. Gecə keşik məşəllərini tufanda belə söndürməz; Şahdağ qalalarının mühafizəçiləri və təbibləri onu səbirsizliklə gözləyər.",
+      "merchant_whisper": "«Qoxusu sərt, hökmü böyükdür; şimal dağ keçidlərinə çıxanda qiyməti ikiqat qalxar.»"
     },
     "silk": {
       "item_id": "silk",
       "name": "Şəki Xam İpəyi",
       "category": "luxury",
-      "tier_label": "Xanlıq Xəzinəsi",
-      "seal_title": "Şəki Barama Əmanəti",
+      "tier_label": "Xanlıq Xəzinəsi · Ali Nişan",
+      "seal_title": "Şəki Barama Gildiyası Əmanəti",
       "origin_region": "Şəki · Baş Küngüt və Kiş tut bağları",
-      "unit_label": "Büküm kələf",
-      "lore": "Tut bağlarının səssizliyində bəslənən baramalardan min bir səbirlə açılmış zərif ipək kələfləri. Şam işığında su kimi axır, toxunduğu əldə sərinlik, xan və bəy məclislərində isə əzəmət yaradır.",
-      "merchant_whisper": "«Yüngül yük, ağır qazanc. Nəmişlikdən qorusan, liman bazarlarında sərvət gətirər.»"
+      "unit_label": "İpək kələf topu",
+      "lore": "Tut bağlarının səssizliyində bəslənən baramalardan min bir səbirlə açılmış zərif ipək kələfləri. Şam işığında su kimi axır, Gizli Divan məktublarını bükən bəylər onu əzəmət və sirlilik rəmzi sayır.",
+      "merchant_whisper": "«Yüngül yük, ağır qazanc. Nəmişlikdən qorusan, Gəncə və Bakı liman bazarlarında sərvət gətirər.»"
     },
     "carpet": {
       "item_id": "carpet",
       "name": "Naxışlı Qarabağ Xalçası",
       "category": "luxury",
-      "tier_label": "Nadir Sənət İrsi",
-      "seal_title": "Çələbi Toxucu Möhürü",
+      "tier_label": "Nadir Sənət İrsi · Şah Nişanı",
+      "seal_title": "Çələbi Toxucu Gizli Möhürü",
       "origin_region": "Şuşa və Bərdə karxanaları",
       "unit_label": "Tay büküm",
-      "lore": "Qarabağ ustalarının kökboyası ilə rənglənmiş yundan ilmə-ilmə düyünlədiyi 'Çələbi' və 'Xanlıq' çeşnili xalça. Hər gölündə qədim nəsil yaddaşı, hər haşiyəsində ocaq qoruyucu simvollar gizlənib.",
-      "merchant_whisper": "«Əsl xalça illər keçdikcə qiymətə minər; Xəzər limanında əcnəbi tacirlər onun üçün kisə açar.»"
+      "lore": "Qarabağ ustalarının kökboyası ilə rənglənmiş yundan ilmə-ilmə düyünlədiyi 'Çələbi' və 'Xanlıq' çeşnili xalça. Hər gölündə qədim nəsil yaddaşı, hər haşiyəsində isə karvanı bədnəzərdən qoruyan şifrəli simvollar gizlənib.",
+      "merchant_whisper": "«Əsl xalça illər keçdikcə qiymətə minər; Atabəylər meydanında və Xəzər limanında əcnəbi elçilər onun üçün kisə açar.»"
     },
     "horse_gear": {
       "item_id": "horse_gear",
       "name": "Qarabağ Atı Ləvazimatı",
       "category": "luxury",
-      "tier_label": "Xan İlxısı Nişanı",
-      "seal_title": "Cıdır Düzü Möhürü",
+      "tier_label": "Xan İlxısı Nişanı · Süvari İrsi",
+      "seal_title": "Cıdır Düzü Polad Möhürü",
       "origin_region": "Şuşa · Xan İlxısı və Lahıc sərracları",
-      "unit_label": "Tam dəst",
-      "lore": "Köhlən Qarabağ atları üçün gümüş toqqalı yəhər, nəfis işləməli yüyən və polad üzəngi dəsti. Heybədə daşındığı müddətdə karvanın gedişinə çeviklik (+35% sürət) və yollarda hörmət qazandırır.",
-      "merchant_whisper": "«Sürət tacirin gizli qalxanıdır — həm oğrudan uzaq tutar, həm də barı xarab olmadan bazara çatdırar.»"
+      "unit_label": "Gümüşlü tam dəst",
+      "lore": "Köhlən Qarabağ atları üçün gümüş toqqalı yəhər, nəfis işləməli yüyən və polad üzəngi dəsti. Heybədə daşındığı müddətdə karvanın gedişinə çeviklik (+35% sürət) və yollarda Gildiya ehtiramı qazandırır.",
+      "merchant_whisper": "«Sürət tacirin gizli qalxanıdır — həm yol kəsən quldurdan uzaq tutar, həm də meyvəni xarab olmadan bazara çatdırar.»"
     },
     "halva": {
       "item_id": "halva",
       "name": "Şəki Ustad Halvası",
       "category": "craft",
-      "tier_label": "Ustad Sirri",
-      "seal_title": "Karvansaray Halvaçı Nişanı",
+      "tier_label": "Ustad Sirri · Gildiya Şirniyyatı",
+      "seal_title": "Yuxarı Karvansaray Halvaçı Nişanı",
       "origin_region": "Şəki · Yuxarı Karvansaray mətbəxi",
-      "unit_label": "Mis sinidə bağlama",
-      "lore": "İncə düyü rəştası, qovrulmuş fındıq ləpəsi, keşniş toxumu və zəfəran şərbətinin gizli nisbəti ilə bişirilən Şəki halvası. Xan süfrələrinin bəzəyi olsa da, zərif şərbəti dörd gün içində qurumağa meyllidir.",
+      "unit_label": "Mis sinidə möhürlü qutu",
+      "lore": "İncə düyü rəştası, qovrulmuş fındıq ləpəsi, keşniş toxumu və zəfəran şərbətinin ustadan şəyirdə pıçıldanan gizli nisbəti ilə bişirilən Şəki halvası. Zərif şərbəti dörd gün içində təravətini qoruyur.",
       "merchant_whisper": "«Şirin dil və Şəki halvası açılmayan qapıları açar; möhləti bitmədən Şuşa və Bakı məclislərinə çatdır.»"
     },
     "apple": {
       "item_id": "apple",
-      "name": "Şehli Dağ Alması",
+      "name": "Şehli Quba Dağ Alması",
       "category": "agriculture",
-      "tier_label": "Bağ Bərəkəti",
-      "seal_title": "Bağban Əmanəti",
-      "origin_region": "Şəki və Quba dağ ətəyi bağları",
-      "unit_label": "Hörgü səbət",
-      "lore": "Sərin bulaq suyu ilə suvarılan uca dağ bağlarının ətirli, bərk qabıqlı alması. Saman döşənmiş səbətlərdə daşınsa da, üç gündən artıq yol istisinə tab gətirməz.",
+      "tier_label": "Bağ Bərəkəti · Şahdağ İrsi",
+      "seal_title": "Quba Bağbanı Əmanəti",
+      "origin_region": "Quba və Şəki dağ ətəyi bağları",
+      "unit_label": "Samanlı hörgü səbət",
+      "lore": "Şahdağın sərin bulaq suyu ilə suvarılan uca dağ bağlarının ətirli, qırmızı yanaqlı alması. Saman döşənmiş səbətlərdə daşınsa da, üç gündən artıq yol istisinə tab gətirməz.",
       "merchant_whisper": "«Bağ malını alarkən mənzili əvvəlcədən ölç; gecikən karvan qazancı yolda çürüdər.»"
     },
     "pear": {
       "item_id": "pear",
       "name": "Şəki Bal Armudu",
       "category": "agriculture",
-      "tier_label": "Zərif Bar",
-      "seal_title": "Xan Bağı Nişanı",
+      "tier_label": "Zərif Bar · Sürət Sınağı",
+      "seal_title": "Xan Bağı İncə Nişanı",
       "origin_region": "Şəki · Kiş dərəsi bağları",
-      "unit_label": "Səbət",
+      "unit_label": "Zərif hörgü səbət",
       "lore": "Nazik qabıqlı, ağızda əriyən ətirli Şəki armudu. Bütün bağ nemətləri içində ən həssasıdır: cəmi iki gün ərzində mənzil başına çatdırılmasa təravətini itirib dəyərdən düşər.",
       "merchant_whisper": "«Tez xarab olan malın qazancı şirindir, amma yalnız köhlən atı olan tacir bu riskə girər.»"
     },
     "pomegranate": {
       "item_id": "pomegranate",
-      "name": "Yaqut Qarabağ Narı",
+      "name": "Yaqut Qarabağ-Göyçay Narı",
       "category": "agriculture",
-      "tier_label": "Bərəkət Tacı",
+      "tier_label": "Bərəkət Tacı · Şərq İksiri",
       "seal_title": "Göyçay-Qarabağ Bağ Möhürü",
       "origin_region": "Qarabağ və Göyçay bağları",
       "unit_label": "Səbət",
-      "lore": "Qalın qabığı altında minlərlə al-yaqut dənə gizlədən payız şahı. Şərq elmində həm dirilik şərbəti, həm də bolluq rəmzi sayılır; digər meyvələrə nisbətən yola daha dözümlüdür.",
-      "merchant_whisper": "«Qabığı bərk, müştərisi sadiqdir; sahil şəhərlərində həm təbiblər, həm saray əhli həvəslə alar.»"
+      "lore": "Qalın qabığı altında minlərlə al-yaqut dənə gizlədən payız şahı. Şərq təbabətində həm dirilik şərbəti, həm də bolluq rəmzi sayılır; digər meyvələrə nisbətən uzun yola daha dözümlüdür.",
+      "merchant_whisper": "«Qabığı bərk, müştərisi sadiqdir; Gəncə və Bakı bazarlarında həm təbiblər, həm saray əhli həvəslə alar.»"
     },
     "grape": {
       "item_id": "grape",
@@ -107,18 +107,18 @@
       "seal_title": "Abşeron Tənək Nişanı",
       "origin_region": "Bakı · Bilgəh və Mərdəkan bağları",
       "unit_label": "Səbət",
-      "lore": "Xəzər mehinin və qaynar qumun şirinləşdirdiyi qızılı-kəhrəba şanı salxımları. Günəşin dadını canına çəksə də, üç gün içində əzilmədən dağ bazarlarına çatdırılmalıdır.",
+      "lore": "Xəzər mehinin və qaynar Abşeron qumunun şirinləşdirdiyi qızılı-kəhrəba şanı salxımları. Günəşin dadını canına çəksə də, üç gün içində əzilmədən dağ bazarlarına çatdırılmalıdır.",
       "merchant_whisper": "«Sahilin şanısı dağ elində nadir nemətdir; təzə çatdırsan ikiqat əvəzini verər.»"
     },
     "honey": {
       "item_id": "honey",
       "name": "Möhürlü Dağ Balı (Küp)",
       "category": "agriculture",
-      "tier_label": "Əbədi Şəfa",
+      "tier_label": "Əbədi Şəfa · Mum Möhürü",
       "seal_title": "Yaylaq Pətək Möhürü",
       "origin_region": "Böyük Qafqaz və Kəlbəcər yaylaqları",
       "unit_label": "Mumlu saxsı küp",
-      "lore": "Min bir yaylaq çiçəyinin nektarından süzülüb ağzı arı mumu ilə möhürlənmiş saxsı küp balı. İllər keçsə belə xarab olmaz; karvan taciri üçün həm dərman, həm də itməz sərmayədir.",
+      "lore": "Min bir yaylaq çiçəyinin nektarından süzülüb ağzı arı mumu ilə möhürlənmiş saxsı küp balı. İllər keçsə belə xarab olmaz; gizli karvan taciri üçün həm şəfa, həm də itməz sərmayədir.",
       "merchant_whisper": "«Möhürlü küp nə vaxt qorxusu bilər, nə yol istisi; dar gündə qızıl sikkə kimi keçərlidir.»"
     },
     "wheat": {
@@ -130,7 +130,7 @@
       "origin_region": "Qarabağ və Mil düzənlikləri",
       "unit_label": "Toxuma kisə",
       "lore": "Bərəkətli Qarabağ torpağında yetişən iri dənli, qızılı sünbül buğdası. Quru kisədə saxlandıqca xarab olmur; hər şəhərin çörək təknəsi və karvansaray anbarı ona möhtacdır.",
-      "merchant_whisper": "«Qızıl parlayar, amma ac qalan şəhər əvvəl buğda axtarar; ucuz alıb uzaq limana daşımaq ağıllı gedişdir.»"
+      "merchant_whisper": "«Qızıl parlayar, amma ac qalan şəhər əvvəl buğda axtarar; ucuz alıb uzaq bazara daşımaq ağıllı gedişdir.»"
     }
   }
 }
