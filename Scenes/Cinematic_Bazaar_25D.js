@@ -4,9 +4,14 @@ import { ModelLoader } from '../Prefabs/ModelLoader.js';
 
 /**
  * Scenes/Cinematic_Bazaar_25D.js
- * 6 Şəhər (hərəsində 5–6 özəl adlı məkan) + 4 Xüsusi Missiya Məkanı (hərəsində 2 otaq)
- * + Real Vaxt ☀ Səhər ↔ ☾ Gecə Modu (T düyməsi)
- * + Hər Məkan Üçün Fərdi Hərəkət Sərhədi & Hərəkət Etməmə Zolaqları (blockedZones) + B (Sərhəd Göstəricisi)
+ * HƏQİQİ 3D PROYEKSİYALI DƏRİNLİK QABIĞI (3D Projected Depth-Shell Mesh) + FƏRDİ MƏKAN HƏRƏKƏT PROFİLLƏRİ:
+ * - Artıq 2D düz ekran şəkli deyil: hər məkan 140×84 seqmentli HƏQİQİ 3D DƏRİNLİK TORUNA (Depth-Displaced 3D Shell)
+ *   proyeksiyalanır! Döşəmə pikselləri real Y=0 (və ya Qala Bürcündə yüksələn yamac!) müstəvisinə kilidlənir,
+ *   yan tağlar/sütunlar önə çıxır, Qız Qalası/dəniz/dağlar arxada dərinlikdə qalır.
+ * - Real Three.js PerspectiveCamera 3D məkanda tacirin arxasınca irəliləyir, yanlara dönür və yamaclara qalxır —
+ *   tacirin ayaqları daş döşəmədə sürüşmədən bütün memarlıq əsl 3D perspektivdə hərəkət edir!
+ * - Bakının hər 6 məkanı fərqli kamera davranışı, fərqli yeriş sürəti/ritmi, fərqli əyri/yamac trayektoriyası,
+ *   fərdi sərhəd trapesiyası və qadağan zolaqlarına (`blockedZones`) malikdir (`B` düyməsi ilə canlı görünür!).
  */
 
 const ENABLE_PLACEHOLDER_NPCS = false;
@@ -94,18 +99,37 @@ const CITY_CULTURE_STYLES = {
   },
 };
 
-// Hər məkan şablonunun öz fərdi kamerası, üfüqü, hərəkət sərhədi və HƏRƏKƏT ETMƏMƏ ZOLAQLARI (blockedZones)
+/**
+ * Hər məkan şablonunun öz fərdi 3D kamera proyeksiya dərinliyi, fərdi xarakter hərəkət sürəti/ritmi,
+ * yamac hündürlüyü (`slopeRise`), əyri oxu (`curveX`), hərəkət sərhədi və qadağan zolaqları!
+ */
 const ROOM_TEMPLATES = {
+  // 1. BAKI — İÇƏRİŞƏHƏR HƏYƏTİ: Geniş meydan izləmə + günəş/kölgə keçidi
   baku_courtyard: {
     baseImage: './images/bazaar_baku_25d',
-    camPos: [0, 1.82, 13.4],
-    lookAt: [0, 3.35, -12.0],
-    zRange: [-8.4, 6.6],
-    xBounds: [-3.4, 2.75, 0.85, 0.55],
-    // Sağ ön tərəfdəki meyvə səbətləri hərəkət etməmə zolağıdır
+    camPos: [0, 1.84, 13.4],
+    lookAt: [0, 3.32, -12.0],
+    liveFov: 38,
+    refFov: 48,
+    depthShell: { nearDist: 6.8, farDist: 44.0, maxGroundDist: 28.0 },
+    movement: {
+      profileName: 'Geniş Meydan İzləmə',
+      speed: 4.55,
+      animScale: 1.12,
+      followX: 0.44,
+      followZ: 0.36,
+      followY: 0.14,
+      lookX: 0.24,
+      lookUpOnApproach: 0.45,
+      camRollAmp: 0.0,
+      slopeRise: 0.0,
+      curveX: 0.0,
+    },
+    zRange: [-7.6, 6.2],
+    xBounds: [-3.35, 2.7, 0.85, 0.55],
     blockedZones: [
-      { x: 2.85, z: 3.6, rx: 1.15, rz: 2.2, label: 'Meyvə Səbətləri' },
-      { x: -3.65, z: 2.8, rx: 0.75, rz: 2.8, label: 'Sol Sütunlar' },
+      { x: 2.75, z: 3.4, rx: 1.15, rz: 2.2, label: 'Meyvə & Nar Səbətləri' },
+      { x: -3.6, z: 2.8, rx: 0.78, rz: 2.8, label: 'Sol Tağ Sütunları' },
     ],
     sunColor: 0xffe4b0,
     sunPos: [14, 17, 7],
@@ -123,12 +147,240 @@ const ROOM_TEMPLATES = {
       { pos: [4.2, 2.5, 1.8], uv: [0.89, 0.56], color: 0xffb656, intensity: 2.7 },
     ],
   },
+
+  // 2. BAKI — BUXARA ÖRTÜLÜ XALÇA BAZARI: Dar tağlı dəhlizdə dərin 3D Tunel Dolly irəliləyişi!
+  covered_arcade: {
+    baseImage: './images/bazaar_baku_carpet_25d',
+    camPos: [0, 1.56, 12.2],
+    lookAt: [0, 4.68, -12.0],
+    liveFov: 37,
+    refFov: 48,
+    depthShell: { nearDist: 5.8, farDist: 38.0, maxGroundDist: 26.0 },
+    movement: {
+      profileName: 'Tağlı Dəhliz Tunel-Dolly',
+      speed: 3.45,
+      animScale: 0.94,
+      followX: 0.24,
+      followZ: 0.58, // Dərin 3D tunel boyunca irəli sürüşən kamera!
+      followY: 0.1,
+      lookX: 0.15,
+      lookUpOnApproach: -0.2,
+      camRollAmp: 0.0,
+      slopeRise: 0.0,
+      curveX: 0.0,
+    },
+    zRange: [-6.6, 5.4],
+    xBounds: [-1.72, 1.72, 0.62, 0.62],
+    blockedZones: [
+      { x: -2.15, z: 3.0, rx: 0.95, rz: 2.35, label: 'Sol Xalça Piştaxtası' },
+      { x: 2.15, z: 3.0, rx: 0.95, rz: 2.35, label: 'Sağ Mis & Ədviyyat Masası' },
+    ],
+    sunColor: 0xffd692,
+    sunPos: [5.5, 14.0, 2.0],
+    sunBaseIntensity: 2.35,
+    ambientSky: 0xebd0a2,
+    ambientGround: 0x382414,
+    ambientIntensity: 1.1,
+    fogColor: 0x453220,
+    fogDensity: 0.014,
+    exposureMul: 1.04,
+    useDynamicSunZone: false,
+    isInterior: true,
+    lanterns: [
+      { pos: [-3.2, 2.8, 1.8], uv: [0.22, 0.72], color: 0xffaa44, intensity: 3.4 },
+      { pos: [3.2, 2.8, -0.8], uv: [0.78, 0.72], color: 0xffb24c, intensity: 3.3 },
+    ],
+  },
+
+  // 3. BAKI — ŞİRVANŞAHLAR DİVANXANASI: Ağırbaşlı saray yürüşü + taxta baxan əzəmətli kamera yüksəlişi!
+  divan_palace: {
+    baseImage: './images/bazaar_baku_palace_25d',
+    camPos: [0, 1.72, 13.0],
+    lookAt: [0, 3.8, -12.0],
+    liveFov: 38,
+    refFov: 48,
+    depthShell: { nearDist: 6.4, farDist: 40.0, maxGroundDist: 24.0 },
+    movement: {
+      profileName: 'Təntənəli Saray Yürüşü',
+      speed: 2.9, // Qırmızı xalça üstündə ağırbaşlı, sakit mərasim addımı!
+      animScale: 0.82,
+      followX: 0.28,
+      followZ: 0.34,
+      followY: 0.16,
+      lookX: 0.18,
+      lookUpOnApproach: 0.95, // Taxta yaxınlaşdıqca kamera yuxarı — günbəzə və taxta doğru açılır!
+      camRollAmp: 0.0,
+      slopeRise: 0.0,
+      curveX: 0.0,
+    },
+    zRange: [-3.8, 5.8],
+    xBounds: [-2.65, 2.65, 0.45, 0.45],
+    blockedZones: [
+      { x: 0.0, z: -4.9, rx: 2.25, rz: 1.35, label: 'Şirvanşah Taxt Kürsüsü' },
+      { x: -3.05, z: 1.2, rx: 0.78, rz: 2.1, label: 'Sol Saray Şamdanları' },
+      { x: 3.05, z: 1.2, rx: 0.78, rz: 2.1, label: 'Sağ Saray Şamdanları' },
+    ],
+    sunColor: 0xffdc9a,
+    sunPos: [3.0, 16.0, 1.0],
+    sunBaseIntensity: 2.25,
+    ambientSky: 0xcfa878,
+    ambientGround: 0x332418,
+    ambientIntensity: 1.06,
+    fogColor: 0x3d2e20,
+    fogDensity: 0.013,
+    exposureMul: 1.06,
+    useDynamicSunZone: false,
+    isInterior: true,
+    lanterns: [
+      { pos: [-4.2, 2.2, 2.0], uv: [0.15, 0.48], color: 0xffae4a, intensity: 3.2 },
+      { pos: [4.2, 2.2, 2.0], uv: [0.85, 0.48], color: 0xffae4a, intensity: 3.2 },
+    ],
+  },
+
+  // 4. BAKI — XƏZƏR LİMANI: Asimmetrik sola çəkilmiş sahil körpüsü + dəniz kənarı qadağan zolağı + yüngül dəniz dalğası!
+  caspian_harbor: {
+    baseImage: './images/room_baku_harbor_25d',
+    camPos: [0, 1.62, 12.6],
+    lookAt: [0, 4.3, -12.0],
+    liveFov: 38,
+    refFov: 48,
+    depthShell: { nearDist: 6.0, farDist: 46.0, maxGroundDist: 28.0 },
+    movement: {
+      profileName: 'Asimmetrik Liman Körpüsü',
+      speed: 3.95,
+      animScale: 1.04,
+      followX: 0.34,
+      followZ: 0.52,
+      followY: 0.12,
+      lookX: 0.22,
+      lookUpOnApproach: 0.2,
+      camRollAmp: 0.0085, // Dəniz sahilində zərif külək/gəmi nəfəsi effekti!
+      slopeRise: 0.0,
+      curveX: -0.35, // Körpü perspektivdə uzaq dəniz qapısına doğru yüngül sola meyillənir!
+    },
+    zRange: [-7.2, 5.6],
+    xBounds: [-1.85, 0.72, 0.45, 0.25],
+    blockedZones: [
+      { x: -2.25, z: 3.6, rx: 1.05, rz: 2.35, label: 'Liman Sandıqları & Neft Tuluqları' },
+      { x: 1.7, z: 0.0, rx: 1.05, rz: 8.5, label: 'Xəzər Dənizi Suyu (Keçilməz)' },
+    ],
+    sunColor: 0xffcc84,
+    sunPos: [10, 12, -8],
+    sunBaseIntensity: 2.3,
+    ambientSky: 0xc9b29a,
+    ambientGround: 0x2a343b,
+    ambientIntensity: 1.05,
+    fogColor: 0x3f434a,
+    fogDensity: 0.014,
+    exposureMul: 1.06,
+    useDynamicSunZone: false,
+    isInterior: false,
+    lanterns: [
+      { pos: [-3.2, 1.9, 3.2], uv: [0.1, 0.44], color: 0xffa842, intensity: 3.5 },
+      { pos: [-2.4, 2.0, -1.2], uv: [0.28, 0.48], color: 0xffb24c, intensity: 3.1 },
+    ],
+  },
+
+  // 5. BAKI — QIZ QALASI BÜRCLƏRİ: REAL 3D YAMACA QALXAN ƏYRİ QALA YOLU (Y hündürlüyü artır!)
+  fortress_rampart: {
+    baseImage: './images/room_fortress_rampart_25d',
+    camPos: [0, 1.62, 12.6],
+    lookAt: [0, 4.35, -12.0],
+    liveFov: 38,
+    refFov: 48,
+    depthShell: { nearDist: 5.8, farDist: 48.0, maxGroundDist: 26.0 },
+    movement: {
+      profileName: 'Yüksələn Əyri Qala Yolu',
+      speed: 3.6,
+      animScale: 0.98,
+      followX: 0.34,
+      followZ: 0.5,
+      followY: 0.72, // Tacir qala yamacına qalxdıqca kamera da onunla real 3D yüksəlir!
+      lookX: 0.25,
+      lookUpOnApproach: 0.55,
+      camRollAmp: 0.0,
+      slopeRise: 1.05, // Arxa bürcə doğru 1.05m real 3D yüksəliş!
+      curveX: 0.45, // Qala divarı uzaqda sağa doğru qıvrılır!
+    },
+    zRange: [-8.2, 5.6],
+    xBounds: [-2.15, 0.68, 0.65, 0.35],
+    blockedZones: [
+      { x: 1.72, z: 0.0, rx: 0.95, rz: 9.2, label: 'Uçurum Məhəccəri (Keçilməz)' },
+      { x: -2.85, z: 1.0, rx: 0.72, rz: 8.5, label: 'Məşəlli Qala Divarı' },
+    ],
+    sunColor: 0xffc888,
+    sunPos: [12, 13, -6],
+    sunBaseIntensity: 2.25,
+    ambientSky: 0xb6a8c4,
+    ambientGround: 0x332d2b,
+    ambientIntensity: 1.04,
+    fogColor: 0x4a404c,
+    fogDensity: 0.015,
+    exposureMul: 1.05,
+    useDynamicSunZone: false,
+    isInterior: false,
+    lanterns: [
+      { pos: [-3.0, 2.4, 2.6], uv: [0.15, 0.56], color: 0xff9838, intensity: 3.6 },
+      { pos: [-2.2, 2.4, -1.6], uv: [0.31, 0.55], color: 0xffa242, intensity: 3.2 },
+    ],
+  },
+
+  // 6. BAKI — ATƏŞGAH & NEFT-DUZ YOLU: Geniş 3D Orbital Dönüşlü Abidə Meydanı (sürətli açıq yol!)
+  mausoleum_square: {
+    baseImage: './images/bazaar_nakhchivan_25d',
+    camPos: [0, 1.74, 13.0],
+    lookAt: [0, 3.85, -12.0],
+    liveFov: 38,
+    refFov: 48,
+    depthShell: { nearDist: 6.4, farDist: 44.0, maxGroundDist: 26.0 },
+    movement: {
+      profileName: 'Geniş Orbital Abidə Baxışı',
+      speed: 4.85, // Açıq karvan meydanında çevik sürət!
+      animScale: 1.2,
+      followX: 0.55, // Sola-sağa gəzdikcə abidə arxadakı dağlara qarşı güclü 3D fırlanır!
+      followZ: 0.42,
+      followY: 0.14,
+      lookX: 0.3,
+      lookUpOnApproach: 0.35,
+      camRollAmp: 0.0,
+      slopeRise: 0.0,
+      curveX: 0.0,
+    },
+    zRange: [-6.0, 6.0],
+    xBounds: [-2.9, 2.9, 0.72, 0.72],
+    blockedZones: [
+      { x: 0.0, z: -7.0, rx: 1.85, rz: 1.45, label: 'Mərkəzi Abidə Bünövrəsi' },
+      { x: -3.05, z: 4.0, rx: 1.12, rz: 1.85, label: 'Sol Duz & Neft Kisələri' },
+      { x: 3.05, z: 4.1, rx: 1.08, rz: 1.65, label: 'Sağ Zəfəran Qabları' },
+    ],
+    sunColor: 0xffb874,
+    sunPos: [-10, 13, -4],
+    sunBaseIntensity: 2.35,
+    ambientSky: 0xf0ba90,
+    ambientGround: 0x422618,
+    ambientIntensity: 1.06,
+    fogColor: 0x543624,
+    fogDensity: 0.013,
+    exposureMul: 1.04,
+    useDynamicSunZone: false,
+    isInterior: false,
+    lanterns: [
+      { pos: [-4.0, 2.5, 1.5], uv: [0.18, 0.52], color: 0xffac44, intensity: 3.2 },
+      { pos: [4.0, 2.5, 1.5], uv: [0.83, 0.52], color: 0xffac44, intensity: 3.2 },
+    ],
+  },
+
+  // DİGƏR ŞƏHƏR MEYDANLARI (Eyni real 3D Depth-Shell mühərriki + fərdi hərəkət zolaqları ilə!)
   shamakhi_courtyard: {
     baseImage: './images/bazaar_shamakhi_25d',
     camPos: [0, 1.72, 13.0],
     lookAt: [0, 3.85, -12.0],
-    zRange: [-8.0, 6.5],
-    xBounds: [-3.25, 3.25, 0.8, 0.8],
+    liveFov: 38,
+    refFov: 48,
+    depthShell: { nearDist: 6.5, farDist: 44.0, maxGroundDist: 27.0 },
+    movement: { profileName: 'Şirvan Meydan İzləmə', speed: 4.4, animScale: 1.1, followX: 0.44, followZ: 0.38, followY: 0.14, lookX: 0.24, lookUpOnApproach: 0.35, camRollAmp: 0, slopeRise: 0, curveX: 0 },
+    zRange: [-7.6, 6.2],
+    xBounds: [-3.2, 3.2, 0.8, 0.8],
     blockedZones: [
       { x: -3.25, z: 2.4, rx: 1.0, rz: 2.4, label: 'Sol Ədviyyat Kisələri' },
       { x: 3.35, z: 2.6, rx: 0.95, rz: 2.2, label: 'Sağ Sandıqlar' },
@@ -153,9 +405,12 @@ const ROOM_TEMPLATES = {
     baseImage: './images/bazaar_sheki_25d',
     camPos: [0, 1.84, 13.4],
     lookAt: [0, 3.25, -12.0],
-    zRange: [-8.2, 6.6],
-    xBounds: [-3.15, 2.95, 0.85, 0.75],
-    // Sağdakı səkkizguşəli daş bulaq və sol ön halva masası hərəkət etməmə zolağıdır!
+    liveFov: 38,
+    refFov: 48,
+    depthShell: { nearDist: 6.6, farDist: 44.0, maxGroundDist: 28.0 },
+    movement: { profileName: 'Bulaqlı Həyət İzləmə', speed: 4.3, animScale: 1.08, followX: 0.42, followZ: 0.38, followY: 0.14, lookX: 0.22, lookUpOnApproach: 0.3, camRollAmp: 0, slopeRise: 0, curveX: 0 },
+    zRange: [-7.8, 6.4],
+    xBounds: [-3.1, 2.9, 0.85, 0.75],
     blockedZones: [
       { x: 2.1, z: 1.45, rx: 1.45, rz: 1.35, label: 'Səkkizguşəli Daş Bulaq' },
       { x: -3.05, z: 5.1, rx: 1.25, rz: 1.45, label: 'Halva Piştaxtası' },
@@ -180,8 +435,12 @@ const ROOM_TEMPLATES = {
     baseImage: './images/bazaar_ganja_25d',
     camPos: [0, 1.74, 13.0],
     lookAt: [0, 3.85, -12.0],
-    zRange: [-8.2, 6.4],
-    xBounds: [-2.85, 2.85, 0.8, 0.8],
+    liveFov: 38,
+    refFov: 48,
+    depthShell: { nearDist: 6.5, farDist: 44.0, maxGroundDist: 27.0 },
+    movement: { profileName: 'Çinarlı Xiyaban Dolly', speed: 4.45, animScale: 1.1, followX: 0.4, followZ: 0.45, followY: 0.14, lookX: 0.22, lookUpOnApproach: 0.35, camRollAmp: 0, slopeRise: 0, curveX: 0 },
+    zRange: [-7.8, 6.2],
+    xBounds: [-2.8, 2.8, 0.8, 0.8],
     blockedZones: [
       { x: -2.65, z: -0.6, rx: 0.85, rz: 0.95, label: 'Sol Çinar Ağacı' },
       { x: 2.65, z: -0.6, rx: 0.85, rz: 0.95, label: 'Sağ Çinar Ağacı' },
@@ -206,8 +465,12 @@ const ROOM_TEMPLATES = {
     baseImage: './images/bazaar_shusha_25d',
     camPos: [0, 1.6, 12.4],
     lookAt: [0, 4.45, -12.0],
-    zRange: [-7.8, 6.2],
-    xBounds: [-2.9, 2.75, 0.85, 0.85],
+    liveFov: 38,
+    refFov: 48,
+    depthShell: { nearDist: 6.2, farDist: 46.0, maxGroundDist: 26.0 },
+    movement: { profileName: 'Qala Meydanı Yürüşü', speed: 4.15, animScale: 1.05, followX: 0.4, followZ: 0.44, followY: 0.14, lookX: 0.22, lookUpOnApproach: 0.4, camRollAmp: 0, slopeRise: 0, curveX: 0 },
+    zRange: [-7.4, 6.0],
+    xBounds: [-2.85, 2.7, 0.85, 0.85],
     blockedZones: [
       { x: 2.95, z: 3.2, rx: 1.05, rz: 2.1, label: 'Sağ Misgərlik Piştaxtası' },
       { x: -3.2, z: 3.4, rx: 0.9, rz: 2.4, label: 'Sol Xalça Məhəccəri' },
@@ -232,8 +495,12 @@ const ROOM_TEMPLATES = {
     baseImage: './images/bazaar_lankaran_25d',
     camPos: [0, 1.68, 12.8],
     lookAt: [0, 4.05, -12.0],
-    zRange: [-7.8, 6.2],
-    xBounds: [-2.75, 2.75, 0.8, 0.8],
+    liveFov: 38,
+    refFov: 48,
+    depthShell: { nearDist: 6.3, farDist: 44.0, maxGroundDist: 26.0 },
+    movement: { profileName: 'Bağlı Qala Yürüşü', speed: 4.2, animScale: 1.06, followX: 0.4, followZ: 0.42, followY: 0.14, lookX: 0.22, lookUpOnApproach: 0.35, camRollAmp: 0, slopeRise: 0, curveX: 0 },
+    zRange: [-7.4, 6.0],
+    xBounds: [-2.7, 2.7, 0.8, 0.8],
     blockedZones: [
       { x: -2.85, z: 3.8, rx: 1.15, rz: 2.0, label: 'Sol Nar Səbətləri' },
       { x: 2.95, z: 3.8, rx: 1.1, rz: 1.9, label: 'Sağ Samovarlar' },
@@ -254,118 +521,16 @@ const ROOM_TEMPLATES = {
       { pos: [4.0, 2.6, 1.5], uv: [0.78, 0.58], color: 0xffac44, intensity: 3.1 },
     ],
   },
-  covered_arcade: {
-    baseImage: './images/bazaar_baku_carpet_25d',
-    camPos: [0, 1.56, 12.2],
-    lookAt: [0, 4.72, -12.0],
-    zRange: [-7.0, 5.6],
-    xBounds: [-1.95, 1.95, 0.55, 0.55],
-    blockedZones: [
-      { x: -2.35, z: 3.2, rx: 0.9, rz: 2.2, label: 'Sol Xalça Piştaxtası' },
-      { x: 2.35, z: 3.2, rx: 0.9, rz: 2.2, label: 'Sağ Mis və Ədviyyat Masası' },
-    ],
-    sunColor: 0xffd692,
-    sunPos: [5.5, 14.0, 2.0],
-    sunBaseIntensity: 2.35,
-    ambientSky: 0xebd0a2,
-    ambientGround: 0x382414,
-    ambientIntensity: 1.1,
-    fogColor: 0x453220,
-    fogDensity: 0.014,
-    exposureMul: 1.04,
-    useDynamicSunZone: false,
-    isInterior: true,
-    lanterns: [
-      { pos: [-3.2, 2.8, 1.8], uv: [0.22, 0.72], color: 0xffaa44, intensity: 3.4 },
-      { pos: [3.2, 2.8, -0.8], uv: [0.78, 0.72], color: 0xffb24c, intensity: 3.3 },
-    ],
-  },
-  divan_palace: {
-    baseImage: './images/bazaar_baku_palace_25d',
-    camPos: [0, 1.72, 13.0],
-    lookAt: [0, 3.8, -12.0],
-    zRange: [-4.2, 6.0],
-    xBounds: [-2.85, 2.85, 0.45, 0.45],
-    blockedZones: [
-      { x: 0.0, z: -5.2, rx: 2.2, rz: 1.2, label: 'Taxt Kürsüsü' },
-      { x: -3.2, z: 1.4, rx: 0.7, rz: 2.0, label: 'Sol Şamdanlar' },
-      { x: 3.2, z: 1.4, rx: 0.7, rz: 2.0, label: 'Sağ Şamdanlar' },
-    ],
-    sunColor: 0xffdc9a,
-    sunPos: [3.0, 16.0, 1.0],
-    sunBaseIntensity: 2.25,
-    ambientSky: 0xcfa878,
-    ambientGround: 0x332418,
-    ambientIntensity: 1.06,
-    fogColor: 0x3d2e20,
-    fogDensity: 0.013,
-    exposureMul: 1.06,
-    useDynamicSunZone: false,
-    isInterior: true,
-    lanterns: [
-      { pos: [-4.2, 2.2, 2.0], uv: [0.15, 0.48], color: 0xffae4a, intensity: 3.2 },
-      { pos: [4.2, 2.2, 2.0], uv: [0.85, 0.48], color: 0xffae4a, intensity: 3.2 },
-    ],
-  },
-  caspian_harbor: {
-    baseImage: './images/room_baku_harbor_25d',
-    camPos: [0, 1.62, 12.6],
-    lookAt: [0, 4.3, -12.0],
-    zRange: [-7.6, 5.8],
-    // Sağ tərəf Xəzər dənizi suyudur — yalnız daş liman körpüsü boyunca gəzmə!
-    xBounds: [-2.05, 0.95, 0.45, 0.35],
-    blockedZones: [
-      { x: -2.4, z: 3.8, rx: 1.0, rz: 2.2, label: 'Liman Sandıqları və Tuluqlar' },
-      { x: 1.85, z: 0.0, rx: 1.0, rz: 8.5, label: 'Xəzər Suyu (Kənar)' },
-    ],
-    sunColor: 0xffcc84,
-    sunPos: [10, 12, -8],
-    sunBaseIntensity: 2.3,
-    ambientSky: 0xc9b29a,
-    ambientGround: 0x2a343b,
-    ambientIntensity: 1.05,
-    fogColor: 0x3f434a,
-    fogDensity: 0.014,
-    exposureMul: 1.06,
-    useDynamicSunZone: false,
-    isInterior: false,
-    lanterns: [
-      { pos: [-3.2, 1.9, 3.2], uv: [0.1, 0.44], color: 0xffa842, intensity: 3.5 },
-      { pos: [-2.4, 2.0, -1.2], uv: [0.28, 0.48], color: 0xffb24c, intensity: 3.1 },
-    ],
-  },
-  fortress_rampart: {
-    baseImage: './images/room_fortress_rampart_25d',
-    camPos: [0, 1.62, 12.6],
-    lookAt: [0, 4.35, -12.0],
-    zRange: [-7.2, 5.8],
-    // Sağ tərəf uçurum məhəccəridir, sol tərəf qala divarıdır
-    xBounds: [-1.85, 0.85, 0.5, 0.45],
-    blockedZones: [
-      { x: 1.75, z: 0.0, rx: 0.95, rz: 8.0, label: 'Qala Uçurum Məhəccəri' },
-    ],
-    sunColor: 0xffc888,
-    sunPos: [12, 13, -6],
-    sunBaseIntensity: 2.25,
-    ambientSky: 0xb6a8c4,
-    ambientGround: 0x332d2b,
-    ambientIntensity: 1.04,
-    fogColor: 0x4a404c,
-    fogDensity: 0.015,
-    exposureMul: 1.05,
-    useDynamicSunZone: false,
-    isInterior: false,
-    lanterns: [
-      { pos: [-3.0, 2.4, 2.6], uv: [0.15, 0.56], color: 0xff9838, intensity: 3.6 },
-      { pos: [-2.2, 2.4, -1.6], uv: [0.31, 0.55], color: 0xffa242, intensity: 3.2 },
-    ],
-  },
   mountain_pass_bazaar: {
     baseImage: './images/bazaar_quba_25d',
     camPos: [0, 1.66, 12.6],
     lookAt: [0, 4.15, -12.0],
-    zRange: [-7.8, 6.2],
-    xBounds: [-2.9, 2.9, 0.75, 0.75],
+    liveFov: 38,
+    refFov: 48,
+    depthShell: { nearDist: 6.4, farDist: 48.0, maxGroundDist: 27.0 },
+    movement: { profileName: 'Dağ Aşırımı Bazarı', speed: 4.35, animScale: 1.08, followX: 0.42, followZ: 0.4, followY: 0.14, lookX: 0.24, lookUpOnApproach: 0.4, camRollAmp: 0, slopeRise: 0, curveX: 0 },
+    zRange: [-7.4, 6.0],
+    xBounds: [-2.85, 2.85, 0.75, 0.75],
     blockedZones: [
       { x: -3.15, z: 3.5, rx: 1.05, rz: 2.3, label: 'Sol Alma Səbətləri' },
       { x: 3.15, z: 3.5, rx: 1.05, rz: 2.3, label: 'Sağ Yun və Alma Səbətləri' },
@@ -386,36 +551,8 @@ const ROOM_TEMPLATES = {
       { pos: [4.2, 2.6, 1.6], uv: [0.92, 0.58], color: 0xffae4a, intensity: 3.0 },
     ],
   },
-  mausoleum_square: {
-    baseImage: './images/bazaar_nakhchivan_25d',
-    camPos: [0, 1.74, 13.0],
-    lookAt: [0, 3.85, -12.0],
-    zRange: [-6.6, 6.2],
-    xBounds: [-2.95, 2.95, 0.75, 0.75],
-    blockedZones: [
-      { x: 0.0, z: -7.2, rx: 1.8, rz: 1.4, label: 'Türbə Bünövrəsi' },
-      { x: -3.1, z: 4.1, rx: 1.1, rz: 1.8, label: 'Sol Duz Kisələri' },
-      { x: 3.1, z: 4.2, rx: 1.05, rz: 1.6, label: 'Sağ Zəfəran Qabları' },
-    ],
-    sunColor: 0xffb874,
-    sunPos: [-10, 13, -4],
-    sunBaseIntensity: 2.35,
-    ambientSky: 0xf0ba90,
-    ambientGround: 0x422618,
-    ambientIntensity: 1.06,
-    fogColor: 0x543624,
-    fogDensity: 0.013,
-    exposureMul: 1.04,
-    useDynamicSunZone: false,
-    isInterior: false,
-    lanterns: [
-      { pos: [-4.0, 2.5, 1.5], uv: [0.18, 0.52], color: 0xffac44, intensity: 3.2 },
-      { pos: [4.0, 2.5, 1.5], uv: [0.83, 0.52], color: 0xffac44, intensity: 3.2 },
-    ],
-  },
 };
 
-// HƏR 6 ŞƏHƏR + 4 XÜSUSİ MİSSİYA YERİ ÜÇÜN ÖZƏL, TƏKRARLANMAYAN TARİXİ MƏKAN ADLARI!
 const LOCATION_ROOMS = {
   City_Baku: {
     isMission: false,
@@ -490,7 +627,6 @@ const LOCATION_ROOMS = {
       { id: 'hirkan_fort', shortTitle: 'Hirkan Qalası', title: 'Hirkan Dağ Sərhəd Qalası', template: 'fortress_rampart', tint: [1.0, 1.03, 0.93], role: 'explore' },
     ],
   },
-  // 4 XÜSUSİ MİSSİYA MƏKANI (Hərəsində 2 özəl 2.5D səhnə — Xəritədəki 2 Körpü və 2 Tarla!)
   Mission_Bridge_North: {
     isMission: true,
     missionPrompt: 'Şimal Körpüsü Quldurları ilə Üzləş',
@@ -543,6 +679,14 @@ function buildLocationAngleMap(locationId) {
     const [xMin0, xMax0, xMinBack, xMaxBack] = tpl.xBounds;
     const [zMin, zMax] = tpl.zRange;
     const zSpan = Math.max(1, zMax - zMin);
+    const mv = tpl.movement;
+
+    const getDepthT = (z) => Math.max(0, Math.min(1, (zMax - z) / zSpan));
+    const getFloorY = (z) => getDepthT(z) * (mv.slopeRise || 0);
+    const getCurveOffsetX = (z) => {
+      const t = getDepthT(z);
+      return t * t * (mv.curveX || 0);
+    };
 
     const nextRoom = spec.rooms[(idx + 1) % spec.rooms.length];
     let portals = [];
@@ -562,7 +706,7 @@ function buildLocationAngleMap(locationId) {
           id: 'portal_to_r2',
           label: `${spec.rooms[2].title} · Keçid`,
           targetAngle: spec.rooms[2].id,
-          pos: [xMin0 + 0.9, 0, -5.4],
+          pos: [xMin0 + 0.9, 0, -5.2],
           triggerRadius: 1.3,
           ringColor: 0xd46a54,
         });
@@ -578,22 +722,16 @@ function buildLocationAngleMap(locationId) {
         });
       }
     } else {
+      const backCurve = getCurveOffsetX(zMin + 0.55);
+      // Yan-otaqlarda yalnız uzaq çıxış qapısından həyətə qayıdış portalı saxla ki, düz yeriyəndə təsadüfən otaq dəyişməsin!
       portals = [
         {
           id: 'portal_return_courtyard',
           label: `${spec.rooms[0].title} · Qayıt`,
           targetAngle: 'courtyard',
-          pos: [0.0, 0, zMin + 0.65],
-          triggerRadius: 1.35,
+          pos: [backCurve, 0, zMin + 0.55],
+          triggerRadius: 1.25,
           ringColor: 0xf4cf76,
-        },
-        {
-          id: 'portal_next_room',
-          label: `${nextRoom.title} · Keçid`,
-          targetAngle: nextRoom.id,
-          pos: [xMax0 - 0.1, 0, 0.2],
-          triggerRadius: 0.85,
-          ringColor: 0x82be74,
         },
       ];
     }
@@ -606,16 +744,21 @@ function buildLocationAngleMap(locationId) {
       baseImage: tpl.baseImage,
       camPos: tpl.camPos,
       lookAt: tpl.lookAt,
-      fov: 43,
-      baseZoom: 1.07,
-      spawnPos: [0.0, 0, Math.min(4.2, zMax - 1.5)],
+      liveFov: tpl.liveFov || 38,
+      refFov: tpl.refFov || 48,
+      depthShell: tpl.depthShell || { nearDist: 6.4, farDist: 44.0, maxGroundDist: 26.0 },
+      movement: mv,
+      spawnPos: [getCurveOffsetX(Math.min(4.0, zMax - 1.4)), 0, Math.min(4.0, zMax - 1.4)],
       spawnYaw: Math.PI,
       zRange: tpl.zRange,
-      xBoundsRaw: tpl.xBounds,
       blockedZones: tpl.blockedZones || [],
+      getDepthT,
+      getFloorY,
+      getCurveOffsetX,
       xBoundsFn: (z) => {
-        const tBack = (zMax - z) / zSpan;
-        return [xMin0 + tBack * xMinBack, xMax0 - tBack * xMaxBack];
+        const tBack = getDepthT(z);
+        const shift = getCurveOffsetX(z);
+        return [xMin0 + tBack * xMinBack + shift, xMax0 - tBack * xMaxBack + shift];
       },
       sunColor: tpl.sunColor,
       sunPos: tpl.sunPos,
@@ -632,7 +775,7 @@ function buildLocationAngleMap(locationId) {
       useDynamicSunZone: Boolean(tpl.useDynamicSunZone),
       isInterior: Boolean(tpl.isInterior),
       tint: new THREE.Color(...rm.tint),
-      playerScaleHeight: rm.template === 'covered_arcade' ? 1.78 : 1.84,
+      playerScaleHeight: rm.template === 'covered_arcade' ? 1.76 : rm.template === 'divan_palace' ? 1.88 : 1.84,
       portals,
     };
 
@@ -642,27 +785,71 @@ function buildLocationAngleMap(locationId) {
   return { spec, culture, angleMap, roomList };
 }
 
-const BACKDROP_VERT = /* glsl */ `
+/**
+ * HƏQİQİ 3D PROYEKSİYALI DƏRİNLİK QABIĞI VERTEX ŞEYDERİ:
+ * Hər piksel/təpə nöqtəsini referans kamera şüası boyunca `_depth.png` və Y=0 (və yamac) döşəmə müstəvisinə
+ * real 3D dünya koordinatlarına proyeksiya edir — nəticədə 3D kamera tərpəndikcə bütün otaq REAL 3D perspektivdə hərəkət edir!
+ */
+const SHELL_3D_VERT = /* glsl */ `
+  uniform sampler2D uDepthMap;
+  uniform vec3 uRefPos;
+  uniform vec3 uRefForward;
+  uniform vec3 uRefRight;
+  uniform vec3 uRefUp;
+  uniform float uRefTanHalfFov;
+  uniform float uShellAspect;
+  uniform float uNearDist;
+  uniform float uFarDist;
+  uniform float uMaxGroundDist;
+  uniform float uSlopeRise;
+
   varying vec2 vUv;
+  varying float vWorldDepth;
+
   void main() {
     vUv = uv;
-    gl_Position = vec4(position.xy, 0.9999, 1.0);
+    vec2 ndc = uv * 2.0 - 1.0;
+
+    // Referans kameranın həmin pikselə düşən 3D şüası
+    vec3 rayDir = normalize(
+      uRefForward
+      + uRefRight * (ndc.x * uRefTanHalfFov * uShellAspect)
+      + uRefUp    * (ndc.y * uRefTanHalfFov)
+    );
+
+    float d = texture2D(uDepthMap, uv).r;
+    float shellDist = mix(uFarDist, uNearDist, pow(clamp(d, 0.0, 1.0), 1.15));
+
+    // Döşəmə piksellərini real Y=0 (və ya Qala yamacı) müstəvisinə kilidlə ki, tacirin ayaqları sürüşməsin!
+    float rawGroundDist = (rayDir.y < -0.015) ? (-uRefPos.y / rayDir.y) : uFarDist;
+    float groundDist = clamp(rawGroundDist, 4.2, uMaxGroundDist);
+
+    float belowHorizon = smoothstep(-0.01, -0.085, rayDir.y);
+    float centerCorridor = 1.0 - smoothstep(0.45, 0.90, abs(ndc.x));
+    float floorLock = belowHorizon * centerCorridor;
+
+    float finalDist = mix(shellDist, min(groundDist, shellDist + 2.5), floorLock);
+    vec3 worldPos = uRefPos + rayDir * finalDist;
+
+    // Yüksələn Qala yamacında (uSlopeRise > 0) döşəmə təpələrini uyğun qaldır
+    if (uSlopeRise > 0.01 && floorLock > 0.05) {
+      float zFactor = clamp((6.0 - worldPos.z) / 13.0, 0.0, 1.0);
+      worldPos.y += zFactor * uSlopeRise * floorLock;
+    }
+
+    vWorldDepth = finalDist;
+    gl_Position = projectionMatrix * viewMatrix * vec4(worldPos, 1.0);
   }
 `;
 
-// Səhər (aydın sRGB gün işığı) ↔ Gecə (dərin qaranlıq qamma + parlaq yanan fənərlər) + 10-addımlı POM!
-const BACKDROP_FRAG = /* glsl */ `
+// Real 3D Depth-Shell Fragment Şeyderi: Normal-Map fənər işığı + Səhər ↔ Gecə + sRGB çıxış
+const SHELL_3D_FRAG = /* glsl */ `
   precision highp float;
 
   uniform sampler2D uColorMap;
-  uniform sampler2D uDepthMap;
   uniform sampler2D uNormalMap;
   uniform sampler2D uGlowMap;
 
-  uniform vec2 uParallax;
-  uniform float uZoom;
-  uniform float uDolly;
-  uniform float uAspectRatio;
   uniform float uTime;
   uniform vec2 uPlayerUV;
   uniform float uPlayerDepth;
@@ -675,46 +862,21 @@ const BACKDROP_FRAG = /* glsl */ `
   uniform float uFade;
 
   varying vec2 vUv;
-
-  vec2 computeCoverUv(vec2 uv) {
-    vec2 centered = uv - 0.5;
-    if (uAspectRatio > 1.0) {
-      centered.y /= uAspectRatio;
-    } else {
-      centered.x *= uAspectRatio;
-    }
-    centered *= (0.90 / max(0.85, uZoom));
-    return centered + 0.5;
-  }
+  varying float vWorldDepth;
 
   void main() {
-    vec2 baseUv = computeCoverUv(vUv);
-
-    vec2 pUv = baseUv;
-    float depth = 0.0;
-    vec2 radial = (baseUv - 0.5);
-    for (int i = 0; i < 10; i++) {
-      depth = texture2D(uDepthMap, clamp(pUv, 0.002, 0.998)).r;
-      float curvedDepth = pow(clamp(depth, 0.0, 1.0), 1.22);
-      float lateralShift = 0.24 + (curvedDepth - 0.28) * 1.48;
-      vec2 dollyExpansion = radial * uDolly * (curvedDepth - 0.22) * 0.28;
-      vec2 targetUv = baseUv - uParallax * lateralShift - dollyExpansion;
-      pUv = mix(pUv, targetUv, 0.48);
-    }
-
-    pUv = clamp(pUv, 0.002, 0.998);
+    vec2 pUv = clamp(vUv, 0.002, 0.998);
     vec3 color = texture2D(uColorMap, pUv).rgb * uCityTint;
     vec3 normalTex = texture2D(uNormalMap, pUv).rgb * 2.0 - 1.0;
-    vec3 N = normalize(vec3(normalTex.x * 1.22, normalTex.y * 1.22, max(0.26, normalTex.z)));
+    vec3 N = normalize(vec3(normalTex.x * 1.24, normalTex.y * 1.24, max(0.26, normalTex.z)));
     float glow = texture2D(uGlowMap, pUv).r;
 
-    // Gecə modunda dərin mistik qaranlıq (qamma-öncəsi atmosfer + ay işığı çaları)
+    // Səhər (parlaq gün işığı) ↔ Gecə (dərin mistik qaranlıq + güclü fənərlər)
     vec3 nightGrade = pow(max(color, vec3(0.0001)), vec3(2.15, 2.10, 1.90)) * vec3(0.28, 0.32, 0.44);
     vec3 gradedBase = mix(color, nightGrade, uNightMix);
 
     float flickerA = 0.88 + 0.12 * sin(uTime * 5.1 + pUv.x * 19.0) * cos(uTime * 3.0 + pUv.y * 11.0);
     float flickerB = 0.91 + 0.09 * sin(uTime * 7.4 + pUv.x * 31.0);
-    // Gecə vaxtı bütün fənərlər və alovlar kəskin parlayır
     float nightGlowBoost = mix(0.42, 1.32, uNightMix);
     vec3 lanternBloom = uGlowTint * glow * (nightGlowBoost * flickerA);
 
@@ -728,14 +890,13 @@ const BACKDROP_FRAG = /* glsl */ `
     float att2 = exp(-dist2 * 3.6) * flickerB;
     float diff2 = max(dot(N, lDir2), 0.0);
 
-    // Tacirin əl fənəri gecə vaxtı ətraf daşları daha güclü işıqlandırır
-    vec2 playerLight = uPlayerUV + vec2(0.0, 0.05);
+    vec2 playerLight = uPlayerUV + vec2(0.0, 0.04);
     vec3 lDirP = normalize(vec3(playerLight - pUv, 0.20));
     float distP = length((playerLight - pUv) * vec2(1.35, 1.65));
     float attP = exp(-distP * mix(5.0, 3.7, uNightMix)) * (0.38 + 0.55 * uPlayerDepth) * (0.94 + 0.06 * sin(uTime * 4.2));
     float diffP = max(dot(N, lDirP), 0.0);
 
-    float dynMul = mix(0.22, 0.55, uNightMix);
+    float dynMul = mix(0.22, 0.56, uNightMix);
     vec3 dynamicLight =
       uGlowTint * (diff1 * att1 * dynMul + diff2 * att2 * dynMul + diffP * attP * (dynMul * 1.15));
 
@@ -743,8 +904,8 @@ const BACKDROP_FRAG = /* glsl */ `
     vec3 finalCol = (gradedBase + lanternBloom + dynamicLight * (gradedBase + vec3(0.14 * uNightMix))) * expNow;
     finalCol = finalCol / (vec3(1.0) + finalCol * 0.26);
 
-    float vig = smoothstep(1.05, 0.30, length((vUv - 0.5) * vec2(1.08, 1.03)));
-    finalCol *= mix(mix(0.86, 0.62, uNightMix), 1.04, vig);
+    float vig = smoothstep(1.05, 0.28, length((pUv - 0.5) * vec2(1.04, 1.02)));
+    finalCol *= mix(mix(0.88, 0.64, uNightMix), 1.04, vig);
     finalCol *= clamp(uFade, 0.0, 1.0);
 
     gl_FragColor = vec4(finalCol, 1.0);
@@ -783,24 +944,22 @@ export class CinematicBazaar25DScene {
     this.isTransitioning = false;
     this.portalCooldown = 1.6;
 
-    // Səhər ↔ Gecə keçidi (0 = Səhər, 1 = Gecə)
     this.targetNightMix = 0.0;
     this.currentNightMix = 0.0;
 
-    // Sərhəd & Hərəkət etməmə zolağı göstəricisi (B düyməsi ilə aç/bağla)
     this.showWalkBoundsDebug = false;
     this.debugBoundsGroup = null;
+    this.debugHudEl = null;
 
-    this.backdropMesh = null;
-    this.backdropUniforms = null;
+    this.shellMesh = null;
+    this.shellUniforms = null;
     this.imageAspect = 16 / 9;
 
     this.player = {
       group: null,
       baseNormScale: 1.0,
-      pos: new THREE.Vector3(0.0, 0, 4.2),
+      pos: new THREE.Vector3(0.0, 0, 4.0),
       yaw: Math.PI,
-      speed: 4.6,
       walkPhase: 0,
       isMoving: false,
       targetPos: null,
@@ -817,10 +976,9 @@ export class CinematicBazaar25DScene {
 
     this.baseCamPos = new THREE.Vector3(...this.angleCfg.camPos);
     this.baseLookAt = new THREE.Vector3(...this.angleCfg.lookAt);
+    this.liveCamPos = this.baseCamPos.clone();
+    this.liveLookAt = this.baseLookAt.clone();
     this.mouseNorm = { x: 0, y: 0 };
-    this.smoothParallax = new THREE.Vector2(0, 0);
-    this.smoothZoom = this.angleCfg.baseZoom;
-    this.smoothDolly = 0.0;
 
     this.dialogueFocus = null;
     this.interactables = [];
@@ -865,9 +1023,7 @@ export class CinematicBazaar25DScene {
     this.targetNightMix = mode === 'night' ? 1.0 : 0.0;
     if (immediate) {
       this.currentNightMix = this.targetNightMix;
-      if (this.backdropUniforms) {
-        this.backdropUniforms.uNightMix.value = this.currentNightMix;
-      }
+      if (this.shellUniforms) this.shellUniforms.uNightMix.value = this.currentNightMix;
       this._applyTimeLighting();
     }
   }
@@ -914,13 +1070,12 @@ export class CinematicBazaar25DScene {
       this.keys.add(code);
       this.player.targetPos = null;
     } else if (code === 'KeyB' && !e.repeat && !this.gameManager?.ui?.isAnyModalOpen?.()) {
-      // Hər məkanın hərəkət sərhədini (yaşıl) və hərəkət etməmə zolaqlarını (qırmızı) göstər/gizlət
       this.showWalkBoundsDebug = !this.showWalkBoundsDebug;
       this._rebuildWalkBoundsDebug();
       this.eventBus.emit('ui:toast', {
         message: this.showWalkBoundsDebug
-          ? 'Sərhəd Göstəricisi AÇIQ (Yaşıl: Hərəkət sahəsi · Qırmızı: Qadağan zolaq).'
-          : 'Sərhəd Göstəricisi bağlandı.',
+          ? `3D Sərhəd & Hərəkət Profili AÇIQ: ${this.angleCfg.movement.profileName}`
+          : '3D Sərhəd Göstəricisi bağlandı.',
         type: 'info',
       });
     }
@@ -951,9 +1106,6 @@ export class CinematicBazaar25DScene {
     }
   }
 
-  /**
-   * Hər məkanın öz fərdi trapesiya sərhədi + HƏRƏKƏT ETMƏMƏ ZOLAQLARI (blockedZones) üzrə sürüşmə
-   */
   _clampWalkable(x, z) {
     const [zMin, zMax] = this.angleCfg.zRange;
     let cz = Math.max(zMin, Math.min(zMax, z));
@@ -971,18 +1123,18 @@ export class CinematicBazaar25DScene {
       }
     }
 
-    // İkinci dəfə əsas sərhəd daxilində saxla
     cz = Math.max(zMin, Math.min(zMax, cz));
     const [xMin2, xMax2] = this.angleCfg.xBoundsFn(cz);
     cx = Math.max(xMin2, Math.min(xMax2, cx));
-    return { x: cx, z: cz };
+    const cy = this.angleCfg.getFloorY(cz);
+    return { x: cx, y: cy, z: cz };
   }
 
   _setWalkTarget(x, z) {
     const clamped = this._clampWalkable(x, z);
-    this.player.targetPos = new THREE.Vector3(clamped.x, 0, clamped.z);
+    this.player.targetPos = new THREE.Vector3(clamped.x, clamped.y, clamped.z);
     if (this.clickRipple) {
-      this.clickRipple.position.set(clamped.x, 0.035, clamped.z);
+      this.clickRipple.position.set(clamped.x, clamped.y + 0.035, clamped.z);
       this.clickRipple.visible = true;
       this.clickRippleLife = 1.0;
     }
@@ -997,31 +1149,37 @@ export class CinematicBazaar25DScene {
       this.scene.remove(this.debugBoundsGroup);
       this.debugBoundsGroup = null;
     }
+    if (this.debugHudEl) {
+      this.debugHudEl.style.display = this.showWalkBoundsDebug ? 'block' : 'none';
+    }
     if (!this.showWalkBoundsDebug || !this.scene) return;
 
     this.debugBoundsGroup = new THREE.Group();
     const [zMin, zMax] = this.angleCfg.zRange;
-    const [xMinFront, xMaxFront] = this.angleCfg.xBoundsFn(zMax);
-    const [xMinBack, xMaxBack] = this.angleCfg.xBoundsFn(zMin);
 
-    // Yaşıl hərəkət sərhədi trapesiyası
-    const borderPts = [
-      new THREE.Vector3(xMinFront, 0.04, zMax),
-      new THREE.Vector3(xMaxFront, 0.04, zMax),
-      new THREE.Vector3(xMaxBack, 0.04, zMin),
-      new THREE.Vector3(xMinBack, 0.04, zMin),
-      new THREE.Vector3(xMinFront, 0.04, zMax),
-    ];
-    const lineGeo = new THREE.BufferGeometry().setFromPoints(borderPts);
+    // Əyri və yamaclı hərəkət sərhədini 16 addımda dəqiq çək (yaşıl)
+    const leftEdge = [];
+    const rightEdge = [];
+    for (let i = 0; i <= 16; i++) {
+      const z = zMax - (i / 16) * (zMax - zMin);
+      const y = this.angleCfg.getFloorY(z) + 0.045;
+      const [xMin, xMax] = this.angleCfg.xBoundsFn(z);
+      leftEdge.push(new THREE.Vector3(xMin, y, z));
+      rightEdge.push(new THREE.Vector3(xMax, y, z));
+    }
+    const loopPts = [...leftEdge, ...rightEdge.reverse(), leftEdge[0]];
+    const lineGeo = new THREE.BufferGeometry().setFromPoints(loopPts);
     const lineMat = new THREE.LineBasicMaterial({ color: 0x52e078 });
     this.debugBoundsGroup.add(new THREE.Line(lineGeo, lineMat));
 
-    // Qırmızı hərəkət etməmə zolaqları (ellipslər)
+    // Qırmızı hərəkət etməmə zolaqları
     for (const obs of this.angleCfg.blockedZones || []) {
       const pts = [];
       for (let i = 0; i <= 32; i++) {
         const a = (i / 32) * Math.PI * 2;
-        pts.push(new THREE.Vector3(obs.x + Math.cos(a) * obs.rx, 0.05, obs.z + Math.sin(a) * obs.rz));
+        const oz = obs.z + Math.sin(a) * obs.rz;
+        const oy = this.angleCfg.getFloorY(oz) + 0.055;
+        pts.push(new THREE.Vector3(obs.x + Math.cos(a) * obs.rx, oy, oz));
       }
       const oGeo = new THREE.BufferGeometry().setFromPoints(pts);
       const oMat = new THREE.LineBasicMaterial({ color: 0xf24e4e });
@@ -1067,6 +1225,39 @@ export class CinematicBazaar25DScene {
     return bundle;
   }
 
+  /**
+   * 3D Dərinlik Qabığı üçün referans kamera basis vektorlarını hesabla və overscan marjasını təmin et
+   */
+  _syncShellReferenceCamera() {
+    if (!this.shellUniforms) return;
+    const refPos = new THREE.Vector3(...this.angleCfg.camPos);
+    const refLook = new THREE.Vector3(...this.angleCfg.lookAt);
+    const forward = new THREE.Vector3().subVectors(refLook, refPos).normalize();
+    const worldUp = new THREE.Vector3(0, 1, 0);
+    const right = new THREE.Vector3().crossVectors(forward, worldUp).normalize();
+    const up = new THREE.Vector3().crossVectors(right, forward).normalize();
+
+    const w = this.container.clientWidth || window.innerWidth;
+    const h = this.container.clientHeight || window.innerHeight;
+    const viewAspect = w / Math.max(1, h);
+
+    // Hər ölçüdə ekranda 3D kamera hərəkət edərkən kənarda qara boşluq görünməməsi üçün ≥25% overscan marjası
+    const baseRefTan = Math.tan(THREE.MathUtils.degToRad(this.angleCfg.refFov * 0.5));
+    const aspectCover = Math.max(1.0, (viewAspect / this.imageAspect) * 1.16);
+    const refTan = baseRefTan * aspectCover;
+
+    this.shellUniforms.uRefPos.value.copy(refPos);
+    this.shellUniforms.uRefForward.value.copy(forward);
+    this.shellUniforms.uRefRight.value.copy(right);
+    this.shellUniforms.uRefUp.value.copy(up);
+    this.shellUniforms.uRefTanHalfFov.value = refTan;
+    this.shellUniforms.uShellAspect.value = this.imageAspect;
+    this.shellUniforms.uNearDist.value = this.angleCfg.depthShell.nearDist;
+    this.shellUniforms.uFarDist.value = this.angleCfg.depthShell.farDist;
+    this.shellUniforms.uMaxGroundDist.value = this.angleCfg.depthShell.maxGroundDist;
+    this.shellUniforms.uSlopeRise.value = this.angleCfg.movement.slopeRise || 0.0;
+  }
+
   async mount() {
     this.isMounted = false;
     this.container.innerHTML = '';
@@ -1078,7 +1269,7 @@ export class CinematicBazaar25DScene {
     const w = this.container.clientWidth || window.innerWidth;
     const h = this.container.clientHeight || window.innerHeight;
 
-    this.camera = new THREE.PerspectiveCamera(this.angleCfg.fov, w / h, 0.2, 120);
+    this.camera = new THREE.PerspectiveCamera(this.angleCfg.liveFov, w / h, 0.2, 160);
     this.camera.position.copy(this.baseCamPos);
     this.camera.lookAt(this.baseLookAt);
 
@@ -1091,7 +1282,14 @@ export class CinematicBazaar25DScene {
     this.renderer.toneMappingExposure = 1.18;
     this.container.appendChild(this.renderer.domElement);
 
-    await this._buildDepthParallaxBackdrop();
+    // 3D Hərəkət & Sərhəd telemetriya paneli (yalnız B basılanda görünür)
+    if (this.debugHudEl) this.debugHudEl.remove();
+    this.debugHudEl = document.createElement('div');
+    this.debugHudEl.style.cssText =
+      'display:none;position:fixed;left:14px;bottom:84px;z-index:26;padding:6px 10px;background:rgba(14,10,7,0.88);border:1px solid rgba(82,224,120,0.65);border-radius:3px;color:#d6f5de;font-family:monospace;font-size:11px;line-height:1.45;pointer-events:none;';
+    document.body.appendChild(this.debugHudEl);
+
+    await this._buildProjected3DShell();
     this._buildLights();
     this._buildShadowFloorAndAtmosphere();
     this._buildForegroundFrame();
@@ -1267,13 +1465,13 @@ export class CinematicBazaar25DScene {
         this.culturalAnimItems.push({ mesh: glow, kind: 'pulse', baseOpacity: 0.32, phase: tx });
       }
     } else if (mode === 'baku_sun_fire' && !this.angleCfg.isInterior) {
-      const sunTex = makeSoftGradientTex('rgba(255, 224, 152, 0.42)');
+      const sunTex = makeSoftGradientTex('rgba(255, 224, 152, 0.40)');
       const sunPool = new THREE.Mesh(
         new THREE.PlaneGeometry(4.8, 3.8),
         new THREE.MeshBasicMaterial({
           map: sunTex,
           transparent: true,
-          opacity: 0.34,
+          opacity: 0.32,
           blending: THREE.AdditiveBlending,
           depthWrite: false,
         })
@@ -1281,7 +1479,7 @@ export class CinematicBazaar25DScene {
       sunPool.rotation.x = -Math.PI / 2;
       sunPool.position.set(-1.3, 0.03, 2.6);
       this.culturalAccentGroup.add(sunPool);
-      this.culturalAnimItems.push({ mesh: sunPool, kind: 'pulse', baseOpacity: 0.34, phase: 0.4 });
+      this.culturalAnimItems.push({ mesh: sunPool, kind: 'pulse', baseOpacity: 0.32, phase: 0.4 });
     }
 
     this.scene.add(this.culturalAccentGroup);
@@ -1298,7 +1496,7 @@ export class CinematicBazaar25DScene {
     const fadeOutSteps = 8;
     for (let i = 1; i <= fadeOutSteps; i++) {
       this.fadeAlpha = 1 - i / fadeOutSteps;
-      if (this.backdropUniforms) this.backdropUniforms.uFade.value = this.fadeAlpha;
+      if (this.shellUniforms) this.shellUniforms.uFade.value = this.fadeAlpha;
       await new Promise((r) => setTimeout(r, 17));
     }
 
@@ -1309,28 +1507,26 @@ export class CinematicBazaar25DScene {
     this.angleCfg = this.angleConfigs[angleId];
     this.baseCamPos.set(...this.angleCfg.camPos);
     this.baseLookAt.set(...this.angleCfg.lookAt);
-    this.camera.fov = this.angleCfg.fov;
+    this.liveCamPos.copy(this.baseCamPos);
+    this.liveLookAt.copy(this.baseLookAt);
+    this.camera.fov = this.angleCfg.liveFov;
     this.camera.updateProjectionMatrix();
-    this.smoothZoom = this.angleCfg.baseZoom;
-    this.smoothDolly = 0.0;
 
     if (bundle.colorMap?.image?.width && bundle.colorMap?.image?.height) {
       this.imageAspect = bundle.colorMap.image.width / bundle.colorMap.image.height;
     }
 
-    if (this.backdropUniforms) {
-      if (bundle.colorMap) this.backdropUniforms.uColorMap.value = bundle.colorMap;
-      if (bundle.depthMap) this.backdropUniforms.uDepthMap.value = bundle.depthMap;
-      if (bundle.normalMap) this.backdropUniforms.uNormalMap.value = bundle.normalMap;
-      if (bundle.glowMap) this.backdropUniforms.uGlowMap.value = bundle.glowMap;
-      this.backdropUniforms.uCityTint.value.copy(this.angleCfg.tint);
-      this.backdropUniforms.uGlowTint.value.copy(this.angleCfg.glowTint);
-      this.backdropUniforms.uExposure.value = this.angleCfg.exposure;
-      this.backdropUniforms.uLanternA.value.set(...this.angleCfg.lanterns[0].uv);
-      this.backdropUniforms.uLanternB.value.set(...this.angleCfg.lanterns[1].uv);
-      const w = this.container.clientWidth || window.innerWidth;
-      const h = this.container.clientHeight || window.innerHeight;
-      this.backdropUniforms.uAspectRatio.value = (w / Math.max(1, h)) / this.imageAspect;
+    if (this.shellUniforms) {
+      if (bundle.colorMap) this.shellUniforms.uColorMap.value = bundle.colorMap;
+      if (bundle.depthMap) this.shellUniforms.uDepthMap.value = bundle.depthMap;
+      if (bundle.normalMap) this.shellUniforms.uNormalMap.value = bundle.normalMap;
+      if (bundle.glowMap) this.shellUniforms.uGlowMap.value = bundle.glowMap;
+      this.shellUniforms.uCityTint.value.copy(this.angleCfg.tint);
+      this.shellUniforms.uGlowTint.value.copy(this.angleCfg.glowTint);
+      this.shellUniforms.uExposure.value = this.angleCfg.exposure;
+      this.shellUniforms.uLanternA.value.set(...this.angleCfg.lanterns[0].uv);
+      this.shellUniforms.uLanternB.value.set(...this.angleCfg.lanterns[1].uv);
+      this._syncShellReferenceCamera();
     }
 
     if (this.sunLight) {
@@ -1339,6 +1535,11 @@ export class CinematicBazaar25DScene {
     }
     if (this.floorMesh) {
       this.floorMesh.material.opacity = this.angleCfg.shadowOpacity;
+      // Yamaclı otaqda kölgə müstəvisini də yamaca uyğun əy!
+      const rise = this.angleCfg.movement.slopeRise || 0;
+      const span = Math.max(1, this.angleCfg.zRange[1] - this.angleCfg.zRange[0]);
+      this.floorMesh.rotation.x = Math.atan2(rise, span);
+      this.floorMesh.position.y = rise * 0.35;
     }
     this.angleCfg.lanterns.forEach((lCfg, idx) => {
       if (this.flickerLights[idx]) {
@@ -1352,7 +1553,7 @@ export class CinematicBazaar25DScene {
 
     const sp = customSpawn || this.angleCfg.spawnPos;
     const safeSp = this._clampWalkable(sp[0], sp[2]);
-    this.player.pos.set(safeSp.x, 0, safeSp.z);
+    this.player.pos.set(safeSp.x, safeSp.y, safeSp.z);
     this.player.yaw = this.angleCfg.spawnYaw;
     if (this.player.group) {
       this.player.group.scale.setScalar(this.player.baseNormScale * (this.angleCfg.playerScaleHeight / 1.84));
@@ -1368,15 +1569,18 @@ export class CinematicBazaar25DScene {
     const fadeInSteps = 10;
     for (let i = 1; i <= fadeInSteps; i++) {
       this.fadeAlpha = i / fadeInSteps;
-      if (this.backdropUniforms) this.backdropUniforms.uFade.value = this.fadeAlpha;
+      if (this.shellUniforms) this.shellUniforms.uFade.value = this.fadeAlpha;
       await new Promise((r) => setTimeout(r, 17));
     }
     this.fadeAlpha = 1.0;
-    if (this.backdropUniforms) this.backdropUniforms.uFade.value = 1.0;
+    if (this.shellUniforms) this.shellUniforms.uFade.value = 1.0;
     this.isTransitioning = false;
   }
 
-  async _buildDepthParallaxBackdrop() {
+  /**
+   * 140×84 seqmentli Həqiqi 3D Dərinlik Qabığı (Projected 3D World Shell)
+   */
+  async _buildProjected3DShell() {
     const bundle = await this._loadAngleTextures(this.activeAngleId);
     if (bundle.colorMap?.image?.width && bundle.colorMap?.image?.height) {
       this.imageAspect = bundle.colorMap.image.width / bundle.colorMap.image.height;
@@ -1390,18 +1594,21 @@ export class CinematicBazaar25DScene {
       return t;
     };
 
-    const w = this.container.clientWidth || window.innerWidth;
-    const h = this.container.clientHeight || window.innerHeight;
-
-    this.backdropUniforms = {
+    this.shellUniforms = {
       uColorMap: { value: bundle.colorMap || fallbackTex() },
       uDepthMap: { value: bundle.depthMap || fallbackTex() },
       uNormalMap: { value: bundle.normalMap || fallbackTex() },
       uGlowMap: { value: bundle.glowMap || fallbackTex() },
-      uParallax: { value: new THREE.Vector2(0, 0) },
-      uZoom: { value: this.angleCfg.baseZoom },
-      uDolly: { value: 0.0 },
-      uAspectRatio: { value: (w / Math.max(1, h)) / this.imageAspect },
+      uRefPos: { value: new THREE.Vector3() },
+      uRefForward: { value: new THREE.Vector3(0, 0, -1) },
+      uRefRight: { value: new THREE.Vector3(1, 0, 0) },
+      uRefUp: { value: new THREE.Vector3(0, 1, 0) },
+      uRefTanHalfFov: { value: 0.45 },
+      uShellAspect: { value: this.imageAspect },
+      uNearDist: { value: this.angleCfg.depthShell.nearDist },
+      uFarDist: { value: this.angleCfg.depthShell.farDist },
+      uMaxGroundDist: { value: this.angleCfg.depthShell.maxGroundDist },
+      uSlopeRise: { value: this.angleCfg.movement.slopeRise || 0.0 },
       uTime: { value: 0 },
       uPlayerUV: { value: new THREE.Vector2(0.5, 0.25) },
       uPlayerDepth: { value: 0.6 },
@@ -1414,18 +1621,23 @@ export class CinematicBazaar25DScene {
       uFade: { value: 1.0 },
     };
 
+    this._syncShellReferenceCamera();
+
     const mat = new THREE.ShaderMaterial({
-      uniforms: this.backdropUniforms,
-      vertexShader: BACKDROP_VERT,
-      fragmentShader: BACKDROP_FRAG,
+      uniforms: this.shellUniforms,
+      vertexShader: SHELL_3D_VERT,
+      fragmentShader: SHELL_3D_FRAG,
+      side: THREE.DoubleSide,
       depthTest: false,
       depthWrite: false,
     });
 
-    this.backdropMesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat);
-    this.backdropMesh.frustumCulled = false;
-    this.backdropMesh.renderOrder = -100;
-    this.scene.add(this.backdropMesh);
+    // 140×84 yüksək dəqiqlikli 3D relyef toru (real kamera hərəkətində axıcı 3D perspektiv!)
+    const shellGeo = new THREE.PlaneGeometry(2, 2, 140, 84);
+    this.shellMesh = new THREE.Mesh(shellGeo, mat);
+    this.shellMesh.frustumCulled = false;
+    this.shellMesh.renderOrder = -100;
+    this.scene.add(this.shellMesh);
   }
 
   _buildLights() {
@@ -1447,9 +1659,8 @@ export class CinematicBazaar25DScene {
     this.sunLight.shadow.bias = -0.0004;
     this.scene.add(this.sunLight);
 
-    // Gecə vaxtı tacirin öz ətrafını işıqlandıran isti fənər işığı
-    this.playerLanternLight = new THREE.PointLight(0xffb454, 0.25, 7.5, 1.5);
-    this.playerLanternLight.position.set(0, 1.5, 4.2);
+    this.playerLanternLight = new THREE.PointLight(0xffb454, 0.18, 7.5, 1.5);
+    this.playerLanternLight.position.set(0.55, 1.25, 3.6);
     this.scene.add(this.playerLanternLight);
 
     this.flickerLights = [];
@@ -1584,8 +1795,8 @@ export class CinematicBazaar25DScene {
           id: 'fayton_station',
           type: 'fayton',
           label: 'Fayton Dayanacağı · Şəhərlərarası Səfər',
-          pos: new THREE.Vector3(1.6, 0, 2.5),
-          npcPos: new THREE.Vector3(2.8, 1.5, 2.5),
+          pos: new THREE.Vector3(1.5, 0, 2.3),
+          npcPos: new THREE.Vector3(2.8, 1.5, 2.3),
           radius: 2.3,
           ringColor: 0x6cb8cf,
         },
@@ -1604,7 +1815,7 @@ export class CinematicBazaar25DScene {
         id: 'market_arcade_zone',
         type: 'market',
         label: `${this.angleCfg.title} · Sövdələş`,
-        pos: new THREE.Vector3(-1.1, 0, 1.5),
+        pos: new THREE.Vector3(-0.95, 0, 1.5),
         npcPos: new THREE.Vector3(-2.2, 1.5, 1.5),
         radius: 2.6,
         defaultItem: primaryLuxury,
@@ -1637,6 +1848,8 @@ export class CinematicBazaar25DScene {
     }
 
     for (const def of defs) {
+      const fy = this.angleCfg.getFloorY(def.pos.z);
+      def.pos.y = fy;
       this.interactables.push(def);
 
       const ringGeo = new THREE.RingGeometry(0.46, 0.495, 44);
@@ -1650,7 +1863,7 @@ export class CinematicBazaar25DScene {
         depthWrite: false,
       });
       const ring = new THREE.Mesh(ringGeo, ringMat);
-      ring.position.set(def.pos.x, 0.022, def.pos.z);
+      ring.position.set(def.pos.x, fy + 0.022, def.pos.z);
       this.interactGroup.add(ring);
 
       const innerGeo = new THREE.RingGeometry(0.22, 0.245, 32);
@@ -1658,7 +1871,7 @@ export class CinematicBazaar25DScene {
       const innerMat = ringMat.clone();
       innerMat.opacity = 0.14;
       const inner = new THREE.Mesh(innerGeo, innerMat);
-      inner.position.set(def.pos.x, 0.026, def.pos.z);
+      inner.position.set(def.pos.x, fy + 0.026, def.pos.z);
       this.interactGroup.add(inner);
 
       this.interactRings.push({ id: def.id, outer: ring, inner });
@@ -1716,7 +1929,7 @@ export class CinematicBazaar25DScene {
     }
 
     const safeSp = this._clampWalkable(this.player.pos.x, this.player.pos.z);
-    this.player.pos.set(safeSp.x, 0, safeSp.z);
+    this.player.pos.set(safeSp.x, safeSp.y, safeSp.z);
     mesh.position.copy(this.player.pos);
     mesh.rotation.y = this.player.yaw;
     this.scene.add(mesh);
@@ -1729,7 +1942,8 @@ export class CinematicBazaar25DScene {
     const prevAction = this.player.actions[this.player.activeActionName];
     if (!nextAction) return;
 
-    nextAction.reset().setEffectiveTimeScale(targetName === 'Walk' ? 1.15 : 1.0).setEffectiveWeight(1).play();
+    const animScale = targetName === 'Walk' ? this.angleCfg.movement.animScale || 1.12 : 1.0;
+    nextAction.reset().setEffectiveTimeScale(animScale).setEffectiveWeight(1).play();
     if (prevAction) prevAction.crossFadeTo(nextAction, 0.2, true);
     this.player.activeActionName = targetName;
   }
@@ -1741,9 +1955,7 @@ export class CinematicBazaar25DScene {
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h);
-    if (this.backdropUniforms) {
-      this.backdropUniforms.uAspectRatio.value = (w / Math.max(1, h)) / this.imageAspect;
-    }
+    this._syncShellReferenceCamera();
   }
 
   update(dt) {
@@ -1754,10 +1966,11 @@ export class CinematicBazaar25DScene {
     // Səhər ↔ Gecə hamar animasiyası
     if (Math.abs(this.targetNightMix - this.currentNightMix) > 0.001) {
       this.currentNightMix += (this.targetNightMix - this.currentNightMix) * Math.min(1, dt * 3.5);
-      if (this.backdropUniforms) this.backdropUniforms.uNightMix.value = this.currentNightMix;
+      if (this.shellUniforms) this.shellUniforms.uNightMix.value = this.currentNightMix;
       this._applyTimeLighting();
     }
 
+    const mv = this.angleCfg.movement;
     let moveX = 0;
     let moveZ = 0;
     const modalBlocking = this.gameManager?.ui?.isInventoryOpen?.() || this.gameManager?.ui?.mapOpen;
@@ -1787,10 +2000,9 @@ export class CinematicBazaar25DScene {
     if (this.player.isMoving) {
       const nx = moveX / len;
       const nz = moveZ / len;
-      const step = this.player.speed * dt;
+      const step = (mv.speed || 4.4) * dt;
       const clamped = this._clampWalkable(this.player.pos.x + nx * step, this.player.pos.z + nz * step);
-      this.player.pos.x = clamped.x;
-      this.player.pos.z = clamped.z;
+      this.player.pos.set(clamped.x, clamped.y, clamped.z);
 
       const targetYaw = Math.atan2(nx, nz);
       let diff = targetYaw - this.player.yaw;
@@ -1809,7 +2021,7 @@ export class CinematicBazaar25DScene {
       }
     }
     if (this.playerLanternLight) {
-      this.playerLanternLight.position.set(this.player.pos.x + 0.55, 1.25, this.player.pos.z - 0.45);
+      this.playerLanternLight.position.set(this.player.pos.x + 0.55, this.player.pos.y + 1.25, this.player.pos.z - 0.45);
     }
 
     if (this.portalCooldown <= 0 && !this.isTransitioning && !this.dialogueFocus && !modalBlocking && this.player.isMoving) {
@@ -1891,41 +2103,62 @@ export class CinematicBazaar25DScene {
       posAttr.needsUpdate = true;
     }
 
-    const [zMin, zMax] = this.angleCfg.zRange;
-    const depthProgress = Math.max(0, Math.min(1, (zMax - this.player.pos.z) / Math.max(1, zMax - zMin)));
+    // REAL 3D KAMERA İZLƏMƏSİ: Hər məkanın öz fərdi 3D kamera davranışı (Pan + Forward Dolly + Yamac Yüksəlişi + Baxış)!
+    const depthT = this.angleCfg.getDepthT(this.player.pos.z);
+    const zOffsetFromSpawn = this.angleCfg.spawnPos[2] - this.player.pos.z; // Dərinə getdikcə müsbət
 
-    const targetParX = this.player.pos.x * 0.0135 + this.mouseNorm.x * 0.011;
-    const targetParY = -this.mouseNorm.y * 0.0065 + (depthProgress - 0.3) * 0.006;
-    this.smoothParallax.x += (targetParX - this.smoothParallax.x) * Math.min(1, dt * 3.6);
-    this.smoothParallax.y += (targetParY - this.smoothParallax.y) * Math.min(1, dt * 3.6);
+    const desiredCamX =
+      this.baseCamPos.x +
+      this.player.pos.x * (mv.followX || 0.4) +
+      this.mouseNorm.x * 0.52;
+    const desiredCamY =
+      this.baseCamPos.y +
+      this.player.pos.y * (mv.followY || 0.15) -
+      this.mouseNorm.y * 0.24 +
+      Math.sin(this.elapsed * 0.72) * 0.025;
+    const desiredCamZ =
+      this.baseCamPos.z -
+      Math.max(-0.5, zOffsetFromSpawn * (mv.followZ || 0.42)) -
+      (this.dialogueFocus ? 1.4 : 0);
 
-    const targetDolly = this.dialogueFocus ? 0.55 : depthProgress * 0.82;
-    this.smoothDolly += (targetDolly - this.smoothDolly) * Math.min(1, dt * 2.8);
+    const desiredLookX =
+      this.baseLookAt.x +
+      this.player.pos.x * (mv.lookX || 0.22) +
+      this.mouseNorm.x * 0.65;
+    const desiredLookY =
+      this.baseLookAt.y +
+      this.player.pos.y * 0.65 +
+      depthT * (mv.lookUpOnApproach || 0.3) -
+      this.mouseNorm.y * 0.32;
+    const desiredLookZ = this.baseLookAt.z;
 
-    const targetZoom = this.angleCfg.baseZoom + this.smoothDolly * 0.16;
-    this.smoothZoom += (targetZoom - this.smoothZoom) * Math.min(1, dt * 3.0);
+    const camLerp = Math.min(1, dt * 3.8);
+    this.liveCamPos.x += (desiredCamX - this.liveCamPos.x) * camLerp;
+    this.liveCamPos.y += (desiredCamY - this.liveCamPos.y) * camLerp;
+    this.liveCamPos.z += (desiredCamZ - this.liveCamPos.z) * camLerp;
 
-    const breatheY = Math.sin(this.elapsed * 0.72) * 0.022;
-    this.camera.position.set(
-      this.baseCamPos.x + this.smoothParallax.x * 26.0,
-      this.baseCamPos.y - this.smoothParallax.y * 9.0 + breatheY,
-      this.baseCamPos.z - this.smoothDolly * 2.25
-    );
-    this.camera.lookAt(
-      this.baseLookAt.x + this.smoothParallax.x * 10.5,
-      this.baseLookAt.y,
-      this.baseLookAt.z
-    );
+    this.liveLookAt.x += (desiredLookX - this.liveLookAt.x) * camLerp;
+    this.liveLookAt.y += (desiredLookY - this.liveLookAt.y) * camLerp;
+    this.liveLookAt.z += (desiredLookZ - this.liveLookAt.z) * camLerp;
 
-    if (this.backdropUniforms) {
-      this.backdropUniforms.uTime.value = this.elapsed;
-      this.backdropUniforms.uParallax.value.copy(this.smoothParallax);
-      this.backdropUniforms.uZoom.value = this.smoothZoom;
-      this.backdropUniforms.uDolly.value = this.smoothDolly;
+    this.camera.position.copy(this.liveCamPos);
+    this.camera.lookAt(this.liveLookAt);
+    if (mv.camRollAmp > 0) {
+      this.camera.rotation.z += Math.sin(this.elapsed * 0.85) * mv.camRollAmp;
+    }
 
+    if (this.shellUniforms) {
+      this.shellUniforms.uTime.value = this.elapsed;
       const proj = this.player.pos.clone().add(new THREE.Vector3(0, 1.1, 0)).project(this.camera);
-      this.backdropUniforms.uPlayerUV.value.set(proj.x * 0.5 + 0.5, proj.y * 0.5 + 0.5);
-      this.backdropUniforms.uPlayerDepth.value = Math.max(0.15, Math.min(1.0, 1.0 - depthProgress * 0.75));
+      this.shellUniforms.uPlayerUV.value.set(proj.x * 0.5 + 0.5, proj.y * 0.5 + 0.5);
+      this.shellUniforms.uPlayerDepth.value = Math.max(0.15, Math.min(1.0, 1.0 - depthT * 0.72));
+    }
+
+    if (this.showWalkBoundsDebug && this.debugHudEl) {
+      this.debugHudEl.innerHTML =
+        `<b>3D Profil:</b> ${mv.profileName}<br/>` +
+        `<b>Sürət:</b> ${mv.speed} · <b>DollyZ:</b> ${mv.followZ} · <b>Yamac:</b> +${mv.slopeRise || 0}m<br/>` +
+        `<b>Tacir 3D:</b> X=${this.player.pos.x.toFixed(2)} Y=${this.player.pos.y.toFixed(2)} Z=${this.player.pos.z.toFixed(2)} · <b>Qadağan:</b> ${(this.angleCfg.blockedZones || []).length}`;
     }
 
     this.renderer.render(this.scene, this.camera);
@@ -1937,6 +2170,10 @@ export class CinematicBazaar25DScene {
     window.removeEventListener('keydown', this._onKeyDown);
     window.removeEventListener('keyup', this._onKeyUp);
     window.removeEventListener('blur', this._onBlur);
+    if (this.debugHudEl) {
+      this.debugHudEl.remove();
+      this.debugHudEl = null;
+    }
     if (this.renderer) {
       const dom = this.renderer.domElement;
       dom.removeEventListener('pointermove', this._onPointerMove);
