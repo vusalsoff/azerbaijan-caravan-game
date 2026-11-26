@@ -1,9 +1,25 @@
 /**
  * Audio/AudioManager.js
- * Web Audio API əsaslı Azərbaycan lad/məqam ruhlu bölgə musiqiləri
- * (audio_baku_shirvan, audio_sheki_silk, audio_shusha_mugham) və səs effektləri.
- * İstəyə bağlı olaraq public/audio/<trackId>.mp3/.ogg fayllarını da dəstəkləyir.
+ * 6 Azərbaycan şəhərinin hər biri üçün ayrıca MP3 musiqi faylı + Web Audio API ehtiyat sintezi
+ * və səs effektləri / Azərbaycan dilində səsləndirmə (Voiceover) idarəetməsi.
+ *
+ * Şəhər → Musiqi Faylı (public/audio/<trackId>.mp3):
+ *   - Bakı     (City_Baku)     → audio_baku_shirvan.mp3
+ *   - Şamaxı   (City_Shamakhi) → audio_shamakhi_shirvan.mp3
+ *   - Şəki     (City_Sheki)    → audio_sheki_silk.mp3
+ *   - Gəncə    (City_Ganja)    → audio_ganja_nizami.mp3
+ *   - Şuşa     (City_Shusha)   → audio_shusha_mugham.mp3
+ *   - Lənkəran (City_Lankaran) → audio_lankaran_caspian.mp3
  */
+
+export const CITY_MUSIC_MAP = {
+  City_Baku: { trackId: 'audio_baku_shirvan', file: 'public/audio/audio_baku_shirvan.mp3', label: 'Bakı · Şirvanşahlar Motivi' },
+  City_Shamakhi: { trackId: 'audio_shamakhi_shirvan', file: 'public/audio/audio_shamakhi_shirvan.mp3', label: 'Şamaxı · Firuzəyi Karvansaray Motivi' },
+  City_Sheki: { trackId: 'audio_sheki_silk', file: 'public/audio/audio_sheki_silk.mp3', label: 'Şəki · İpək Yolu Motivi' },
+  City_Ganja: { trackId: 'audio_ganja_nizami', file: 'public/audio/audio_ganja_nizami.mp3', label: 'Gəncə · Nizami İntibahı Motivi' },
+  City_Shusha: { trackId: 'audio_shusha_mugham', file: 'public/audio/audio_shusha_mugham.mp3', label: 'Şuşa · Qarabağ Muğamı Motivi' },
+  City_Lankaran: { trackId: 'audio_lankaran_caspian', file: 'public/audio/audio_lankaran_caspian.mp3', label: 'Lənkəran · Cənub Xəzər Motivi' },
+};
 
 const TRACK_CONFIGS = {
   // Şirvan / Şur-Rast ab-havalı Xəzər sahili motivi
@@ -94,7 +110,9 @@ export class AudioManager {
     this.stepIdx = 0;
     this.externalAudio = null;
     this.voiceoverAudio = null;
+    this._musicSeq = 0;
     this._voSeq = 0;
+    this._pendingAutoplayRetry = false;
     this._loadSettings();
   }
 
@@ -145,13 +163,14 @@ export class AudioManager {
   }
 
   _syncGains() {
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    if (this.musicGain) {
-      this.musicGain.gain.setValueAtTime(this.muted || this.musicMuted ? 0 : this.musicVolume, now);
-    }
-    if (this.sfxGain) {
-      this.sfxGain.gain.setValueAtTime(this.muted || this.sfxMuted ? 0 : this.sfxVolume, now);
+    if (this.ctx) {
+      const now = this.ctx.currentTime;
+      if (this.musicGain) {
+        this.musicGain.gain.setValueAtTime(this.muted || this.musicMuted ? 0 : this.musicVolume, now);
+      }
+      if (this.sfxGain) {
+        this.sfxGain.gain.setValueAtTime(this.muted || this.sfxMuted ? 0 : this.sfxVolume, now);
+      }
     }
     if (this.externalAudio) {
       const duck = this.voiceoverAudio ? 0.35 : 1;
@@ -236,12 +255,14 @@ export class AudioManager {
   }
 
   playCityMusic(trackId) {
-    if (this.currentTrack === trackId) return;
+    if (!trackId) return;
+    if (this.currentTrack === trackId && (this.externalAudio || this.loopTimer)) return;
     this.currentTrack = trackId;
+    const seq = ++this._musicSeq;
     this._stopCurrentMusic();
 
-    this._tryExternalAudio(trackId).then((started) => {
-      if (started || this.currentTrack !== trackId) return;
+    this._tryExternalAudio(trackId, seq).then((started) => {
+      if (started || seq !== this._musicSeq || this.currentTrack !== trackId) return;
       this._startProceduralMusic(trackId);
     });
   }
@@ -296,18 +317,41 @@ export class AudioManager {
     }
   }
 
-  async _tryExternalAudio(trackId) {
+  async _tryExternalAudio(trackId, seq) {
     for (const ext of ['mp3', 'ogg']) {
       const url = `./audio/${trackId}.${ext}`;
       try {
         const res = await fetch(url, { method: 'HEAD' });
         const ct = (res.headers.get('content-type') || '').toLowerCase();
+        if (seq !== this._musicSeq) return true;
         if (res.ok && ct.startsWith('audio/')) {
           const el = new Audio(url);
           el.loop = true;
-          el.volume = this.muted || this.musicMuted ? 0 : this.musicVolume * 0.5;
-          await el.play().catch(() => {});
+          const duck = this.voiceoverAudio ? 0.35 : 1;
+          el.volume = this.muted || this.musicMuted ? 0 : this.musicVolume * 0.5 * duck;
           this.externalAudio = el;
+          const playPromise = el.play();
+          if (playPromise) {
+            await playPromise.catch(() => {
+              // İlk klikdən əvvəl brauzer autoplay-i bloklayarsa, ilk toxunuşda bu şəhərin musiqisini dərhal başlat
+              if (!this._pendingAutoplayRetry) {
+                this._pendingAutoplayRetry = true;
+                const resumeFn = () => {
+                  this._pendingAutoplayRetry = false;
+                  if (this.externalAudio && this.externalAudio.paused && !this.muted && !this.musicMuted) {
+                    this.externalAudio.play().catch(() => {});
+                  }
+                };
+                window.addEventListener('pointerdown', resumeFn, { once: true });
+                window.addEventListener('keydown', resumeFn, { once: true });
+              }
+            });
+          }
+          if (seq !== this._musicSeq) {
+            el.pause();
+            if (this.externalAudio === el) this.externalAudio = null;
+            return true;
+          }
           return true;
         }
       } catch {

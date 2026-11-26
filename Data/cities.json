@@ -23,7 +23,7 @@
       "display_name": "Şamaxı (Şirvan Karvansarayı)",
       "short_name": "Şamaxı",
       "era_name": "Şirvanşahlar Paytaxtı · XVI əsr",
-      "music_track": "audio_baku_shirvan",
+      "music_track": "audio_shamakhi_shirvan",
       "carpet_variant": "shirvan",
       "culture_note": "Firuzəyi günbəzli böyük İpək Yolu qovşağı, Şirvan xalçaları, şərab-üzüm və Venesiya elçilərinin bazarı.",
       "goods": [
@@ -60,7 +60,7 @@
       "display_name": "Gəncə (Şah Abbas Karvansarayı)",
       "short_name": "Gəncə",
       "era_name": "Gəncə Xanlığı · XVII–XVIII əsr",
-      "music_track": "audio_baku_shirvan",
+      "music_track": "audio_ganja_nizami",
       "carpet_variant": "karabakh",
       "culture_note": "Nizami yurdu, qırmızı kərpicli Şah Abbas karvansarayı, firuzəyi saxsı və ipək-buğda qovşağı.",
       "goods": [
@@ -97,7 +97,7 @@
       "display_name": "Lənkəran (Dairəvi Qala)",
       "short_name": "Lənkəran",
       "era_name": "Talış Xanlığı · XVIII əsr",
-      "music_track": "audio_shusha_mugham",
+      "music_track": "audio_lankaran_caspian",
       "carpet_variant": "shirvan",
       "culture_note": "Cənub Xəzər sahilinin Dairəvi Qalası, nar-sitrus bağları, ədviyyat, bal və dəniz ticarəti qapısı.",
       "goods": [
