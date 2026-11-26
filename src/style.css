@@ -1,17 +1,31 @@
 :root {
-  --bg-deep: #0c0907;
-  --bg-panel: rgba(20, 15, 11, 0.94);
-  --bg-parchment-dark: #19120c;
-  --gold: #cfa355;
-  --gold-bright: #e4be74;
-  --gold-dim: #8c6b34;
-  --gold-soft: rgba(207, 163, 85, 0.22);
-  --wax-crimson: #7e2323;
-  --emerald-muted: #2d5a43;
-  --crimson: #b84239;
-  --text-main: #eadcc3;
-  --text-muted: #b5a182;
-  --border-ornate: rgba(196, 152, 76, 0.48);
+  /* Royal Obsidian, Hammered Shirvan Bronze, Karabakh Crimson & Safavid Turquoise */
+  --bg-deep: #090705;
+  --bg-obsidian: #110c09;
+  --bg-panel: rgba(18, 13, 10, 0.94);
+  --bg-parchment-dark: #1a120c;
+
+  --gold: #d2a452;
+  --gold-bright: #f2cf7c;
+  --gold-pale: #fae8be;
+  --gold-dim: #7f5d29;
+  --gold-soft: rgba(210, 164, 82, 0.24);
+  --bronze-dark: #3a2713;
+
+  --wax-crimson: #8a1f24;
+  --wax-crimson-deep: #4e0f13;
+  --crimson: #c2423a;
+  --turquoise: #2f8b8f;
+  --turquoise-bright: #6cd0d4;
+  --emerald-muted: #21523b;
+  --emerald-bright: #5ec48c;
+
+  --text-main: #f1e3c8;
+  --text-muted: #b7a180;
+  --border-ornate: rgba(212, 166, 84, 0.56);
+
+  /* 100% Native Azerbaijani (Ə, Ş, Ğ, Ç, Ö, Ü, İ, ı) Chiseled Royal Typography */
+  --font-royal: 'Cormorant SC', 'Cormorant Garamond', Georgia, serif;
   --font-display: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
   --font-body: 'Spectral', Georgia, 'Times New Roman', serif;
 }
@@ -32,6 +46,7 @@ body,
   color: var(--text-main);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   user-select: none;
 }
 
@@ -49,6 +64,7 @@ body,
 }
 
 #ui-root button,
+#ui-root a,
 #ui-root .interactive,
 #ui-root .modal-card,
 #ui-root .hud-bar {

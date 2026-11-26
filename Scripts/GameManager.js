@@ -97,6 +97,7 @@ export class GameManager {
       bazaarRenderMode: this.bazaarRenderMode,
       timeOfDay: this.timeOfDay,
       bazaarCityLabel: this.bazaarScene?.getLocationLabel?.() || snapshot.currentCity?.short_name || 'Bakı',
+      activeLocationId: this.activeLocationId || this.bazaarCityId || snapshot.currentCity?.city_id || 'City_Baku',
       bazaarAngleId: this.bazaarScene?.activeAngleId || 'courtyard',
       bazaarAngleTitle: this.bazaarScene?.angleCfg?.title || 'Karvansaray Həyəti',
       bazaarRooms: this.bazaarScene?.getRoomList?.() || [],

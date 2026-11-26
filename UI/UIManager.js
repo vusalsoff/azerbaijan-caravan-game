@@ -1,4 +1,4 @@
-import { renderItemSvg, renderSigil, renderSeljukStarDivider } from './AntiqueIcons.js';
+import { renderItemSvg, renderSigil, renderSeljukStarDivider, renderCityCrest, renderButaWing } from './AntiqueIcons.js';
 
 const SHORT_ITEM_LABELS = {
   salt: 'Duz',
@@ -212,16 +212,43 @@ export class UIManager {
       const separateRoomRow = roomsList.length >= 4;
 
       const isNight = state.timeOfDay === 'night';
+      const activeLocId = state.activeLocationId || state.currentCity?.city_id || 'City_Baku';
+      const goldPct = Math.max(0, Math.min(100, Math.round((state.gold / Math.max(1, state.winGoldGoal)) * 100)));
       this.hudEl.innerHTML = `
+        <div class="cinema-corner-filigree tl"></div>
+        <div class="cinema-corner-filigree tr"></div>
+        <div class="cinema-corner-filigree bl"></div>
+        <div class="cinema-corner-filigree br"></div>
+
         <div class="cinema-hud-shell">
           <div class="cinema-top-strip">
-            <div class="cinema-location-whisper">
-              <span class="cinema-brand-mark">KARVA</span>
-              <span class="cinema-sep">·</span>
-              <span class="cinema-city-text">${state.bazaarCityLabel || state.currentCity?.short_name || 'Bakı'}</span>
-              <span class="cinema-sep">·</span>
-              <span class="cinema-zone-text">${angleLabel}</span>
+            <div class="cinema-royal-banner">
+              <div class="cinema-crest-medallion" title="${state.bazaarCityLabel || 'Bakı'} Xanədan Gerbi">
+                ${renderCityCrest(activeLocId, 36)}
+              </div>
+              <div class="cinema-location-whisper">
+                <div class="cinema-whisper-top">
+                  <span class="cinema-brand-mark">KARVA</span>
+                  <span class="cinema-sep">✦</span>
+                  <span class="cinema-city-text">${state.bazaarCityLabel || state.currentCity?.short_name || 'Bakı'}</span>
+                  <span class="cinema-sep cinema-sep-zone">·</span>
+                  <span class="cinema-zone-text">${angleLabel}</span>
+                </div>
+                <div class="cinema-whisper-meta">
+                  <span class="cinema-gold-meter" title="Xəzinə Hədəfi: ${state.gold} / ${state.winGoldGoal} qızıl">
+                    ${renderSigil('coin', 13)}
+                    <strong style="color:var(--gold-bright);font-family:var(--font-royal);font-size:13px;">${state.gold}</strong>
+                    <small style="color:#a89474;">/${state.winGoldGoal}</small>
+                    <span class="cinema-gold-track"><span class="cinema-gold-fill" style="width:${goldPct}%;"></span></span>
+                  </span>
+                  <span class="cinema-day-tag" title="Səfər Günü">
+                    ${renderSigil('sun', 12)}
+                    <span>GÜN ${state.gameDay}</span>
+                  </span>
+                </div>
+              </div>
             </div>
+
             <div class="cinema-top-right-mini">
               <button id="btn-toggle-time" class="cinema-mini-btn" title="Səhər / Gecə Modu (T)">${isNight ? '☾ Gecə' : '☀ Səhər'}</button>
               <button id="btn-toggle-25d" class="cinema-mini-btn" title="Klassik 3D Rejiminə keç">🏛️ 3D</button>
@@ -241,37 +268,33 @@ export class UIManager {
                 : ''
             }
             <div class="cinema-dock lotm-plate">
-              <div class="cinema-stat" title="Xəzinə">
-                ${renderSigil('coin', 14)}
-                <strong>${state.gold}</strong><small>/${state.winGoldGoal}</small>
-              </div>
-              <div class="cinema-stat" title="Gün">
-                ${renderSigil('sun', 13)}
-                <span>G.${state.gameDay}</span>
-              </div>
+              ${renderButaWing('left', 24)}
               ${
                 !separateRoomRow
-                  ? `<span class="cinema-dock-div"></span><div class="cinema-angle-pills">${roomsPillsHtml}</div>`
+                  ? `<div class="cinema-angle-pills">${roomsPillsHtml}</div><span class="cinema-dock-div"></span>`
                   : ''
               }
-              <span class="cinema-dock-div"></span>
               <button id="btn-inv-top" class="cinema-dock-btn" title="Karvan Heybəsi (I)">
                 ${renderSigil('satchel', 14)}
                 <span>Heybə <b>${state.totalItems}/${state.maxInventory}</b></span>
               </button>
-              <button id="btn-exit-map-top" class="cinema-dock-btn gold" title="Qədim Xəritə (X)">
-                ${renderSigil('compass', 14)}
-                <span>Xəritə</span>
-              </button>
               <button id="btn-cinema-quests" class="cinema-dock-btn ${this._cinemaQuestOpen ? 'active' : ''}" title="Divan Əmanətləri & Bacarıqlar">
                 ${renderSigil('seal', 14)}
-                <span>Əmanət (${activeQuestCount})</span>
+                <span>Əmanət</span>
+                ${activeQuestCount > 0 ? `<span class="cinema-badge-dot">${activeQuestCount}</span>` : ''}
+              </button>
+              <button id="btn-exit-map-top" class="cinema-dock-btn gold" title="Qədim Xəritə (X)">
+                ${renderSigil('compass', 15)}
+                <span><span class="dock-full-only">Qədim </span>Xəritə</span>
               </button>
               <button id="btn-map" class="cinema-dock-btn" title="Tarixi Salnamə (M)">
                 ${renderSigil('scroll', 14)}
                 <span>Salnamə</span>
               </button>
-              <button id="btn-event-test" class="cinema-dock-btn" title="Yol Rəvayəti">✦</button>
+              <button id="btn-event-test" class="cinema-dock-btn" title="Yol Rəvayəti">
+                ${renderSigil('buta', 14)}
+              </button>
+              ${renderButaWing('right', 24)}
             </div>
           </div>
         </div>
@@ -399,6 +422,7 @@ export class UIManager {
       <div class="hud-shell">
         <div class="hud-top-row">
           <div class="irs-brand-box lotm-plate">
+            ${renderCityCrest(state.currentCity?.city_id || 'City_Baku', 34)}
             <div class="irs-logo">
               <span class="irs-logo-main">KARVA</span>
               <span class="irs-logo-sub">Karvan Yolu</span>
@@ -2041,10 +2065,11 @@ export class UIManager {
     this.modalEl.innerHTML = `
       <div class="modal-backdrop" style="z-index:80;">
         <div class="modal-card lotm-plate" style="max-width:480px;width:92vw;padding:24px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-            <h2 style="margin:0;color:#f3cf70;font-size:22px;">⚙ Ayarlar · Səs və Performans</h2>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <h2 style="margin:0;color:var(--gold-bright);font-size:21px;">⚙ Ayarlar · Səs və Qrafika</h2>
             <button id="settings-close" class="btn-ghost">✕ Bağla</button>
           </div>
+          ${renderSeljukStarDivider()}
 
           <div style="display:flex;flex-direction:column;gap:14px;">
             <div style="padding:12px;background:rgba(16,12,8,0.75);border:1px solid rgba(212,175,55,0.35);border-radius:8px;">

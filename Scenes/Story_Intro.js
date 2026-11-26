@@ -1,4 +1,4 @@
-import { renderSeljukStarDivider, renderSigil } from '../UI/AntiqueIcons.js';
+import { renderSeljukStarDivider, renderSigil, renderCityCrest, renderButaWing } from '../UI/AntiqueIcons.js';
 
 /**
  * Scenes/Story_Intro.js
@@ -181,29 +181,35 @@ export class StoryIntroScene {
     canvas.width = this.root.clientWidth || window.innerWidth;
     canvas.height = this.root.clientHeight || window.innerHeight;
 
-    const motes = Array.from({ length: 28 }, () => ({
+    const motes = Array.from({ length: 44 }, (_, i) => ({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
-      r: 0.8 + Math.random() * 1.6,
-      vy: -0.1 - Math.random() * 0.22,
-      alpha: 0.12 + Math.random() * 0.32,
+      r: 0.9 + Math.random() * 2.1,
+      vx: (Math.random() - 0.5) * 0.25,
+      vy: -0.18 - Math.random() * 0.42,
+      alpha: 0.16 + Math.random() * 0.48,
+      warm: i % 3 === 0 ? '#f0863a' : '#f4cf78',
     }));
 
     const draw = () => {
       this.rafId = requestAnimationFrame(draw);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#cfa355';
       for (const p of motes) {
+        p.x += p.vx + Math.sin(p.y * 0.015) * 0.12;
         p.y += p.vy;
-        if (p.y < -6) {
-          p.y = canvas.height + 6;
+        if (p.y < -8) {
+          p.y = canvas.height + 8;
           p.x = Math.random() * canvas.width;
         }
         ctx.globalAlpha = p.alpha;
+        ctx.fillStyle = p.warm;
+        ctx.shadowColor = p.warm;
+        ctx.shadowBlur = 7;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
         ctx.fill();
       }
+      ctx.shadowBlur = 0;
       ctx.globalAlpha = 1;
     };
     draw();
@@ -211,36 +217,70 @@ export class StoryIntroScene {
 
   render() {
     if (!this.showSlides) {
+      const houses = [
+        { id: 'City_Baku', name: 'Bakı' },
+        { id: 'City_Shamakhi', name: 'Şamaxı' },
+        { id: 'City_Sheki', name: 'Şəki' },
+        { id: 'City_Ganja', name: 'Gəncə' },
+        { id: 'City_Shusha', name: 'Şuşa' },
+        { id: 'City_Lankaran', name: 'Lənkəran' },
+      ];
       this.root.innerHTML = `
-        <div style="
-          position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;
-          background:radial-gradient(circle at 50% 34%, rgba(110, 74, 32, 0.34), #0b0806 78%);
-          padding:24px;overflow-y:auto;
-        ">
-          <canvas id="story-ambient-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;"></canvas>
+        <div class="karva-title-screen">
+          <div class="karva-title-bg" style="background-image:url('./images/bazaar_baku_25d.jpg');"></div>
+          <div class="karva-title-vignette"></div>
+          <canvas id="story-ambient-canvas" style="position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;"></canvas>
 
-          <div style="position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;text-align:center;max-width:540px;width:100%;">
-            <img src="./images/karva_logo.png" alt="KARVA" style="width:min(420px, 86vw);height:auto;filter:drop-shadow(0 12px 32px rgba(0,0,0,0.85));margin-bottom:8px;" />
-            <div style="font-family:var(--font-display);font-size:15px;letter-spacing:0.16em;text-transform:uppercase;color:#d6b880;margin-bottom:26px;">
-              XVI Əsr Azərbaycan Karvan Ticarəti
+          <div class="cinema-corner-filigree tl"></div>
+          <div class="cinema-corner-filigree tr"></div>
+          <div class="cinema-corner-filigree bl"></div>
+          <div class="cinema-corner-filigree br"></div>
+
+          <div class="karva-title-topbar">
+            <span class="karva-era-ribbon">${renderSigil('flame', 15)} ODLAR YURDU · XVI ƏSR İPƏK YOLU</span>
+            <span class="karva-era-ribbon">${renderSigil('seal', 14)} ŞİRVANŞAHLAR & XANLIQLAR DİVANI</span>
+          </div>
+
+          <div class="karva-title-stage">
+            <img src="./images/karva_logo.png" alt="KARVA" class="karva-title-logo" />
+            <div class="karva-title-subtitle">
+              ${renderButaWing('left', 26)}
+              <span>Azərbaycan Karvan Ticarəti</span>
+              ${renderButaWing('right', 26)}
             </div>
+            <div style="width:100%;">${renderSeljukStarDivider()}</div>
+            <p class="karva-title-motto">«Altı qala, bir salnamə — tərəzi, ipək və qılınc arasında böyük yol.»</p>
 
-            <div style="display:flex;flex-direction:column;gap:12px;width:min(360px, 88vw);">
-              <button id="title-play-btn" class="btn-primary" style="font-size:17px;padding:12px 24px;justify-content:center;letter-spacing:0.06em;">
-                ▶ Oyna
+            <div class="karva-title-actions">
+              <button id="title-play-btn" class="btn-primary karva-cta-royal">
+                ${renderSigil('gate', 18)}
+                <span>KARVANA BAŞLA</span>
               </button>
-              <div style="display:flex;gap:10px;width:100%;">
-                <button id="title-settings-btn" class="btn-secondary" style="flex:1;font-size:14px;padding:10px 14px;justify-content:center;">
+              <div class="karva-title-row">
+                <button id="title-settings-btn" class="btn-secondary" style="padding:10px 14px;font-size:13.5px;">
                   ⚙ Ayarlar
                 </button>
-                <a id="title-prompts-btn" href="https://vusalsoff.github.io/azerbaijan-caravan-game/" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="flex:1;font-size:14px;padding:10px 14px;justify-content:center;text-decoration:none;" title="44 Məkanlı 2.5D/3D Şəkil Prompt Kataloqu">
+                <a id="title-prompts-btn" href="https://vusalsoff.github.io/azerbaijan-caravan-game/" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="padding:10px 14px;font-size:13.5px;text-decoration:none;" title="44 Məkanlı 2.5D/3D Şəkil Prompt Kataloqu">
                   🖼️ 44 Prompt
                 </a>
               </div>
-              <button id="title-story-btn" class="btn-ghost" style="font-size:13px;padding:8px 16px;justify-content:center;color:#cbb893;">
-                📜 Tarixi Salnamə (Giriş Hekayəsi)
+              <button id="title-story-btn" class="btn-ghost" style="font-size:13px;padding:8px 16px;">
+                ${renderSigil('scroll', 14)}
+                <span>Tarixi Salnamə (Giriş Hekayəsi)</span>
               </button>
             </div>
+          </div>
+
+          <div class="karva-houses-bar">
+            ${houses
+              .map(
+                (h) => `
+              <span class="karva-house-chip">
+                ${renderCityCrest(h.id, 22)}
+                <span>${h.name}</span>
+              </span>`
+              )
+              .join('')}
           </div>
         </div>
       `;
