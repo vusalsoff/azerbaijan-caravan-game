@@ -214,6 +214,7 @@ export class UIManager {
       const isNight = state.timeOfDay === 'night';
       const activeLocId = state.activeLocationId || state.currentCity?.city_id || 'City_Baku';
       const goldPct = Math.max(0, Math.min(100, Math.round((state.gold / Math.max(1, state.winGoldGoal)) * 100)));
+      const hudHidden = Boolean(this._hudMinimized);
       this.hudEl.innerHTML = `
         <div class="cinema-corner-filigree tl"></div>
         <div class="cinema-corner-filigree tr"></div>
@@ -222,9 +223,12 @@ export class UIManager {
 
         <div class="cinema-hud-shell">
           <div class="cinema-top-strip">
-            <div class="cinema-royal-banner">
+            ${
+              hudHidden
+                ? `<div></div>`
+                : `<div class="cinema-royal-banner">
               <div class="cinema-crest-medallion" title="${state.bazaarCityLabel || 'Bakı'} Xanədan Gerbi">
-                ${renderCityCrest(activeLocId, 36)}
+                ${renderCityCrest(activeLocId, 30)}
               </div>
               <div class="cinema-location-whisper">
                 <div class="cinema-whisper-top">
@@ -236,39 +240,48 @@ export class UIManager {
                 </div>
                 <div class="cinema-whisper-meta">
                   <span class="cinema-gold-meter" title="Xəzinə Hədəfi: ${state.gold} / ${state.winGoldGoal} qızıl">
-                    ${renderSigil('coin', 13)}
-                    <strong style="color:var(--gold-bright);font-family:var(--font-royal);font-size:13px;">${state.gold}</strong>
+                    ${renderSigil('coin', 12)}
+                    <strong style="color:var(--gold-bright);font-family:var(--font-royal);font-size:12.5px;">${state.gold}</strong>
                     <small style="color:#a89474;">/${state.winGoldGoal}</small>
                     <span class="cinema-gold-track"><span class="cinema-gold-fill" style="width:${goldPct}%;"></span></span>
                   </span>
                   <span class="cinema-day-tag" title="Səfər Günü">
-                    ${renderSigil('sun', 12)}
+                    ${renderSigil('sun', 11)}
                     <span>GÜN ${state.gameDay}</span>
                   </span>
                 </div>
               </div>
-            </div>
+            </div>`
+            }
 
             <div class="cinema-top-right-mini">
-              <button id="btn-toggle-time" class="cinema-mini-btn" title="Səhər / Gecə Modu (T)">${isNight ? '☾ Gecə' : '☀ Səhər'}</button>
+              <button id="btn-toggle-hud" class="cinema-mini-btn" title="${hudHidden ? 'Paneli Göstər' : 'Təmiz Ekran (Paneli Gizlət)'}">${hudHidden ? '👁 Panel' : '👁'}</button>
+              ${
+                hudHidden
+                  ? ''
+                  : `<button id="btn-toggle-time" class="cinema-mini-btn" title="Səhər / Gecə Modu (T)">${isNight ? '☾ Gecə' : '☀ Səhər'}</button>
               <button id="btn-toggle-25d" class="cinema-mini-btn" title="Klassik 3D Rejiminə keç">🏛️ 3D</button>
               <button id="btn-vo-toggle" class="cinema-mini-btn" title="Səsləndirmə (Voiceover) Aç/Bağla">${this.voMuted ? '🎙️✕' : '🎙️'}</button>
               <button id="btn-mute" class="cinema-mini-btn" title="Səs">${this.muted ? '🔇' : '🔊'}</button>
               <button id="btn-settings" class="cinema-mini-btn" title="Ayarlar">⚙</button>
-              <a id="btn-prompts-mini" href="https://vusalsoff.github.io/azerbaijan-caravan-game/" target="_blank" rel="noopener noreferrer" class="cinema-mini-btn" style="text-decoration:none;display:inline-flex;align-items:center;" title="44 Məkan Prompt Kataloqu">🖼️</a>
+              <a id="btn-prompts-mini" href="https://vusalsoff.github.io/azerbaijan-caravan-game/" target="_blank" rel="noopener noreferrer" class="cinema-mini-btn" style="text-decoration:none;display:inline-flex;align-items:center;" title="44 Məkan Prompt Kataloqu">🖼️</a>`
+              }
             </div>
           </div>
 
           <div class="cinema-bottom-wrap">
-            ${questPopoverHtml}
+            ${hudHidden ? '' : questPopoverHtml}
             ${contextBtnHtml}
             ${
-              separateRoomRow
+              !hudHidden && separateRoomRow
                 ? `<div class="cinema-room-strip lotm-plate" title="Şəhərin Xüsusi Məkanları">${roomsPillsHtml}</div>`
                 : ''
             }
-            <div class="cinema-dock lotm-plate">
-              ${renderButaWing('left', 24)}
+            ${
+              hudHidden
+                ? ''
+                : `<div class="cinema-dock lotm-plate">
+              ${renderButaWing('left', 22)}
               ${
                 !separateRoomRow
                   ? `<div class="cinema-angle-pills">${roomsPillsHtml}</div><span class="cinema-dock-div"></span>`
@@ -294,11 +307,18 @@ export class UIManager {
               <button id="btn-event-test" class="cinema-dock-btn" title="Yol Rəvayəti">
                 ${renderSigil('buta', 14)}
               </button>
-              ${renderButaWing('right', 24)}
-            </div>
+              ${renderButaWing('right', 22)}
+            </div>`
+            }
           </div>
         </div>
       `;
+
+      this.hudEl.querySelector('#btn-toggle-hud')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this._hudMinimized = !this._hudMinimized;
+        this.updateHUD(this.lastState);
+      });
 
       this.hudEl.querySelectorAll('.cinema-pill[data-angle]').forEach((btn) => {
         btn.addEventListener('click', (e) => {
@@ -372,110 +392,44 @@ export class UIManager {
       return;
     }
 
-    const bonuses = [];
-    if (state.hasHorseBonus) bonuses.push('Köhlən +35%');
-    if (state.speedBoostTimer > 0) bonuses.push(`Çeviklik ${state.speedBoostTimer}s`);
-    if (state.guardBoostTimer > 0) bonuses.push(`Keşik ${state.guardBoostTimer}s`);
-
+    const activeQuestCount = state.activeQuests?.length || 0;
+    const goldPct = Math.max(0, Math.min(100, Math.round((state.gold / Math.max(1, state.winGoldGoal)) * 100)));
+    const hudHidden = Boolean(this._hudMinimized);
+    const activeLocId = state.currentCity?.city_id || 'City_Baku';
     const prox = state.bazaarProximity;
-    const bottomActionHtml = isBazaar
+
+    const mapContextHtml = isBazaar
       ? prox?.type === 'exit_to_map'
-        ? `<button id="btn-exit-map" class="btn-primary">
-            <span class="key-cap">E</span>
-            <span>Qədim Xəritəyə Çıx</span>
-          </button>`
+        ? `<div class="cinema-context-bar"><button id="btn-exit-map" class="btn-primary cinema-action-pill"><span class="key-cap">E</span><span>Qədim Xəritəyə Çıx</span></button></div>`
         : prox?.type === 'horse_mount'
-          ? `<button id="btn-mount-horse" class="btn-primary">
-              <span class="key-cap">E</span>
-              <span>${prox.label}</span>
-            </button>
-            <span style="color:#b8a484;font-size:12.5px;">Atdan enmək üçün: <span class="key-cap">R</span></span>`
-          : prox?.type === 'fayton'
-          ? `<button id="btn-board-fayton" class="btn-primary">
-              <span class="key-cap">E</span>
-              <span>${prox.label}</span>
-            </button>
-            <span style="color:#b8a484;font-size:12.5px;">Faytonla Bakı · Şəki · Şuşa səfəri</span>`
-          : prox?.type === 'palace_audience'
-          ? `<button id="btn-palace-audience" class="btn-primary">
-              <span class="key-cap">E</span>
-              <span>${prox.label}</span>
-            </button>
-            <span style="color:#b8a484;font-size:12.5px;">${prox.palaceTitle || 'Saray Qəbulu'}</span>`
-          : `<button id="btn-open-market" class="btn-primary">
-              <span class="key-cap">E</span>
-              <span>${prox?.label || 'Tacirlə Sövdələş'}</span>
-            </button>
-            <span style="color:#b8a484;font-size:12.5px;">WASD: Gəz · Siçan: Baxış · <span class="key-cap">I</span> Heybə</span>`
-      : state.currentCity
-      ? `<button id="btn-enter-bazaar" class="btn-emerald">
-           ${renderSigil('gate', 15)}
-           <span>Karvansaraya Daxil Ol</span>
-         </button>
-         <button id="btn-open-market" class="btn-primary">
-           <span class="key-cap">E</span>
-           <span>Bazar Dəftəri (${state.currentCity.short_name || state.currentCity.display_name})</span>
-         </button>`
-      : `<span><strong>Qədim Mənzil Xəritəsi:</strong> Səfər üçün xəritədə istənilən mənzilə klikləyin · <span class="key-cap">WASD</span> Hərəkət · <span class="key-cap">I</span> Heybə · <span class="key-cap">M</span> Salnamə</span>`;
+        ? `<div class="cinema-context-bar"><button id="btn-mount-horse" class="btn-primary cinema-action-pill"><span class="key-cap">E</span><span>${prox.label}</span></button></div>`
+        : prox?.type === 'fayton'
+        ? `<div class="cinema-context-bar"><button id="btn-board-fayton" class="btn-primary cinema-action-pill"><span class="key-cap">E</span><span>${prox.label}</span></button></div>`
+        : prox?.type === 'palace_audience'
+        ? `<div class="cinema-context-bar"><button id="btn-palace-audience" class="btn-primary cinema-action-pill"><span class="key-cap">E</span><span>${prox.label}</span></button></div>`
+        : prox?.type === 'market'
+        ? `<div class="cinema-context-bar"><button id="btn-open-market" class="btn-primary cinema-action-pill"><span class="key-cap">E</span><span>${prox.label}</span></button></div>`
+        : ''
+      : state.currentCity && !this.marketOpen
+      ? `<div class="cinema-context-bar" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
+           <button id="btn-enter-bazaar" class="btn-emerald" style="padding:7px 15px;font-size:13px;">
+             ${renderSigil('gate', 15)}
+             <span>${state.currentCity.short_name || state.currentCity.display_name} · Daxil Ol</span>
+           </button>
+           <button id="btn-open-market" class="btn-primary" style="padding:7px 14px;font-size:13px;">
+             <span class="key-cap">E</span>
+             <span>Bazar</span>
+           </button>
+         </div>`
+      : '';
 
-    this.hudEl.innerHTML = `
-      <div class="hud-shell">
-        <div class="hud-top-row">
-          <div class="irs-brand-box lotm-plate">
-            ${renderCityCrest(state.currentCity?.city_id || 'City_Baku', 34)}
-            <div class="irs-logo">
-              <span class="irs-logo-main">KARVA</span>
-              <span class="irs-logo-sub">Karvan Yolu</span>
-            </div>
-            <div class="hud-pill" title="Xəzinə və Hədəf">
-              ${renderSigil('coin', 15)}
-              <span><strong>${state.gold}</strong> / ${state.winGoldGoal}</span>
-            </div>
-            <button id="btn-hud-inventory" class="hud-pill clickable" title="İnventarı Aç (I)">
-              ${renderSigil('satchel', 15)}
-              <span>İnventar: <strong>${state.totalItems}/${state.maxInventory}</strong></span>
-            </button>
-            <div class="hud-pill" title="Səfər Günü">
-              ${renderSigil('sun', 15)}
-              <span>Gün <strong>${state.gameDay}</strong></span>
-            </div>
-            ${bonuses.map((b) => `<div class="hud-pill">${b}</div>`).join('')}
-          </div>
-
-          <div class="irs-era-banner lotm-plate">✦ ${eraBanner} ✦</div>
-
-          <div class="hud-actions-bar lotm-plate">
+    const mapQuestPopoverHtml =
+      this._cinemaQuestOpen && !this.marketOpen
+        ? `<div class="cinema-quest-popover lotm-plate">
+            <h4>Divan Əmanətləri (${activeQuestCount})</h4>
             ${
-              isBazaar
-                ? `<button id="btn-toggle-25d" class="btn-emerald" title="2.5D Kinematik və Klassik 3D arasında keçid">${state.bazaarRenderMode === '25d' ? '🏛️ Klassik 3D' : '✦ 2.5D Kinematik'}</button>
-                   <button id="btn-exit-map-top" class="btn-primary">${renderSigil('compass', 15)} <span>Qədim Xəritə (X)</span></button>`
-                : ''
-            }
-            <button id="btn-inv-top" class="btn-secondary" title="İnventar (I)">
-              ${renderSigil('satchel', 15)}
-              <span>İnventar (I)</span>
-            </button>
-            <button id="btn-map" class="btn-secondary" title="Tarixi Salnamə (M)">
-              ${renderSigil('scroll', 15)}
-              <span>Salnamə (${state.discoveredEvents.length}/${state.totalEventsCount})</span>
-            </button>
-            <button id="btn-event-test" class="btn-secondary" title="Yol Qarşılaşması">
-              ${renderSigil('seal', 15)}
-              <span>Rəvayət</span>
-            </button>
-            <button id="btn-vo-toggle" class="btn-secondary" title="Səsləndirməni Aç/Bağla">${this.voMuted ? '🎙️ Səsləndirmə: Bağlı' : '🎙️ Səsləndirmə'}</button>
-            <button id="btn-mute" class="btn-secondary" title="Səs">${this.muted ? 'Səssiz' : 'Səs'}</button>
-            <button id="btn-settings" class="btn-secondary" title="Ayarlar">⚙ Ayarlar</button>
-            <button id="btn-reset" class="btn-secondary" title="Səfəri Yenidən Başlat">↺</button>
-          </div>
-        </div>
-
-        <div class="hud-middle-right" style="${isBazaar && this.marketOpen ? 'display:none;' : ''}">
-          <div class="hud-side-card lotm-plate">
-            <h4>Divan Əmanətləri (${state.activeQuests.length})</h4>
-            ${
-              state.activeQuests.length === 0
-                ? '<div style="color:#a89474;font-style:italic;">Yol boyu el ağsaqqalları, bağbanlar və xan qasidləri sizə əmanət tapşıracaq.</div>'
+              activeQuestCount === 0
+                ? '<div style="color:#a89474;font-style:italic;font-size:12px;">Hələ aktiv əmanət yoxdur. Şəhərləri gəzdikcə tapşırıqlar açılacaq.</div>'
                 : state.activeQuests
                     .map(
                       (q) => `
@@ -486,57 +440,139 @@ export class UIManager {
                           ? 'Hər hansı mənzil'
                           : this.data.getCityById(q.target_city)?.short_name || q.target_city
                       }</span><br/>
-                    <span style="color:var(--gold-bright);">Ənam: +${q.reward_gold} qızıl</span>
+                    <span style="color:var(--gold-bright);">+${q.reward_gold} qızıl</span>
                   </div>`
                     )
                     .join('')
             }
-          </div>
+            ${
+              state.perishables && state.perishables.length > 0
+                ? `<div style="margin-top:8px;padding-top:6px;border-top:1px solid rgba(212,166,84,0.24);">${this._renderFreshnessRows(state.perishables)}</div>`
+                : ''
+            }
+            <div style="margin-top:8px;padding-top:6px;border-top:1px solid rgba(212,166,84,0.24);display:flex;gap:14px;font-size:11.5px;color:#d6c19b;">
+              <span>${renderSigil('charisma', 13)} Nüfuz: <strong style="color:var(--gold-bright);">${state.charisma}</strong></span>
+              <span>${renderSigil('intelligence', 13)} Fərasət: <strong style="color:var(--gold-bright);">${state.intelligence}</strong></span>
+            </div>
+          </div>`
+        : '';
 
+    this.hudEl.innerHTML = `
+      <div class="cinema-corner-filigree tl"></div>
+      <div class="cinema-corner-filigree tr"></div>
+      <div class="cinema-corner-filigree bl"></div>
+      <div class="cinema-corner-filigree br"></div>
+
+      <div class="cinema-hud-shell">
+        <div class="cinema-top-strip">
           ${
-            state.perishables && state.perishables.length > 0
-              ? `<div class="hud-side-card lotm-plate">
-                  <h4>Bağ Nemətlərinin Möhləti</h4>
-                  ${this._renderFreshnessRows(state.perishables)}
-                </div>`
-              : ''
+            hudHidden
+              ? `<div></div>`
+              : `<div class="cinema-royal-banner">
+            <div class="cinema-crest-medallion" title="${state.currentCity?.short_name || 'Azərbaycan'}">
+              ${renderCityCrest(activeLocId, 30)}
+            </div>
+            <div class="cinema-location-whisper">
+              <div class="cinema-whisper-top">
+                <span class="cinema-brand-mark">KARVA</span>
+                <span class="cinema-sep">✦</span>
+                <span class="cinema-city-text">${state.currentCity?.short_name || 'Qədim Xəritə'}</span>
+                <span class="cinema-sep cinema-sep-zone">·</span>
+                <span class="cinema-zone-text">${isBazaar ? 'Klassik 3D' : 'Səfər üçün şəhərə kliklə'}</span>
+              </div>
+              <div class="cinema-whisper-meta">
+                <span class="cinema-gold-meter">
+                  ${renderSigil('coin', 12)}
+                  <strong style="color:var(--gold-bright);font-family:var(--font-royal);font-size:12.5px;">${state.gold}</strong>
+                  <small style="color:#a89474;">/${state.winGoldGoal}</small>
+                  <span class="cinema-gold-track"><span class="cinema-gold-fill" style="width:${goldPct}%;"></span></span>
+                </span>
+                <span class="cinema-day-tag">
+                  ${renderSigil('sun', 11)}
+                  <span>GÜN ${state.gameDay}</span>
+                </span>
+              </div>
+            </div>
+          </div>`
           }
+
+          <div class="cinema-top-right-mini">
+            <button id="btn-toggle-hud" class="cinema-mini-btn" title="${hudHidden ? 'Paneli Göstər' : 'Təmiz Ekran (Paneli Gizlət)'}">${hudHidden ? '👁 Panel' : '👁'}</button>
+            ${
+              hudHidden
+                ? ''
+                : `${isBazaar ? `<button id="btn-toggle-25d" class="cinema-mini-btn" title="2.5D Kinematik Rejiminə keç">✦ 2.5D</button>` : ''}
+            <button id="btn-vo-toggle" class="cinema-mini-btn" title="Səsləndirməni Aç/Bağla">${this.voMuted ? '🎙️✕' : '🎙️'}</button>
+            <button id="btn-mute" class="cinema-mini-btn" title="Səs">${this.muted ? '🔇' : '🔊'}</button>
+            <button id="btn-settings" class="cinema-mini-btn" title="Ayarlar">⚙</button>
+            <button id="btn-reset" class="cinema-mini-btn" title="Səfəri Yenidən Başlat">↺</button>
+            <a id="btn-prompts-mini" href="https://vusalsoff.github.io/azerbaijan-caravan-game/" target="_blank" rel="noopener noreferrer" class="cinema-mini-btn" style="text-decoration:none;display:inline-flex;align-items:center;" title="44 Məkan Prompt Kataloqu">🖼️</a>`
+            }
+          </div>
         </div>
 
-        <div class="hud-bottom-grid">
-          <div class="irs-stats-stack">
-            <div class="gta-minimap-wrap${this.minimapExpanded ? ' is-expanded' : ''}" id="gta-minimap-wrap" title="Şəhər xəritəsini açmaq / bağlamaq üçün klikləyin" style="display:${isBazaar && state.bazaarRenderMode !== '25d' ? 'block' : 'none'};">
-              <div class="gta-minimap-controls">
-                <button type="button" class="gta-minimap-btn" id="btn-minimap-rot">${this.minimapRotate ? 'Yön: Oyunçu' : 'Yön: Şimal ↑'}</button>
-                <button type="button" class="gta-minimap-btn" id="btn-minimap-clear-wp">Hədəfi Sil</button>
-                <button type="button" class="gta-minimap-btn" id="btn-minimap-close">Bağla</button>
-              </div>
-              <canvas class="gta-minimap-canvas" id="gta-minimap" width="172" height="148"></canvas>
-              <div class="gta-minimap-label">
-                <span id="gta-minimap-zone">Karvansara Həyəti</span>
-                <span id="gta-minimap-compass">${this.minimapExpanded ? 'Xəritədə hədəf seç · Ş ↑' : 'Ş ↑'}</span>
-              </div>
-            </div>
-            <div class="irs-stat-badge lotm-plate">
-              <span style="display:inline-flex;align-items:center;gap:6px;">${renderSigil('charisma', 15)} Nüfuz (Xarizma)</span>
-              <strong>${state.charisma}</strong>
-            </div>
-            <div class="irs-stat-badge lotm-plate">
-              <span style="display:inline-flex;align-items:center;gap:6px;">${renderSigil('intelligence', 15)} Fərasət (Zəka)</span>
-              <strong>${state.intelligence}</strong>
-            </div>
+        <div class="gta-minimap-wrap${this.minimapExpanded ? ' is-expanded' : ''}" id="gta-minimap-wrap" title="Şəhər xəritəsini açmaq / bağlamaq üçün klikləyin" style="display:${!hudHidden && isBazaar && state.bazaarRenderMode !== '25d' ? 'block' : 'none'};position:fixed;left:14px;bottom:68px;">
+          <div class="gta-minimap-controls">
+            <button type="button" class="gta-minimap-btn" id="btn-minimap-rot">${this.minimapRotate ? 'Yön: Oyunçu' : 'Yön: Şimal ↑'}</button>
+            <button type="button" class="gta-minimap-btn" id="btn-minimap-clear-wp">Hədəfi Sil</button>
+            <button type="button" class="gta-minimap-btn" id="btn-minimap-close">Bağla</button>
           </div>
-
-          <div class="hud-bottom-center">
-            <div class="hud-bottom-hint lotm-plate">
-              ${bottomActionHtml}
-            </div>
+          <canvas class="gta-minimap-canvas" id="gta-minimap" width="172" height="148"></canvas>
+          <div class="gta-minimap-label">
+            <span id="gta-minimap-zone">Karvansara Həyəti</span>
+            <span id="gta-minimap-compass">${this.minimapExpanded ? 'Hədəf seç · Ş ↑' : 'Ş ↑'}</span>
           </div>
+        </div>
 
-          <div style="width:158px;"></div>
+        <div class="cinema-bottom-wrap">
+          ${hudHidden ? '' : mapQuestPopoverHtml}
+          ${mapContextHtml}
+          ${
+            hudHidden
+              ? ''
+              : `<div class="cinema-dock lotm-plate">
+            ${renderButaWing('left', 22)}
+            <button id="btn-inv-top" class="cinema-dock-btn" title="Karvan Heybəsi (I)">
+              ${renderSigil('satchel', 14)}
+              <span>Heybə <b>${state.totalItems}/${state.maxInventory}</b></span>
+            </button>
+            <button id="btn-cinema-quests" class="cinema-dock-btn ${this._cinemaQuestOpen ? 'active' : ''}" title="Divan Əmanətləri & Bacarıqlar">
+              ${renderSigil('seal', 14)}
+              <span>Əmanət</span>
+              ${activeQuestCount > 0 ? `<span class="cinema-badge-dot">${activeQuestCount}</span>` : ''}
+            </button>
+            ${
+              isBazaar
+                ? `<button id="btn-exit-map-top" class="cinema-dock-btn gold" title="Qədim Xəritə (X)">
+                    ${renderSigil('compass', 15)}
+                    <span><span class="dock-full-only">Qədim </span>Xəritə</span>
+                   </button>`
+                : ''
+            }
+            <button id="btn-map" class="cinema-dock-btn" title="Tarixi Salnamə (M)">
+              ${renderSigil('scroll', 14)}
+              <span>Salnamə</span>
+            </button>
+            <button id="btn-event-test" class="cinema-dock-btn" title="Yol Rəvayəti">
+              ${renderSigil('buta', 14)}
+            </button>
+            ${renderButaWing('right', 22)}
+          </div>`
+          }
         </div>
       </div>
     `;
+
+    this.hudEl.querySelector('#btn-toggle-hud')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this._hudMinimized = !this._hudMinimized;
+      this.updateHUD(this.lastState);
+    });
+    this.hudEl.querySelector('#btn-cinema-quests')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this._cinemaQuestOpen = !this._cinemaQuestOpen;
+      this.updateHUD(this.lastState);
+    });
 
     this.hudEl.querySelector('#btn-minimap-rot')?.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -1718,31 +1754,13 @@ export class UIManager {
    */
   showToast(message, type = 'info') {
     if (!this.toastEl || !message) return;
-    const now = performance.now();
 
-    const existing = this._activeToasts.get(message);
-    if (existing) {
-      if (now - existing.lastAt < 1800) {
-        existing.lastAt = now;
-        clearTimeout(existing.timerId);
-        existing.timerId = setTimeout(() => {
-          existing.el.remove();
-          this._activeToasts.delete(message);
-        }, 3400);
-        return;
-      }
+    // Ekranda yazılar üst-üstə yığılmasın — həmişə yalnız 1 nazik xəbərdarlıq sətri göstər!
+    for (const entry of this._activeToasts.values()) {
+      clearTimeout(entry.timerId);
+      entry.el.remove();
     }
-
-    // Maksimum 3 aktiv bildiriş saxla
-    while (this._activeToasts.size >= 3) {
-      const oldestKey = this._activeToasts.keys().next().value;
-      const oldest = this._activeToasts.get(oldestKey);
-      if (oldest) {
-        clearTimeout(oldest.timerId);
-        oldest.el.remove();
-      }
-      this._activeToasts.delete(oldestKey);
-    }
+    this._activeToasts.clear();
 
     const item = document.createElement('div');
     item.className = `toast-item ${type}`;
@@ -1752,9 +1770,9 @@ export class UIManager {
     const timerId = setTimeout(() => {
       item.remove();
       this._activeToasts.delete(message);
-    }, 3600);
+    }, 2500);
 
-    this._activeToasts.set(message, { el: item, timerId, lastAt: now });
+    this._activeToasts.set(message, { el: item, timerId, lastAt: performance.now() });
   }
 
   /**

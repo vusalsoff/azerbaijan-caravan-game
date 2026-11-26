@@ -482,8 +482,8 @@
 .cinema-crest-medallion {
   position: relative;
   z-index: 2;
-  width: 48px;
-  height: 48px;
+  width: 42px;
+  height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -492,34 +492,35 @@
   border: 2px solid #e6be6c;
   box-shadow:
     inset 0 0 0 2px rgba(10, 7, 5, 0.9),
-    0 0 14px rgba(212, 166, 84, 0.32);
+    0 0 12px rgba(212, 166, 84, 0.28);
   flex-shrink: 0;
 }
 
 .cinema-location-whisper {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  margin-left: -12px;
-  padding: 6px 16px 6px 20px;
-  border-radius: 0 5px 5px 0;
+  gap: 2px;
+  margin-left: -10px;
+  padding: 4px 13px 4px 16px;
+  border-radius: 0 4px 4px 0;
   background:
-    linear-gradient(90deg, rgba(20, 14, 9, 0.94) 0%, rgba(16, 11, 8, 0.86) 72%, rgba(16, 11, 8, 0.56) 100%);
-  border: 1px solid rgba(212, 166, 84, 0.52);
+    linear-gradient(90deg, rgba(20, 14, 9, 0.9) 0%, rgba(16, 11, 8, 0.8) 74%, rgba(16, 11, 8, 0.45) 100%);
+  border: 1px solid rgba(212, 166, 84, 0.46);
   border-left: none;
-  box-shadow: inset 0 1px 0 rgba(252, 228, 170, 0.22);
+  box-shadow: inset 0 1px 0 rgba(252, 228, 170, 0.2);
   backdrop-filter: blur(8px);
 }
 
 .cinema-whisper-top {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   font-family: var(--font-royal);
-  font-size: 13.5px;
-  letter-spacing: 0.08em;
+  font-size: 12.5px;
+  letter-spacing: 0.07em;
   color: #f4e2bf;
   text-shadow: 0 1px 5px rgba(0, 0, 0, 0.92);
+  white-space: nowrap;
 }
 
 .cinema-brand-mark {
@@ -1564,31 +1565,34 @@
   border-radius: 2px;
 }
 
-/* Bildirişlər (Toast) — Şahi Fərman Lentləri */
+/* Bildirişlər (Toast) — Ekrana mane olmayan 1 nazik üst-mərkəz xətti */
 .toast-stack {
   position: fixed;
-  bottom: 108px;
-  left: 16px;
+  top: 62px;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  max-width: min(390px, calc(100vw - 32px));
+  align-items: center;
+  gap: 4px;
+  max-width: min(520px, calc(100vw - 32px));
   z-index: 35;
   pointer-events: none;
 }
 
 .toast-item {
-  padding: 10px 14px;
-  border-radius: 4px;
-  font-size: 12.8px;
-  line-height: 1.44;
+  padding: 5px 14px;
+  border-radius: 3px;
+  font-size: 12px;
+  line-height: 1.35;
+  text-align: center;
   color: #f6ead2;
-  background: linear-gradient(90deg, rgba(28, 19, 12, 0.96), rgba(14, 10, 7, 0.94));
-  border: 1px solid rgba(212, 166, 84, 0.52);
-  border-left: 3.5px solid var(--gold-bright);
-  box-shadow: inset 0 1px 0 rgba(255, 236, 186, 0.18), 0 12px 28px rgba(0, 0, 0, 0.72);
-  backdrop-filter: blur(8px);
-  animation: karvaSlideUp 0.2s ease-out;
+  background: rgba(16, 11, 8, 0.86);
+  border: 1px solid rgba(212, 166, 84, 0.45);
+  border-left: 3px solid var(--gold-bright);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(6px);
+  animation: karvaSlideUp 0.16s ease-out;
 }
 
 .toast-item.success { border-left-color: #5ec48c; }
